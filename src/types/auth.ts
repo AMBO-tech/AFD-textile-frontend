@@ -40,19 +40,7 @@ export interface RegisterResponse {
   message: string
 }
 
-// ─── Auth Errors ──────────────────────────────────────────────────────────────
-
-export interface ApiError {
-  success: false
-  message: string
-  errors?: {
-    name?: string[]
-    email?: string[]
-    password?: string[]
-    passwordConfirmation?: string[]
-    [key: string]: string[] | undefined
-  }
-}
+export type { ApiError } from './api'
 
 // ─── Auth Context / Store Contract ────────────────────────────────────────────
 
