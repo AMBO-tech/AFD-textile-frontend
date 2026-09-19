@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  AlertTriangle, MessageSquare, CreditCard, CheckCircle, HardDrive, X
+  AlertTriangle, MessageSquare, CreditCard, CheckCircle, Store, X
 } from 'lucide-react';
 import type { Notification } from './types';
 
@@ -15,7 +15,7 @@ const TYPE_CONFIG = {
   creance: { icon: CreditCard, color: '#F59E0B', bg: '#FFFBEB', label: 'Créance' },
   validation: { icon: CheckCircle, color: '#22C55E', bg: '#F0FDF4', label: 'Validation' },
   refus: { icon: X, color: '#EF4444', bg: '#FEF2F2', label: 'Refus' },
-  sauvegarde: { icon: HardDrive, color: '#22C55E', bg: '#F0FDF4', label: 'Sauvegarde' },
+  boutique: { icon: Store, color: '#0F3D5E', bg: '#EFF6FF', label: 'Boutique' },
 };
 
 export const NotificationCard: React.FC<NotificationCardProps> = ({
