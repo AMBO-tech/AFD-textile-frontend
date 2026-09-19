@@ -5,11 +5,11 @@ import {
   MapPin,
   Phone,
   User,
-  Users,
-  Package,
   Edit2,
   CheckCircle2,
   XCircle,
+  Users,
+  Package,
 } from 'lucide-react';
 import type { BoutiqueWithStaff } from './types';
 
@@ -29,151 +29,109 @@ export const BoutiqueCard: React.FC<BoutiqueCardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl border transition-all p-5 shadow-sm hover:shadow-md ${
-        boutique.actif ? 'border-gray-100' : 'border-gray-200 opacity-75 bg-gray-50/50'
+      className={`bg-white rounded-2xl p-4 shadow-sm border transition-all hover:border-blue-100 hover:shadow-md ${
+        !boutique.actif ? 'opacity-60 border-gray-100 bg-gray-50/40' : 'border-gray-100'
       }`}
     >
-      {/* Entête Carte */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Section Gauche : Icône + Informations principales */}
+        <div className="flex items-center gap-3.5 min-w-0">
           <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center text-white flex-shrink-0 shadow-xs"
             style={{
               background: isEntrepot
                 ? 'linear-gradient(135deg, #7C3AED, #4F46E5)'
                 : 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
             }}
           >
-            <Icon size={22} className="text-white" />
+            <Icon size={20} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-display font-bold text-gray-900 text-base leading-tight">
-                {boutique.nom}
-              </h3>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm text-gray-900">{boutique.nom}</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-bold">
                 {boutique.code}
               </span>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
               <span
                 className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                  isEntrepot
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-blue-100 text-blue-700'
+                  isEntrepot ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
                 }`}
               >
-                {isEntrepot ? 'Entrepôt central' : 'Boutique de vente'}
+                {isEntrepot ? 'Entrepôt' : 'Boutique'}
               </span>
-              <span
-                className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                  boutique.actif
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {boutique.actif ? (
-                  <>
-                    <CheckCircle2 size={11} /> Actif
-                  </>
-                ) : (
-                  <>
-                    <XCircle size={11} /> Inactif
-                  </>
-                )}
+              {!boutique.actif && (
+                <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">
+                  Désactivé
+                </span>
+              )}
+            </div>
+
+            {/* Coordonnées en une seule ligne compacte */}
+            <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-gray-600">
+                <MapPin size={12} className="text-gray-400" />
+                {boutique.lieu || boutique.adresse}
               </span>
+              {boutique.telephone && (
+                <span className="inline-flex items-center gap-1">
+                  <Phone size={12} className="text-gray-400" />
+                  {boutique.telephone}
+                </span>
+              )}
+              {boutique.gerant && (
+                <span className="inline-flex items-center gap-1 text-gray-400">
+                  <User size={12} />
+                  Gérant : <strong className="text-gray-700 font-medium">{boutique.gerant}</strong>
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Boutons actions rapides */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onEdit(boutique)}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title="Modifier les détails"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => onToggleStatus(boutique.id)}
-            className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-colors ${
-              boutique.actif
-                ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                : 'text-green-700 bg-green-50 hover:bg-green-100'
-            }`}
-          >
-            {boutique.actif ? 'Désactiver' : 'Activer'}
-          </button>
-        </div>
-      </div>
-
-      {/* Coordonnées */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-600 py-3 border-y border-gray-100 my-3">
-        <div className="flex items-center gap-2">
-          <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-          <span className="truncate">{boutique.adresse || boutique.lieu}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Phone size={14} className="text-gray-400 flex-shrink-0" />
-          <span>{boutique.telephone || 'Non renseigné'}</span>
-        </div>
-        <div className="flex items-center gap-2 sm:col-span-2">
-          <User size={14} className="text-gray-400 flex-shrink-0" />
-          <span>
-            Responsable :{' '}
-            <strong className="text-gray-800">{boutique.gerant || 'Non assigné'}</strong>
-          </span>
-        </div>
-      </div>
-
-      {/* Indicateurs Stock & Personnel */}
-      <div className="flex items-center justify-between pt-1">
-        {/* Personnel assigné */}
-        <div className="flex items-center gap-2">
-          <Users size={14} className="text-gray-400" />
-          <span className="text-xs text-gray-500 font-medium">
-            Personnel ({boutique.personnel.length}) :
-          </span>
-          {boutique.personnel.length === 0 ? (
-            <span className="text-xs text-gray-400 italic">Aucun boutiquier</span>
-          ) : (
-            <div className="flex -space-x-1.5 overflow-hidden">
-              {boutique.personnel.map((p) => (
-                <div
-                  key={p.id}
-                  title={`${p.nom} (${p.role})`}
-                  className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white"
-                >
-                  {p.nom.charAt(0)}
-                </div>
-              ))}
+        {/* Section Droite : Métriques discrètes & Actions */}
+        <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 flex-shrink-0">
+          <div className="flex items-center gap-3 text-right">
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              <Users size={13} className="text-gray-400" />
+              <span>
+                <strong className="text-gray-900">{boutique.personnel.length}</strong>{' '}
+                <span className="text-gray-500">vendeur{boutique.personnel.length > 1 ? 's' : ''}</span>
+              </span>
             </div>
-          )}
-        </div>
+            <span className="text-gray-200">·</span>
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              <Package size={13} className="text-gray-400" />
+              <span>
+                <strong className="text-gray-900">{boutique.nbArticlesStock}</strong>{' '}
+                <span className="text-gray-500">en stock</span>
+              </span>
+            </div>
+          </div>
 
-        {/* Produits en stock */}
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-lg">
-          <Package size={13} className="text-gray-500" />
-          <span>{boutique.nbArticlesStock} modèles en stock</span>
+          {/* Actions rapides */}
+          <div className="flex items-center gap-1.5 ml-2">
+            <button
+              onClick={() => onEdit(boutique)}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-gray-100"
+              title="Modifier les informations"
+            >
+              <Edit2 size={14} />
+            </button>
+            <button
+              onClick={() => onToggleStatus(boutique.id)}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors border border-gray-100 ${
+                boutique.actif
+                  ? 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                  : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
+              }`}
+              title={boutique.actif ? 'Désactiver' : 'Activer'}
+            >
+              {boutique.actif ? <XCircle size={14} /> : <CheckCircle2 size={14} />}
+            </button>
+          </div>
         </div>
       </div>
-
-      {/* Liste déroulée du personnel */}
-      {boutique.personnel.length > 0 && (
-        <div className="mt-3 pt-2.5 border-t border-gray-50 flex flex-wrap gap-1.5">
-          {boutique.personnel.map((u) => (
-            <span
-              key={u.id}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-50 text-[11px] font-medium text-gray-700"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-              {u.nom}
-              <span className="text-[10px] text-gray-400">({u.role})</span>
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
