@@ -1,13 +1,6 @@
-import AppRoutes from '@/routes/appRoutes'
-import { Toaster } from '@/components/ui/sonner'
+import React from 'react';
+import AppRoutes from './routes/appRoutes';
 
-export const App = () => {
-  return (
-    <>
-      <AppRoutes />
-      <Toaster position="top-right" richColors closeButton />
-    </>
-  )
+export default function App() {
+  return <AppRoutes />;
 }
-
-export default App
