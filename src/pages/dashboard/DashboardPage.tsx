@@ -39,8 +39,8 @@ export const DashboardPage: React.FC = () => {
       case 'historique':
         navigate('/historique');
         break;
-      case 'sauvegardes':
-        navigate('/sauvegardes');
+      case 'boutiques':
+        navigate('/boutiques');
         break;
       case 'parametres':
         navigate('/parametres');
