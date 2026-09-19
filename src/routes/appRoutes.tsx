@@ -17,14 +17,16 @@ import {
   UsersPage,
   RapportsPage,
   HistoriquePage,
-  SauvegardesPage,
+  BoutiquesPage,
+  ActiverComptePage,
 } from '../pages';
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Route publique : Connexion */}
+      {/* Routes publiques : Connexion et Activation de compte */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/activer-compte" element={<ActiverComptePage />} />
 
       {/* Routes protégées : Authentification requise */}
       <Route element={<ProtectedRoute />}>
@@ -43,11 +45,12 @@ export const AppRoutes: React.FC = () => {
 
           {/* Espace restreint : Gérant uniquement */}
           <Route element={<RoleProtectedRoute allowedRoles={['gerant']} />}>
+            <Route path="/boutiques" element={<BoutiquesPage />} />
             <Route path="/entrepot" element={<EntrepotPage />} />
             <Route path="/utilisateurs" element={<UsersPage />} />
             <Route path="/rapports" element={<RapportsPage />} />
             <Route path="/historique" element={<HistoriquePage />} />
-            <Route path="/sauvegardes" element={<SauvegardesPage />} />
+            <Route path="/sauvegardes" element={<Navigate to="/boutiques" replace />} />
             <Route path="/dashboard_admin" element={<DashboardPage />} />
           </Route>
         </Route>

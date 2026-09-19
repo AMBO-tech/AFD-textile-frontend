@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Package } from 'lucide-react';
+import { X, Plus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, DollarSign } from 'lucide-react';
 import type { ClientDetailed, Produit, LigneProduitCreance } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
 
@@ -8,7 +8,7 @@ interface NewDebtModalProps {
   onClose: () => void;
   client: ClientDetailed;
   produits: Produit[];
-  onSubmit: (lignes: LigneProduitCreance[]) => void;
+  onSubmit: (lignes: LigneProduitCreance[], acompte: number, modeAcompte: string) => void;
 }
 
 export const NewDebtModal: React.FC<NewDebtModalProps> = ({
@@ -22,23 +22,36 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
   const [selectedProdId, setSelectedProdId] = useState(produits[0]?.id || '');
   const [quantite, setQuantite] = useState('6');
   const [prixUnitaire, setPrixUnitaire] = useState(produits[0]?.prix?.toString() || '4500');
+  const [acompte, setAcompte] = useState('0');
+  const [modeAcompte, setModeAcompte] = useState('Espèces');
+  const [errorStock, setErrorStock] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
+  const selectedProd = produits.find((p) => p.id === selectedProdId) || produits[0];
+
   const handleAjouterLigne = () => {
-    const prod = produits.find((p) => p.id === selectedProdId);
-    if (!prod) return;
+    if (!selectedProd) return;
+    setErrorStock(null);
 
     const qteNum = parseFloat(quantite) || 1;
-    const prixNum = parseFloat(prixUnitaire) || prod.prix;
+    const prixNum = parseFloat(prixUnitaire) || selectedProd.prix;
+
+    // Vérification disponibilité du stock
+    if (qteNum > selectedProd.quantite) {
+      setErrorStock(
+        `Stock insuffisant : seulement ${selectedProd.quantite} ${selectedProd.unite} disponible(s) pour "${selectedProd.nom}".`
+      );
+      return;
+    }
 
     setLignes((prev) => [
       ...prev,
       {
-        produitId: prod.id,
-        nom: prod.nom,
+        produitId: selectedProd.id,
+        nom: selectedProd.nom,
         quantite: qteNum,
-        unite: prod.unite,
+        unite: selectedProd.unite,
         prixUnitaire: prixNum,
       },
     ]);
@@ -49,98 +62,155 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
   };
 
   const total = lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0);
+  const acompteNum = Math.min(total, Math.max(0, parseFloat(acompte) || 0));
+  const soldeRestant = Math.max(0, total - acompteNum);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (lignes.length === 0) return;
-    onSubmit(lignes);
+    onSubmit(lignes, acompteNum, modeAcompte);
     setLignes([]);
+    setAcompte('0');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl border border-gray-100 max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 flex-shrink-0">
-          <div>
-            <div className="font-display font-bold text-gray-900 text-base">
-              Nouvelle Créance — {client.nom}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white rounded-3xl w-full max-w-xl p-6 shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between pb-3 mb-2 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-white"
+              style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+            >
+              <ShoppingBag size={20} />
             </div>
-            <div className="text-xs text-gray-400">
-              Sélectionnez les tissus livrés à crédit
+            <div>
+              <div className="font-display font-bold text-gray-900 text-base">
+                Commande Gros & Vente à Crédit
+              </div>
+              <div className="text-xs text-gray-500">
+                Client : <strong className="text-gray-800">{client.nom}</strong> ({client.telephone || 'Sans tél'})
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
-            <X size={20} />
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 py-2">
-          {/* Formulaire ajout ligne */}
-          <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 space-y-2.5">
-            <div className="text-xs font-bold text-gray-700">Ajouter un tissu au panier crédit</div>
+        {/* Corps déroulant */}
+        <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
+          {/* Alerte explicative du flow métier */}
+          <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 text-blue-900 text-xs flex items-start gap-2.5">
+            <CheckCircle2 size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Cette commande génère automatiquement une <strong>vente confirmée</strong>, décrémente
+              le <strong>stock magasin</strong> et impute le <strong>solde restant dû</strong> au compte créance du client.
+            </p>
+          </div>
+
+          {/* Formulaire ajout ligne d'article */}
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-3">
+            <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              1. Sélectionner les tissus livrés
+            </div>
 
             <div className="space-y-1">
-              <label className="block text-[11px] text-gray-500">Modèle de tissu</label>
+              <label className="block text-[11px] font-medium text-gray-600">
+                Tissu / Article en stock
+              </label>
               <select
                 value={selectedProdId}
                 onChange={(e) => {
                   setSelectedProdId(e.target.value);
                   const p = produits.find((pr) => pr.id === e.target.value);
                   if (p) setPrixUnitaire(p.prix.toString());
+                  setErrorStock(null);
                 }}
-                className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
                 {produits.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.nom} ({p.categorie} - {p.couleur})
+                    {p.nom} — {p.categorie} ({p.couleur}) · Dispo: {p.quantite} {p.unite}
                   </option>
                 ))}
               </select>
+              {selectedProd && (
+                <div className="text-[11px] text-gray-500 flex justify-between px-1">
+                  <span>
+                    Stock actuel :{' '}
+                    <strong className={selectedProd.quantite < 10 ? 'text-amber-600' : 'text-green-600'}>
+                      {selectedProd.quantite} {selectedProd.unite}
+                    </strong>
+                  </span>
+                  <span>Prix catalogue : {formatMontant(selectedProd.prix)}</span>
+                </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[11px] text-gray-500">Quantité (mètres)</label>
+                <label className="block text-[11px] font-medium text-gray-600">
+                  Quantité ({selectedProd?.unite || 'mètres'}) *
+                </label>
                 <input
                   type="number"
                   min="0.5"
                   step="any"
                   value={quantite}
-                  onChange={(e) => setQuantite(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold focus:outline-none focus:border-blue-500"
+                  onChange={(e) => {
+                    setQuantite(e.target.value);
+                    setErrorStock(null);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-[11px] text-gray-500">Prix unitaire accordé (FCFA)</label>
+                <label className="block text-[11px] font-medium text-gray-600">
+                  Prix unitaire gros (FCFA) *
+                </label>
                 <input
                   type="number"
                   value={prixUnitaire}
                   onChange={(e) => setPrixUnitaire(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
             </div>
 
+            {errorStock && (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                <AlertTriangle size={14} className="flex-shrink-0" />
+                <span>{errorStock}</span>
+              </div>
+            )}
+
             <button
               type="button"
               onClick={handleAjouterLigne}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-50 text-blue-700 font-semibold text-xs hover:bg-blue-100 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 active:scale-[0.99] transition-all shadow-xs"
             >
               <Plus size={14} />
-              Ajouter cette ligne
+              Ajouter cet article à la commande
             </button>
           </div>
 
           {/* Tableau des lignes ajoutées */}
           <div className="space-y-2">
-            <div className="text-xs font-bold text-gray-700">Lignes enregistrées ({lignes.length})</div>
+            <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              2. Articles commandés ({lignes.length})
+            </div>
             {lignes.length === 0 ? (
-              <div className="text-center py-6 text-xs text-gray-400">
+              <div className="text-center py-6 text-xs text-gray-400 border border-dashed border-gray-200 rounded-2xl">
                 Aucun article ajouté pour le moment.
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {lignes.map((l, i) => (
                   <div
                     key={i}
@@ -152,14 +222,14 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
                         {l.quantite} {l.unite} × {formatMontant(l.prixUnitaire)}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <span className="font-bold text-gray-900 text-xs">
                         {formatMontant(l.quantite * l.prixUnitaire)}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleSupprimerLigne(i)}
-                        className="text-red-400 hover:text-red-600 p-1"
+                        className="text-gray-400 hover:text-red-600 p-1"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -169,20 +239,75 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* 3. Acompte et ventilation financière */}
+          {lignes.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+              <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                3. Acompte initial versé (Optionnel)
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] text-gray-500">Montant acompte (FCFA)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={total}
+                    value={acompte}
+                    onChange={(e) => setAcompte(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500">Mode de règlement</label>
+                  <select
+                    value={modeAcompte}
+                    onChange={(e) => setModeAcompte(e.target.value)}
+                    disabled={acompteNum === 0}
+                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  >
+                    <option value="Espèces">Espèces</option>
+                    <option value="Wave">Wave</option>
+                    <option value="Orange Money">Orange Money</option>
+                    <option value="Chèque">Chèque</option>
+                    <option value="Virement">Virement</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 grid grid-cols-3 gap-2 text-center text-xs">
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Total commande</span>
+                  <span className="font-bold text-gray-900">{formatMontant(total)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Acompte payé</span>
+                  <span className="font-bold text-green-600">{formatMontant(acompteNum)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Créance restante</span>
+                  <span className="font-bold text-red-600">{formatMontant(soldeRestant)}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer avec total et validation */}
         <div className="pt-3 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
           <div>
-            <div className="text-[11px] text-gray-500">Montant total à inscrire :</div>
-            <div className="font-display font-bold text-red-600 text-base">{formatMontant(total)}</div>
+            <div className="text-[11px] text-gray-500">Solde créance à inscrire :</div>
+            <div className="font-display font-bold text-red-600 text-base">
+              {formatMontant(soldeRestant)}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+              className="px-4 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
             >
               Annuler
             </button>
@@ -190,10 +315,11 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
               type="button"
               disabled={lignes.length === 0}
               onClick={handleSubmit}
-              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95 disabled:opacity-50"
-              style={{ background: '#0F3D5E' }}
+              className="px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:opacity-95 disabled:opacity-50 transition-all flex items-center gap-1.5"
+              style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
             >
-              Enregistrer la créance
+              <CheckCircle2 size={14} />
+              Valider la commande & créance
             </button>
           </div>
         </div>

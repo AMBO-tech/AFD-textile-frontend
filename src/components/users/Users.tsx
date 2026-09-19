@@ -16,6 +16,7 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
     addUtilisateur,
     updateUtilisateur,
     toggleUtilisateurActif,
+    resendInvitation,
   } = useMockStore();
 
   const [search, setSearch] = useState('');
@@ -23,6 +24,8 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Utilisateur | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [createdInviteUrl, setCreatedInviteUrl] = useState<{ nom: string; url: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Filtrage des utilisateurs
   const usersFiltres = utilisateurs.filter((u) => {
@@ -53,7 +56,7 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
       setSuccessMsg(`Utilisateur ${form.nom.trim()} modifié avec succès.`);
       setTimeout(() => setSuccessMsg(null), 3500);
     } else {
-      addUtilisateur({
+      const newUser = addUtilisateur({
         nom: form.nom.trim(),
         telephone: form.telephone.trim(),
         email: form.email.trim() || `${form.nom.toLowerCase().replace(/\s+/g, '.')}@afd-textile.sn`,
@@ -62,13 +65,35 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
         actif: true,
       });
       setShowForm(false);
+
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.afd-textile.sn';
+      const inviteUrl = `${baseUrl}/activer-compte?token=${newUser.invitationToken}`;
+      setCreatedInviteUrl({ nom: newUser.nom, url: inviteUrl });
+
       setSuccessMsg(
         `Compte créé avec succès pour ${form.nom.trim()} (${
           form.role === 'gerant' ? 'Gérant' : `Boutiquier · ${boutiqueNom}`
         }).`
       );
+      setTimeout(() => setSuccessMsg(null), 5000);
+    }
+  };
+
+  const handleResend = (id: string) => {
+    const res = resendInvitation(id);
+    const user = utilisateurs.find((u) => u.id === id);
+    if (user) {
+      setCreatedInviteUrl({ nom: user.nom, url: res.activationUrl });
+      setSuccessMsg(`Nouveau lien d'activation (valide 72h) généré pour ${user.nom}.`);
       setTimeout(() => setSuccessMsg(null), 4000);
     }
+  };
+
+  const handleCopyGeneratedUrl = () => {
+    if (!createdInviteUrl) return;
+    navigator.clipboard.writeText(createdInviteUrl.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const openEdit = (u: Utilisateur) => {
@@ -96,12 +121,41 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md active:scale-95 transition-all"
           style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
         >
-          <UserPlus size={15} /> Ajouter un utilisateur
+          <UserPlus size={15} /> Inviter un collaborateur
         </button>
       </div>
 
-      {/* Message de succès */}
-      {successMsg && (
+      {/* Message de succès & Bannière lien d'activation */}
+      {createdInviteUrl && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-2 animate-fade-in shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-blue-900">
+              Lien d'activation pour {createdInviteUrl.nom} (Valable 72h) :
+            </span>
+            <button
+              onClick={() => setCreatedInviteUrl(null)}
+              className="text-blue-400 hover:text-blue-600 text-xs font-bold"
+            >
+              Fermer
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={createdInviteUrl.url}
+              className="flex-1 px-3 py-1.5 bg-white rounded-xl border border-blue-200 text-xs text-blue-950 font-mono select-all"
+            />
+            <button
+              onClick={handleCopyGeneratedUrl}
+              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <span>{copied ? 'Copié !' : 'Copier'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {successMsg && !createdInviteUrl && (
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3 text-green-800 text-sm animate-fade-in shadow-sm">
           <CheckCircle size={18} className="text-green-600 flex-shrink-0" />
           <span className="font-medium">{successMsg}</span>
@@ -120,17 +174,18 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
           />
         </div>
 
-        {/* Badges de filtrage par Rôle */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        {/* Filtres par rôle */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setFiltreRole('tous')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
               filtreRole === 'tous'
-                ? 'bg-gray-900 text-white shadow-sm'
+                ? 'text-white shadow-sm'
                 : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
             }`}
+            style={filtreRole === 'tous' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
           >
-            Tous les rôles ({utilisateurs.length})
+            Tous ({utilisateurs.length})
           </button>
           <button
             onClick={() => setFiltreRole('gerant')}
@@ -168,6 +223,7 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
             boutiques={boutiques}
             onEdit={openEdit}
             onToggleActif={toggleUtilisateurActif}
+            onResendInvite={handleResend}
           />
         ))}
 
