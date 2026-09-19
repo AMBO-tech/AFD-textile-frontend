@@ -11,4 +11,5 @@ export { EntrepotPage } from './entrepot/EntrepotPage';
 export { UsersPage } from './users/UsersPage';
 export { RapportsPage } from './rapports/RapportsPage';
 export { HistoriquePage } from './historique/HistoriquePage';
-export { SauvegardesPage } from './sauvegardes/SauvegardesPage';
+export { BoutiquesPage } from './boutiques/BoutiquesPage';
+export { ActiverComptePage } from './auth/ActiverComptePage';
