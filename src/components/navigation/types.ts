@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 export type Screen =
   | 'accueil' | 'produits' | 'stock' | 'ventes' | 'clients' | 'demandes'
   | 'notifications' | 'profil' | 'dashboard_admin' | 'utilisateurs'
-  | 'entrepot' | 'rapports' | 'historique' | 'sauvegardes' | 'parametres';
+  | 'entrepot' | 'rapports' | 'historique' | 'boutiques' | 'parametres';
 
 export interface NavTabItem {
   id: Screen;
