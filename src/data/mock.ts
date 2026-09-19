@@ -1,7 +1,8 @@
 export const BOUTIQUES = [
-  { id: 'b1', nom: 'AFD Textile Dakar', lieu: 'Dakar - Plateau', gerant: 'Amadou Diallo' },
-  { id: 'b2', nom: 'AFD Textile Pikine', lieu: 'Pikine - Grand-Yoff', gerant: 'Fatou Sow' },
-  { id: 'b3', nom: 'AFD Textile Thiès', lieu: 'Thiès - Centre', gerant: 'Mamadou Ndiaye' },
+  { id: 'b1', code: 'BKT-DKR-01', nom: 'AFD Textile Dakar Plateau', type: 'BOUTIQUE' as const, lieu: 'Dakar - Plateau', adresse: 'Avenue Pompidou, Dakar', telephone: '+221 33 821 10 20', gerant: 'Amadou Diallo', actif: true },
+  { id: 'b2', code: 'BKT-PKN-02', nom: 'AFD Textile Pikine', type: 'BOUTIQUE' as const, lieu: 'Pikine - Grand-Yoff', adresse: 'Route des Niayes, Pikine', telephone: '+221 33 834 40 50', gerant: 'Fatou Sow', actif: true },
+  { id: 'b3', code: 'BKT-THS-03', nom: 'AFD Textile Thiès', type: 'BOUTIQUE' as const, lieu: 'Thiès - Centre', adresse: 'Avenue Général de Gaulle, Thiès', telephone: '+221 33 951 12 34', gerant: 'Mamadou Ndiaye', actif: true },
+  { id: 'b-ent', code: 'ENT-YOF-01', nom: 'Entrepôt Central Yoff', type: 'ENTREPOT' as const, lieu: 'Dakar - Yoff', adresse: "Route de l'Aéroport, Dakar", telephone: '+221 33 820 55 66', gerant: 'Amadou Diallo', actif: true },
 ];
 
 export const CATEGORIES_DATA = [
@@ -76,7 +77,7 @@ export const NOTIFICATIONS = [
   { id: 'n2', type: 'demande', message: 'Nouvelle demande de Fatou Sow : Wax Holland Premium (20m)', date: '2026-09-13 09:30', lu: false, boutique: 'b1' },
   { id: 'n3', type: 'creance', message: 'Créance importante : Sokhna Mbaye doit 320 000 FCFA', date: '2026-09-12 16:00', lu: true, boutique: 'b2' },
   { id: 'n4', type: 'validation', message: 'Demande acceptée : Satin Imperial vers AFD Textile Thiès', date: '2026-09-12 14:00', lu: true, boutique: 'b3' },
-  { id: 'n5', type: 'sauvegarde', message: 'Sauvegarde automatique effectuée avec succès', date: '2026-09-12 00:00', lu: true, boutique: 'b1' },
+  { id: 'n5', type: 'boutique', message: 'Nouvelle boutique enregistrée : AFD Textile Thiès', date: '2026-09-12 08:00', lu: true, boutique: 'b3' },
   { id: 'n6', type: 'stock_faible', message: 'Stock critique : Bogolan Authentique (3 mètres restants)', date: '2026-09-11 17:30', lu: true, boutique: 'b3' },
 ];
 
@@ -98,14 +99,6 @@ export const HISTORIQUE = [
   { id: 'h15', action: 'Modification', details: 'Mise à jour du prix de vente : Bazin Riche Brodé 6 500 → 6 800 FCFA', utilisateur: 'Mamadou Ndiaye', boutique: 'b3', date: '2026-09-10 15:20', typeAction: 'catalogue' },
   { id: 'h16', action: 'Mise en stock', details: 'Mise en stock de 30m Bogolan Authentique à l\'Entrepôt Central', utilisateur: 'Amadou Diallo', boutique: 'entrepot', date: '2026-09-10 08:30', typeAction: 'stock' },
   { id: 'h17', action: 'Transfert', details: 'Expédition lot 50m Wax Holland vers AFD Dakar depuis l\'Entrepôt', utilisateur: 'Amadou Diallo', boutique: 'entrepot', date: '2026-09-13 10:45', typeAction: 'transfert' },
-];
-
-export const SAUVEGARDES = [
-  { id: 's1', type: 'automatique', taille: '12.4 Mo', date: '2026-09-13 00:00', statut: 'succès' },
-  { id: 's2', type: 'manuelle', taille: '12.1 Mo', date: '2026-09-12 18:00', statut: 'succès' },
-  { id: 's3', type: 'automatique', taille: '11.8 Mo', date: '2026-09-12 00:00', statut: 'succès' },
-  { id: 's4', type: 'automatique', taille: '11.5 Mo', date: '2026-09-11 00:00', statut: 'succès' },
-  { id: 's5', type: 'automatique', taille: '11.2 Mo', date: '2026-09-10 00:00', statut: 'erreur' },
 ];
 
 export const VENTES_SEMAINE = [
