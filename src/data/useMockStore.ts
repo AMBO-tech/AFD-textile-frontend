@@ -10,7 +10,6 @@ import {
   ENTREPOT,
   NOTIFICATIONS,
   HISTORIQUE,
-  SAUVEGARDES,
   VENTES_SEMAINE,
   TOP_PRODUITS,
   formatMontant,
@@ -24,8 +23,11 @@ export type Vente = typeof VENTES[0] & { panierRef?: string };
 export type ClientItem = typeof CLIENTS[0];
 export type NotificationItem = typeof NOTIFICATIONS[0];
 export type HistoriqueItem = typeof HISTORIQUE[0];
-export type SauvegardeItem = typeof SAUVEGARDES[0];
-export type UtilisateurItem = typeof UTILISATEURS[0];
+export type UtilisateurItem = typeof UTILISATEURS[0] & {
+  invitationToken?: string;
+  invitationExpiresAt?: string;
+  premiereConnexion?: boolean;
+};
 export type EntrepotItem = typeof ENTREPOT[0];
 
 export interface LigneProduitCreance {
@@ -79,7 +81,6 @@ interface MockStoreState {
   entrepot: EntrepotItem[];
   notifications: NotificationItem[];
   historique: HistoriqueItem[];
-  sauvegardes: SauvegardeItem[];
 
   // Actions
   setSession: (session: SessionUser | null) => void;
@@ -94,10 +95,29 @@ interface MockStoreState {
   addVente: (nouvelleVente: Omit<Vente, 'id'>) => Vente;
   cancelVente: (venteId: string, motif: string, auteur?: string) => void;
 
-  // Clients & Créances
+  // Clients & Créances (Ventes à crédit / Commandes en gros)
   addClient: (nouveauClient: { nom: string; telephone: string; adresse: string; boutiqueId: string }) => ClientDetailed;
-  addCreance: (clientId: string, lignes: LigneProduitCreance[], date?: string) => void;
+  addCreance: (
+    clientId: string,
+    lignes: LigneProduitCreance[],
+    date?: string,
+    acompte?: number,
+    modeAcompte?: string
+  ) => void;
   recordPaiement: (clientId: string, creanceId: string, montant: number, mode: string, auteur?: string) => void;
+
+  // Boutiques & Emplacements
+  addBoutique: (nouvelleBoutique: {
+    nom: string;
+    code: string;
+    type: 'BOUTIQUE' | 'ENTREPOT';
+    lieu: string;
+    adresse: string;
+    telephone: string;
+    gerant: string;
+  }) => Boutique;
+  updateBoutique: (id: string, modifs: Partial<Boutique>) => void;
+  toggleBoutiqueActif: (id: string) => void;
 
   // Demandes & Transferts
   createDemande: (nouvelleDemande: Omit<Demande, 'id' | 'statut' | 'date'>) => Demande;
@@ -108,13 +128,12 @@ interface MockStoreState {
   markNotificationRead: (notifId: string) => void;
   markAllNotificationsRead: () => void;
 
-  // Sauvegardes
-  triggerSauvegarde: (type?: 'manuelle' | 'automatique') => void;
-
-  // Utilisateurs
+  // Utilisateurs & Invitations (Flow A)
   addUtilisateur: (nouvelUtilisateur: Omit<UtilisateurItem, 'id' | 'derniereConnexion'>) => UtilisateurItem;
   updateUtilisateur: (id: string, modifs: Partial<UtilisateurItem>) => void;
   toggleUtilisateurActif: (id: string) => void;
+  resendInvitation: (id: string) => { token: string; activationUrl: string };
+  activateUserPassword: (token: string, newPassword: string) => boolean;
 }
 
 // Initialisation des clients détaillés
@@ -152,7 +171,6 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
   entrepot: [...ENTREPOT],
   notifications: [...NOTIFICATIONS],
   historique: [...HISTORIQUE],
-  sauvegardes: [...SAUVEGARDES],
 
   setSession: (session) => set({ session }),
 
@@ -316,36 +334,91 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     return fullClient;
   },
 
-  addCreance: (clientId, lignes, date) => {
+  addCreance: (clientId, lignes, date, acompte = 0, modeAcompte = 'Espèces') => {
     const state = get();
     const now = new Date();
+    const dateIso = now.toISOString().split('T')[0];
     const dateStr = date || now.toLocaleDateString('fr-FR');
+    const heureStr = now.toTimeString().slice(0, 5);
     const montantTotal = lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0);
+    const targetClient = state.clients.find((c) => c.id === clientId);
+    const clientNom = targetClient?.nom || 'Client Externe';
+    const boutiqueId = targetClient?.boutiqueId || state.session?.boutiqueId || 'b1';
+
+    // 1. Initialisation des paiements sur cette créance si un acompte est versé
+    const initialPaiements: PaiementCreance[] = [];
+    if (acompte > 0) {
+      initialPaiements.push({
+        id: 'p' + Date.now(),
+        montant: acompte,
+        mode: modeAcompte,
+        date: dateStr,
+      });
+    }
 
     const newCreance: Creance = {
       id: 'cr' + Date.now(),
       date: dateStr,
       lignes,
       montantTotal,
-      paiements: [],
+      paiements: initialPaiements,
     };
 
-    const targetClient = state.clients.find((c) => c.id === clientId);
+    // 2. Création automatique de la Vente à crédit correspondante
+    const descriptionProduits =
+      lignes.length === 1
+        ? `${lignes[0].nom} (${lignes[0].quantite} ${lignes[0].unite})`
+        : `${lignes.length} articles en gros (${lignes.map((l) => `${l.quantite}${l.unite}`).join(', ')})`;
+
+    const newVente: Vente = {
+      id: 'v' + (state.ventes.length + 1),
+      client: clientNom,
+      produit: descriptionProduits,
+      produitId: lignes[0]?.produitId || '',
+      quantite: lignes.reduce((s, l) => s + l.quantite, 0),
+      unite: lignes[0]?.unite || 'mètre',
+      montant: montantTotal,
+      remise: 0,
+      paiement: acompte > 0 ? `${modeAcompte} (${formatMontant(acompte)}) + Crédit` : 'À crédit (100%)',
+      date: dateIso,
+      heure: heureStr,
+      statut: 'validée',
+      boutique: boutiqueId,
+      vendeur: state.session?.nom || 'Vendeur',
+      typeVente: 'credit',
+    };
+
+    // 3. Décrémentation physique du stock pour chaque produit commandé
+    const updatedProduits = state.produits.map((p) => {
+      const ligneAchetee = lignes.find((l) => l.produitId === p.id);
+      if (!ligneAchetee) return p;
+      return {
+        ...p,
+        quantite: Math.max(0, p.quantite - ligneAchetee.quantite),
+      };
+    });
+
+    // 4. Rattachement de la créance au client
     const updatedClients = state.clients.map((c) =>
       c.id === clientId ? { ...c, creances: [newCreance, ...c.creances] } : c
     );
 
+    // 5. Enregistrement dans l'historique d'audit
     const newHisto: HistoriqueItem = {
       id: 'h' + (state.historique.length + 1),
-      action: 'Créance',
-      details: `Nouvelle créance de ${formatMontant(montantTotal)} enregistrée pour ${targetClient?.nom || 'Client'}`,
+      action: 'Vente à crédit',
+      details: `Commande gros / Crédit de ${formatMontant(montantTotal)} (${lignes.length} produit(s)) pour ${clientNom}${
+        acompte > 0 ? ` · Acompte versé: ${formatMontant(acompte)}` : ''
+      }`,
       utilisateur: state.session?.nom || 'Vendeur',
-      boutique: targetClient?.boutiqueId || 'b1',
-      date: `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`,
-      typeAction: 'creance',
+      boutique: boutiqueId,
+      date: `${dateIso} ${heureStr}`,
+      typeAction: 'vente',
     };
 
     set({
+      ventes: [newVente, ...state.ventes],
+      produits: updatedProduits,
       clients: updatedClients,
       historique: [newHisto, ...state.historique],
     });
@@ -485,43 +558,109 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     }));
   },
 
-  triggerSauvegarde: (type = 'manuelle') => {
+  // Boutiques & Emplacements
+  addBoutique: (nouvelleBoutique) => {
     const state = get();
-    const now = new Date();
-    const newId = 's' + (state.sauvegardes.length + 1);
-    const newSauvegarde: SauvegardeItem = {
+    const newId = 'b' + (state.boutiques.length + 1);
+    const fullBoutique: Boutique = {
       id: newId,
-      type,
-      taille: '12.8 Mo',
-      date: `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`,
-      statut: 'succès',
+      code: nouvelleBoutique.code,
+      nom: nouvelleBoutique.nom,
+      type: nouvelleBoutique.type,
+      lieu: nouvelleBoutique.lieu,
+      adresse: nouvelleBoutique.adresse,
+      telephone: nouvelleBoutique.telephone,
+      gerant: nouvelleBoutique.gerant,
+      actif: true,
+    };
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 5);
+
+    const newHisto: HistoriqueItem = {
+      id: 'h' + (state.historique.length + 1),
+      action: 'Boutique',
+      details: `Création du nouvel emplacement : ${fullBoutique.nom} (${fullBoutique.code})`,
+      utilisateur: state.session?.nom || 'Gérant',
+      boutique: newId,
+      date: `${dateStr} ${heureStr}`,
+      typeAction: 'catalogue',
     };
 
     const newNotif: NotificationItem = {
       id: 'n' + (state.notifications.length + 1),
-      type: 'sauvegarde',
-      message: `Sauvegarde ${type} effectuée avec succès`,
-      date: newSauvegarde.date,
+      type: 'boutique',
+      message: `Nouvel emplacement créé : ${fullBoutique.nom} (${fullBoutique.type})`,
+      date: `${dateStr} ${heureStr}`,
       lu: false,
-      boutique: state.session?.boutiqueId || 'b1',
+      boutique: newId,
     };
 
     set({
-      sauvegardes: [newSauvegarde, ...state.sauvegardes],
+      boutiques: [...state.boutiques, fullBoutique],
+      historique: [newHisto, ...state.historique],
       notifications: [newNotif, ...state.notifications],
     });
+
+    return fullBoutique;
   },
 
+  updateBoutique: (id, modifs) => {
+    set((state) => ({
+      boutiques: state.boutiques.map((b) =>
+        b.id === id ? { ...b, ...modifs } : b
+      ),
+    }));
+  },
+
+  toggleBoutiqueActif: (id) => {
+    set((state) => ({
+      boutiques: state.boutiques.map((b) =>
+        b.id === id ? { ...b, actif: !b.actif } : b
+      ),
+    }));
+  },
+
+  // Utilisateurs & Invitations (Flow A)
   addUtilisateur: (nouvelUtilisateur) => {
     const state = get();
     const newId = 'u' + (state.utilisateurs.length + 1);
+    // Génération du token cryptographique fictif de 64 caractères
+    const randomHex = Array.from({ length: 4 }, () =>
+      Math.random().toString(36).substring(2, 15)
+    ).join('').slice(0, 64);
+    const expires = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
+
     const fullUser: UtilisateurItem = {
       ...nouvelUtilisateur,
       id: newId,
-      derniereConnexion: 'Jamais',
+      derniereConnexion: 'Jamais (Invitation en attente)',
+      invitationToken: randomHex,
+      invitationExpiresAt: expires,
+      premiereConnexion: true,
+      actif: true,
     };
 
-    set({ utilisateurs: [fullUser, ...state.utilisateurs] });
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 5);
+
+    const newHisto: HistoriqueItem = {
+      id: 'h' + (state.historique.length + 1),
+      action: 'Invitation',
+      details: `Invitation envoyée à ${fullUser.nom} (${fullUser.telephone}) - Rôle: ${fullUser.role}`,
+      utilisateur: state.session?.nom || 'Gérant',
+      boutique: fullUser.boutique || 'b1',
+      date: `${dateStr} ${heureStr}`,
+      typeAction: 'connexion',
+    };
+
+    set({
+      utilisateurs: [fullUser, ...state.utilisateurs],
+      historique: [newHisto, ...state.historique],
+    });
+
     return fullUser;
   },
 
@@ -540,6 +679,54 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       ),
     }));
   },
+
+  resendInvitation: (id) => {
+    const randomHex = Array.from({ length: 4 }, () =>
+      Math.random().toString(36).substring(2, 15)
+    ).join('').slice(0, 64);
+    const expires = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
+
+    set((state) => ({
+      utilisateurs: state.utilisateurs.map((u) =>
+        u.id === id
+          ? {
+              ...u,
+              invitationToken: randomHex,
+              invitationExpiresAt: expires,
+              derniereConnexion: 'Invitation relancée',
+            }
+          : u
+      ),
+    }));
+
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.afd-textile.sn';
+    return {
+      token: randomHex,
+      activationUrl: `${baseUrl}/activer-compte?token=${randomHex}`,
+    };
+  },
+
+  activateUserPassword: (token, _newPassword) => {
+    const state = get();
+    const targetUser = state.utilisateurs.find((u) => u.invitationToken === token);
+    if (!targetUser) return false;
+
+    set((s) => ({
+      utilisateurs: s.utilisateurs.map((u) =>
+        u.id === targetUser.id
+          ? {
+              ...u,
+              premiereConnexion: false,
+              invitationToken: undefined,
+              derniereConnexion: 'Compte activé (Prêt à se connecter)',
+              actif: true,
+            }
+          : u
+      ),
+    }));
+    return true;
+  },
 }));
 
 export { VENTES_SEMAINE, TOP_PRODUITS, formatMontant };
+
