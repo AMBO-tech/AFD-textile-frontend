@@ -146,8 +146,8 @@ export const Clients: React.FC<ClientsProps> = ({
           onClose={() => setShowNewDebtModal(false)}
           client={activeClient}
           produits={produits}
-          onSubmit={(lignes) => {
-            addCreance(activeClient.id, lignes);
+          onSubmit={(lignes, acompte, modeAcompte) => {
+            addCreance(activeClient.id, lignes, undefined, acompte, modeAcompte);
           }}
         />
       )}
