@@ -1,0 +1,14 @@
+export { LoginPage } from './login/LoginPage';
+export { DashboardPage } from './dashboard/DashboardPage';
+export { StockPage } from './stock/StockPage';
+export { SalesPage } from './sales/SalesPage';
+export { ClientsPage } from './clients/ClientsPage';
+export { DemandesPage } from './demandes/DemandesPage';
+export { ProductsPage } from './products/ProductsPage';
+export { NotificationsPage } from './notifications/NotificationsPage';
+export { ParametresPage } from './parametres/ParametresPage';
+export { EntrepotPage } from './entrepot/EntrepotPage';
+export { UsersPage } from './users/UsersPage';
+export { RapportsPage } from './rapports/RapportsPage';
+export { HistoriquePage } from './historique/HistoriquePage';
+export { SauvegardesPage } from './sauvegardes/SauvegardesPage';
