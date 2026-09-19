@@ -25,7 +25,7 @@ export const AppLayout: React.FC = () => {
     const validScreens: Screen[] = [
       'accueil', 'produits', 'stock', 'ventes', 'clients', 'demandes',
       'notifications', 'profil', 'dashboard_admin', 'utilisateurs',
-      'entrepot', 'rapports', 'historique', 'sauvegardes', 'parametres'
+      'entrepot', 'rapports', 'historique', 'boutiques', 'parametres'
     ];
     if (validScreens.includes(p as Screen)) {
       return p as Screen;
