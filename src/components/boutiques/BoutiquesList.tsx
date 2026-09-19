@@ -12,6 +12,7 @@ interface BoutiquesListProps {
   onOpenCreateModal: () => void;
   onEditBoutique: (b: BoutiqueWithStaff) => void;
   onToggleStatus: (id: string) => void;
+  onViewStaff?: (b: BoutiqueWithStaff) => void;
 }
 
 export const BoutiquesList: React.FC<BoutiquesListProps> = ({
@@ -23,6 +24,7 @@ export const BoutiquesList: React.FC<BoutiquesListProps> = ({
   onOpenCreateModal,
   onEditBoutique,
   onToggleStatus,
+  onViewStaff,
 }) => {
   const nbBoutiques = boutiques.filter((b) => b.type === 'BOUTIQUE').length;
   const nbEntrepots = boutiques.filter((b) => b.type === 'ENTREPOT').length;
@@ -152,6 +154,7 @@ export const BoutiquesList: React.FC<BoutiquesListProps> = ({
               boutique={b}
               onEdit={onEditBoutique}
               onToggleStatus={onToggleStatus}
+              onViewStaff={onViewStaff}
             />
           ))}
         </div>

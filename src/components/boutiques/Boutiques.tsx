@@ -3,6 +3,7 @@ import { useMockStore } from '../../data/useMockStore';
 import type { BoutiqueFilter, BoutiqueFormData, BoutiqueWithStaff } from './types';
 import BoutiquesList from './BoutiquesList';
 import BoutiqueModal from './BoutiqueModal';
+import BoutiqueStaffModal from './BoutiqueStaffModal';
 import { CheckCircle2 } from 'lucide-react';
 
 export const Boutiques: React.FC = () => {
@@ -19,6 +20,7 @@ export const Boutiques: React.FC = () => {
   const [filtre, setFiltre] = useState<BoutiqueFilter>('tous');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBoutique, setEditingBoutique] = useState<BoutiqueWithStaff | null>(null);
+  const [staffModalBoutique, setStaffModalBoutique] = useState<BoutiqueWithStaff | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
   // Construction des données enrichies (personnel + stock par boutique)
@@ -114,6 +116,7 @@ export const Boutiques: React.FC = () => {
         onOpenCreateModal={handleOpenCreate}
         onEditBoutique={handleOpenEdit}
         onToggleStatus={handleToggleStatus}
+        onViewStaff={setStaffModalBoutique}
       />
 
       {/* Modal d'ajout / modification */}
@@ -125,6 +128,13 @@ export const Boutiques: React.FC = () => {
         }}
         editingBoutique={editingBoutique}
         onSave={handleSave}
+      />
+
+      {/* Modal d'affichage des vendeurs / personnel */}
+      <BoutiqueStaffModal
+        isOpen={Boolean(staffModalBoutique)}
+        onClose={() => setStaffModalBoutique(null)}
+        boutique={staffModalBoutique}
       />
     </div>
   );
