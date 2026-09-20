@@ -1,33 +1,43 @@
 import React, { useState } from 'react';
-import { X, Plus, ShoppingCart, Tag } from 'lucide-react';
-import type { Produit } from '../../data/useMockStore';
+import { X, ShoppingCart, Tag, AlertTriangle, CheckCircle2, Ruler } from 'lucide-react';
+import type { StockEnriched } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
 import { UNITES } from './types';
+import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface SalesProductConfigProps {
-  produit: Produit | null;
+  produit: StockEnriched | null;
   onClose: () => void;
-  onAddToCart: (ligne: { produit: Produit; qte: number; unite: string; remise: number }) => void;
-  onDirectSale: (ligne: { produit: Produit; qte: number; unite: string; remise: number }) => void;
+  onAddToCart: (ligne: { produit: StockEnriched; qte: number; unite: string; remise: number }) => void;
+  onDirectSale: (ligne: { produit: StockEnriched; qte: number; unite: string; remise: number }) => void;
 }
 
-export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
+interface InnerModalProps {
+  produit: StockEnriched;
+  onClose: () => void;
+  onAddToCart: (ligne: { produit: StockEnriched; qte: number; unite: string; remise: number }) => void;
+  onDirectSale: (ligne: { produit: StockEnriched; qte: number; unite: string; remise: number }) => void;
+}
+
+const SalesProductConfigModal: React.FC<InnerModalProps> = ({
   produit,
   onClose,
   onAddToCart,
   onDirectSale,
 }) => {
-  if (!produit) return null;
-
-  const [qte, setQte] = useState(1);
+  const isRupture = produit.quantite <= 0;
+  const [qte, setQte] = useState(isRupture ? 0 : Math.min(1, produit.quantite));
   const [unite, setUnite] = useState(produit.unite || 'mètre');
   const [remiseMontant, setRemiseMontant] = useState(0);
 
   const sousTotal = produit.prix * qte;
   const remiseAppliquee = Math.min(remiseMontant, sousTotal);
   const totalNet = sousTotal - remiseAppliquee;
+  const prixNetUnitaire = qte > 0 ? totalNet / qte : produit.prix;
+  const isSousPrixMinimal = Boolean(produit.prixMinimal && prixNetUnitaire < produit.prixMinimal);
 
   const handleAjouter = () => {
+    if (isRupture || qte <= 0) return;
     onAddToCart({
       produit,
       qte,
@@ -38,6 +48,7 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
   };
 
   const handleVenteDirecte = () => {
+    if (isRupture || qte <= 0) return;
     onDirectSale({
       produit,
       qte,
@@ -75,6 +86,14 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
           </div>
         </div>
 
+        {/* Rupture banner */}
+        {isRupture && (
+          <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2 text-red-700 text-xs font-semibold mb-3">
+            <AlertTriangle size={15} className="shrink-0 text-red-600" />
+            <span>Article en rupture de stock dans cette boutique (0 disponible).</span>
+          </div>
+        )}
+
         <div className="space-y-3.5">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -84,43 +103,51 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
               <div className="flex items-center">
                 <button
                   type="button"
-                  onClick={() => setQte((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100"
+                  disabled={isRupture}
+                  onClick={() => setQte((q) => Math.max(0.5, Math.round((q - 0.5) * 10) / 10))}
+                  className="w-9 h-9 flex items-center justify-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
                 >
                   -
                 </button>
                 <input
                   type="number"
-                  min="0.5"
+                  min="0.1"
                   step="any"
                   max={produit.quantite}
-                  value={qte}
-                  onChange={(e) => setQte(Math.max(1, parseFloat(e.target.value) || 1))}
-                  className="w-full h-9 border border-gray-200 text-center font-bold text-sm focus:outline-none"
+                  disabled={isRupture}
+                  value={qte || ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (isNaN(val)) setQte(0);
+                    else setQte(Math.min(produit.quantite, Math.max(0.1, Math.round(val * 100) / 100)));
+                  }}
+                  className="w-full h-9 border border-gray-200 text-center font-bold text-sm focus:outline-none disabled:bg-gray-100"
                 />
                 <button
                   type="button"
-                  onClick={() => setQte((q) => Math.min(produit.quantite, q + 1))}
-                  className="w-9 h-9 flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100"
+                  disabled={isRupture}
+                  onClick={() => setQte((q) => Math.min(produit.quantite, Math.round((q + 0.5) * 10) / 10))}
+                  className="w-9 h-9 flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Unité</label>
-              <select
+            <div className="flex-1">
+              <CustomDropdownSelect
+                label="Unité"
                 value={unite}
-                onChange={(e) => setUnite(e.target.value)}
-                className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-              >
-                {UNITES.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
+                disabled={isRupture}
+                onChange={setUnite}
+                icon={<Ruler size={14} />}
+                menuTitle="Unité de vente"
+                options={UNITES.map((u) => ({
+                  value: u,
+                  label: u,
+                  icon: <Ruler size={13} className="text-blue-500" />,
+                }))}
+              />
             </div>
           </div>
 
@@ -133,14 +160,23 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
                 type="number"
                 min="0"
                 max={sousTotal}
+                disabled={isRupture}
                 value={remiseMontant || ''}
                 onChange={(e) => setRemiseMontant(Math.max(0, parseFloat(e.target.value) || 0))}
                 placeholder="0"
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold focus:outline-none focus:border-blue-500 disabled:bg-gray-100"
               />
               <Tag size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
+
+          {/* Avertissement prix minimal */}
+          {isSousPrixMinimal && (
+            <div className="p-2 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-1.5 text-amber-800 text-[11px] font-medium">
+              <AlertTriangle size={13} className="shrink-0 text-amber-600" />
+              <span>Prix unitaire ({formatMontant(Math.round(prixNetUnitaire))}) sous le prix plancher minimal ({formatMontant(produit.prixMinimal)}).</span>
+            </div>
+          )}
 
           {/* Calcul du total */}
           <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 flex items-center justify-between">
@@ -160,24 +196,44 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
             <button
               type="button"
+              disabled={isRupture || qte <= 0}
               onClick={handleAjouter}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors disabled:opacity-40 cursor-pointer"
             >
               <ShoppingCart size={15} />
               Mettre au panier
             </button>
             <button
               type="button"
+              disabled={isRupture || qte <= 0}
               onClick={handleVenteDirecte}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-xs font-semibold shadow-sm hover:opacity-95 transition-all"
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-xs font-semibold shadow-sm hover:opacity-95 transition-all disabled:opacity-40 cursor-pointer"
               style={{ background: '#0F3D5E' }}
             >
-              Valider de suite
+              <span>Vente directe (comptant)</span>
             </button>
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
+  produit,
+  onClose,
+  onAddToCart,
+  onDirectSale,
+}) => {
+  if (!produit) return null;
+
+  return (
+    <SalesProductConfigModal
+      produit={produit}
+      onClose={onClose}
+      onAddToCart={onAddToCart}
+      onDirectSale={onDirectSale}
+    />
   );
 };
 
