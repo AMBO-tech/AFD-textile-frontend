@@ -1,6 +1,6 @@
 import React from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from './stores/authStore'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { ProtectedRoute } from './routes/ProtectedRoute'
 import { AppLayout } from './components/layout/AppLayout'
 
 // Pages
@@ -18,18 +18,6 @@ import Parametres from './pages/Parametres'
 import Profil from './pages/Profil'
 import Notifications from './pages/Notifications'
 import Sauvegardes from './pages/Sauvegardes'
-
-// ProtectedRoute guard
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuthStore()
-  const location = useLocation()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
-
-  return <>{children}</>
-}
 
 export default function App() {
   return (
@@ -96,8 +84,8 @@ export default function App() {
         <Route path="backups" element={<Navigate to="/sauvegardes" replace />} />
       </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* Fallback : redirection vers login */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }

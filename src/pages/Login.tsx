@@ -19,10 +19,10 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [erreur, setErreur] = useState('')
 
-  const { setAuth } = useAuthStore()
+  const { login } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleLogin = async (e?: React.FormEvent) => {
+  const doLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!identifiant.trim() || !motdepasse.trim()) {
       setErreur('Veuillez remplir tous les champs.')
@@ -32,12 +32,12 @@ export const Login: React.FC = () => {
     setLoading(true)
     setErreur('')
     try {
-      const res = await authService.login({ identifiant, motdepasse })
-      setAuth(res.token, res.user)
-      toast.success(`Bienvenue, ${res.user.name} !`)
+      await login(identifiant, motdepasse)
+      toast.success('Connexion réussie !')
       navigate('/dashboard')
     } catch {
-      setErreur('Identifiant ou mot de passe incorrect.')
+      setErreur('Email ou mot de passe incorrect')
+      toast.error('Email ou mot de passe incorrect')
     } finally {
       setLoading(false)
     }
@@ -209,7 +209,7 @@ export const Login: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={doLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                   Email ou téléphone
