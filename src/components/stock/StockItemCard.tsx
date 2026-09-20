@@ -1,18 +1,22 @@
 import React from 'react';
-import { Plus, AlertTriangle, CheckCircle, Package } from 'lucide-react';
-import type { Produit } from '../../data/useMockStore';
+import { Plus, AlertTriangle, CheckCircle, Package, Store, Warehouse } from 'lucide-react';
+import type { StockEnriched } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
 
 interface StockItemCardProps {
-  produit: Produit;
-  onEntreeRapide: (produit: Produit) => void;
+  produit: StockEnriched;
+  onEntreeRapide: (produit: StockEnriched) => void;
   onVenteRapide?: (produitId: string) => void;
+  nomEmplacement?: string;
+  typeEmplacement?: 'boutique' | 'entrepot';
 }
 
 export const StockItemCard: React.FC<StockItemCardProps> = ({
   produit,
   onEntreeRapide,
   onVenteRapide,
+  nomEmplacement,
+  typeEmplacement = 'boutique',
 }) => {
   const isCritique = produit.quantite <= produit.seuil;
   const isRupture = produit.quantite === 0;
@@ -33,7 +37,24 @@ export const StockItemCard: React.FC<StockItemCardProps> = ({
           <div className="text-xs text-gray-500 mt-0.5">
             {produit.couleur} • <span className="font-medium text-gray-700">{formatMontant(produit.prix)}</span>/{produit.unite}
           </div>
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+            {nomEmplacement && (
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                  typeEmplacement === 'entrepot'
+                    ? 'bg-amber-50 text-amber-800 border-amber-200/70'
+                    : 'bg-blue-50 text-blue-800 border-blue-200/70'
+                }`}
+                title={`Stock physique situé à : ${nomEmplacement}`}
+              >
+                {typeEmplacement === 'entrepot' ? (
+                  <Warehouse size={10} className="text-amber-600" />
+                ) : (
+                  <Store size={10} className="text-blue-600" />
+                )}
+                {nomEmplacement}
+              </span>
+            )}
             {isRupture ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
                 <AlertTriangle size={10} />

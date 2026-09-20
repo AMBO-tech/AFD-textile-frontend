@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, ChevronLeft, Package } from 'lucide-react';
 import { useMockStore, type Produit } from '../../data/useMockStore';
+import { toast } from 'sonner';
 import type { ProductsProps } from './types';
 import CategoryCard from './CategoryCard';
 import ProductCard from './ProductCard';
@@ -14,6 +15,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
     categories,
     addProduit,
     updateProduit,
+    deleteProduit,
     addCategorie,
   } = useMockStore();
 
@@ -50,26 +52,24 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
         couleur: data.couleur,
         photo: data.photo,
       });
+      toast.success(`Modèle "${data.nom}" mis à jour`);
     } else {
       addProduit({
         nom: data.nom,
         categorie: data.categorie,
         couleur: data.couleur,
         photo: data.photo,
-        prix: 0,
-        quantite: 0,
-        unite: 'mètre',
-        pieces: 0,
-        boutique: 'b1',
-        seuil: 10,
       });
+      toast.success(`Nouveau tissu "${data.nom}" ajouté au catalogue`);
     }
     setShowForm(false);
   };
 
   const handleDeleteProduct = (id: string) => {
-    if (confirm('Supprimer ce produit ?')) {
-      // Could delete or mark inactive
+    const prod = produits.find((p) => p.id === id);
+    if (confirm(`Supprimer le modèle "${prod?.nom || id}" du catalogue ?`)) {
+      deleteProduit(id);
+      toast.success(`Produit "${prod?.nom || id}" supprimé du catalogue`);
     }
   };
 
@@ -180,6 +180,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
         onClose={() => setShowFormCat(false)}
         onSave={(cat) => {
           addCategorie(cat);
+          toast.success(`Catégorie "${cat.nom}" créée avec succès`);
           setShowFormCat(false);
         }}
       />

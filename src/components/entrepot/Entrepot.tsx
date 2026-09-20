@@ -1,26 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { useMockStore, type Produit } from '../../data/useMockStore';
+import { useMockStore, type Produit, type StockEnriched } from '../../data/useMockStore';
 import EntrepotTransferForm from './EntrepotTransferForm';
 import EntrepotStockList from './EntrepotStockList';
 import EntrepotTransferHistory from './EntrepotTransferHistory';
 
 export const Entrepot: React.FC = () => {
-  const { produits, boutiques, historique, createTransfert, session } = useMockStore();
+  const { boutiques, historique, createTransfert, session, getStocksEnriched } = useMockStore();
 
   const [activeTab, setActiveTab] = useState<'transferer' | 'historique'>('transferer');
   const [sourceId, setSourceId] = useState('entrepot');
   const [destId, setDestId] = useState('b1');
-  const [produitChoisi, setProduitChoisi] = useState<Produit | null>(null);
+  const [produitChoisi, setProduitChoisi] = useState<StockEnriched | null>(null);
   const [quantite, setQuantite] = useState('20');
   const [unite, setUnite] = useState('mètre');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Produits disponibles à la source
+  // Produits physiques disponibles à l'emplacement source
   const prodsSource = useMemo(() => {
-    return produits.filter((p) => p.boutique === sourceId);
-  }, [produits, sourceId]);
+    return getStocksEnriched(sourceId);
+  }, [getStocksEnriched, sourceId]);
 
-  const handleSelectProduit = (p: Produit) => {
+  const handleSelectProduit = (p: StockEnriched) => {
     setProduitChoisi(p);
     setUnite(p.unite);
     setQuantite(Math.min(20, p.quantite).toString());

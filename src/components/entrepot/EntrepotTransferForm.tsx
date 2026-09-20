@@ -1,12 +1,13 @@
 import React from 'react';
 import { ArrowRight, Warehouse, Building2 } from 'lucide-react';
-import type { Produit, Boutique } from '../../data/useMockStore';
+import type { StockEnriched, Boutique } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
+import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
 
 const UNITES = ['mètre', 'yard', 'kilo', 'rouleau'] as const;
 
 interface EntrepotTransferFormProps {
-  produit: Produit | null;
+  produit: StockEnriched | null;
   sourceId: string;
   onSourceChange: (id: string) => void;
   destId: string;
@@ -37,6 +38,24 @@ export const EntrepotTransferForm: React.FC<EntrepotTransferFormProps> = ({
     ...boutiques,
   ];
 
+  const optionsSource: DropdownOption[] = emplacements.map((emp) => ({
+    value: emp.id,
+    label: emp.nom,
+    sublabel: emp.lieu,
+    badge: emp.id === 'entrepot' ? 'HUB' : ('code' in emp && emp.code ? emp.code : undefined),
+    icon: emp.id === 'entrepot' ? <Warehouse size={16} /> : <Building2 size={16} />,
+  }));
+
+  const optionsDest: DropdownOption[] = emplacements
+    .filter((emp) => emp.id !== sourceId)
+    .map((emp) => ({
+      value: emp.id,
+      label: emp.nom,
+      sublabel: emp.lieu,
+      badge: emp.id === 'entrepot' ? 'HUB' : ('code' in emp && emp.code ? emp.code : undefined),
+      icon: emp.id === 'entrepot' ? <Warehouse size={16} /> : <Building2 size={16} />,
+    }));
+
   return (
     <form onSubmit={onSubmit} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-4">
       <div className="font-display font-bold text-gray-900 text-base">
@@ -46,39 +65,25 @@ export const EntrepotTransferForm: React.FC<EntrepotTransferFormProps> = ({
       {/* Source et destination */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Origine (Départ) *
-          </label>
-          <select
+          <CustomDropdownSelect
+            label="Origine (Départ)"
+            menuTitle="Point d'expédition"
             value={sourceId}
-            onChange={(e) => onSourceChange(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-medium focus:outline-none focus:border-blue-500 bg-gray-50"
-          >
-            {emplacements.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.nom} ({emp.lieu})
-              </option>
-            ))}
-          </select>
+            onChange={onSourceChange}
+            options={optionsSource}
+            icon={<Warehouse size={16} />}
+          />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Destination (Arrivée) *
-          </label>
-          <select
+          <CustomDropdownSelect
+            label="Destination (Arrivée)"
+            menuTitle="Point de réception"
             value={destId}
-            onChange={(e) => onDestChange(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-medium focus:outline-none focus:border-blue-500 bg-gray-50"
-          >
-            {emplacements
-              .filter((emp) => emp.id !== sourceId)
-              .map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.nom} ({emp.lieu})
-                </option>
-              ))}
-          </select>
+            onChange={onDestChange}
+            options={optionsDest}
+            icon={<Building2 size={16} />}
+          />
         </div>
       </div>
 

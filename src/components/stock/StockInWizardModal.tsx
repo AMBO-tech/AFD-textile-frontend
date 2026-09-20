@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { X, ChevronLeft, Search, Plus, CheckCircle, Package } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ChevronLeft, Search, Plus, CheckCircle, Package, Store, Building2, Warehouse, Ruler } from 'lucide-react';
 import type { Produit, Categorie, Boutique } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
+import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
 
 const UNITES_STOCK = ['mètre', 'yard', 'kilo', 'rouleau'] as const;
 
@@ -13,12 +14,14 @@ interface StockInWizardModalProps {
   boutiques: Boutique[];
   role: 'gerant' | 'boutiquier';
   boutiqueId: string;
+  emplacementInitial?: string;
   onOpenNewCat: () => void;
   onOpenNewProd: () => void;
   onSubmit: (params: {
     produitId: string;
     quantite: number;
     prix: number;
+    prixMinimal?: number;
     unite: string;
     pieces: number;
     seuil: number;
@@ -34,6 +37,7 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
   boutiques,
   role,
   boutiqueId,
+  emplacementInitial,
   onOpenNewCat,
   onOpenNewProd,
   onSubmit,
@@ -45,13 +49,44 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
 
   // Formulaire configuration
   const [form, setForm] = useState({
-    emplacement: role === 'boutiquier' ? boutiqueId : 'entrepot',
-    prix: '',
+    emplacement: emplacementInitial || (role === 'boutiquier' ? boutiqueId : 'entrepot'),
+    prix: '4500',
+    prixMinimal: '4000',
     quantite: '10',
     unite: 'mètre' as typeof UNITES_STOCK[number],
     pieces: '',
     seuil: '15',
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      setEtape('categories');
+      setCatChoisie(null);
+      setProduitChoisi(null);
+      setSearchProd('');
+      setForm((f) => ({
+        ...f,
+        emplacement: emplacementInitial || (role === 'boutiquier' ? boutiqueId : 'entrepot'),
+      }));
+    }
+  }, [isOpen, emplacementInitial, role, boutiqueId]);
+
+  const optionsEmplacement: DropdownOption[] = [
+    {
+      value: 'entrepot',
+      label: 'Entrepôt Central',
+      sublabel: 'Dakar - Zone Industrielle',
+      badge: 'HUB',
+      icon: <Warehouse size={16} />,
+    },
+    ...boutiques.map((b) => ({
+      value: b.id,
+      label: b.nom,
+      sublabel: b.lieu,
+      badge: b.code || undefined,
+      icon: <Store size={16} />,
+    })),
+  ];
 
   if (!isOpen) return null;
 
@@ -62,11 +97,14 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
 
   const handleSelectProd = (prod: Produit) => {
     setProduitChoisi(prod);
+    const prixBase = prod.prix || 4500;
+    const prixMin = prod.prixMinimal || Math.round(prixBase * 0.9);
     setForm((f) => ({
       ...f,
-      prix: prod.prix.toString(),
+      prix: prixBase.toString(),
+      prixMinimal: prixMin.toString(),
       unite: (prod.unite as typeof UNITES_STOCK[number]) || 'mètre',
-      seuil: prod.seuil.toString(),
+      seuil: (prod.seuil || 15).toString(),
     }));
     setEtape('config');
   };
@@ -75,10 +113,16 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
     e.preventDefault();
     if (!produitChoisi) return;
 
+    const prixVenteNum = parseFloat(form.prix) || (produitChoisi.prix || 4500);
+    const prixMinNum = form.prixMinimal
+      ? parseFloat(form.prixMinimal)
+      : Math.round(prixVenteNum * 0.9);
+
     onSubmit({
       produitId: produitChoisi.id,
       quantite: parseFloat(form.quantite) || 0,
-      prix: parseFloat(form.prix) || produitChoisi.prix,
+      prix: prixVenteNum,
+      prixMinimal: prixMinNum,
       unite: form.unite,
       pieces: parseInt(form.pieces, 10) || 0,
       seuil: parseInt(form.seuil, 10) || 10,
@@ -222,9 +266,11 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-gray-900 text-xs">
-                          {formatMontant(prod.prix)}
+                          {prod.prix ? formatMontant(prod.prix) : 'Prix à fixer'}
                         </div>
-                        <div className="text-[10px] text-gray-400">par {prod.unite}</div>
+                        <div className="text-[10px] text-gray-400">
+                          {prod.unite ? `par ${prod.unite}` : 'au choix'}
+                        </div>
                       </div>
                     </button>
                   ))
@@ -252,26 +298,40 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
               {/* Emplacement destination */}
               {role === 'gerant' ? (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Emplacement de stockage *
-                  </label>
-                  <select
+                  <CustomDropdownSelect
+                    label="Emplacement récepteur"
+                    menuTitle="Point de stockage de destination"
                     value={form.emplacement}
-                    onChange={(e) => setForm({ ...form, emplacement: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="entrepot">Entrepôt Central</option>
-                    {boutiques.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.nom} ({b.lieu})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setForm((f) => ({ ...f, emplacement: val }))}
+                    options={optionsEmplacement}
+                    icon={<Warehouse size={16} />}
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1 pl-0.5">
+                    Indiquez précisément quel point de vente ou entrepôt réceptionne ce stock physique.
+                  </p>
                 </div>
               ) : (
-                <div className="p-2.5 rounded-xl bg-gray-50 text-xs text-gray-600">
-                  Destination : <span className="font-bold text-gray-900">Boutique Dakar (Locale)</span>
-                </div>
+                (() => {
+                  const b = boutiques.find((item) => item.id === boutiqueId);
+                  return (
+                    <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-100 flex items-center gap-2.5 text-xs text-blue-900">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+                        <Store size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-blue-600 block leading-tight">
+                          Point de vente récepteur (Votre boutique)
+                        </span>
+                        <span className="font-bold text-sm text-gray-900 truncate block">
+                          {b?.nom || 'Boutique Locale'}
+                        </span>
+                        <span className="text-[11px] text-gray-500 block">
+                          {b?.lieu || 'Affectation'} • Ce métrage sera immédiatement vendable en caisse
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()
               )}
 
               <div className="grid grid-cols-2 gap-3">
@@ -285,24 +345,25 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
                     min="1"
                     value={form.quantite}
                     onChange={(e) => setForm({ ...form, quantite: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100/60"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Unité</label>
-                  <select
+                  <CustomDropdownSelect
+                    label="Unité de mesure"
                     value={form.unite}
-                    onChange={(e) =>
-                      setForm({ ...form, unite: e.target.value as typeof UNITES_STOCK[number] })
+                    onChange={(val) =>
+                      setForm({ ...form, unite: val as typeof UNITES_STOCK[number] })
                     }
-                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-                  >
-                    {UNITES_STOCK.map((u) => (
-                      <option key={u} value={u}>
-                        {u}
-                      </option>
-                    ))}
-                  </select>
+                    icon={<Ruler size={15} />}
+                    menuTitle="Unité de stock"
+                    options={UNITES_STOCK.map((u) => ({
+                      value: u,
+                      label: u,
+                      badge: 'Unité',
+                      icon: <Ruler size={14} className="text-blue-500" />,
+                    }))}
+                  />
                 </div>
               </div>
 
@@ -315,8 +376,49 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
                     type="number"
                     required
                     value={form.prix}
-                    onChange={(e) => setForm({ ...form, prix: e.target.value })}
+                    onChange={(e) => {
+                      const newPrix = e.target.value;
+                      const num = parseFloat(newPrix);
+                      setForm((prev) => ({
+                        ...prev,
+                        prix: newPrix,
+                        prixMinimal:
+                          !isNaN(num) &&
+                          (!prev.prixMinimal ||
+                            prev.prixMinimal ===
+                              Math.round((parseFloat(prev.prix) || 0) * 0.9).toString())
+                            ? Math.round(num * 0.9).toString()
+                            : prev.prixMinimal,
+                      }));
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Prix plancher minimal (FCFA)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.prixMinimal}
+                    onChange={(e) => setForm({ ...form, prixMinimal: e.target.value })}
+                    placeholder="Prix min négociable"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-700 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Nombre de pièces / rouleaux
+                  </label>
+                  <input
+                    type="number"
+                    value={form.pieces}
+                    onChange={(e) => setForm({ ...form, pieces: e.target.value })}
+                    placeholder="Ex: 5"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
