@@ -1,28 +1,59 @@
 import React, { useState } from 'react'
-import { Users, UserPlus, Phone, CreditCard, CheckCircle2 } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { DebtPanel } from '@/components/crm/DebtPanel'
-import { useClients, useCreateClient } from '@/hooks/useClients'
+import {
+  Search,
+  Plus,
+  Phone,
+  MapPin,
+  CreditCard,
+  MessageCircle,
+  X,
+  ChevronRight,
+  CheckCircle,
+  AlertCircle,
+  UserPlus,
+} from 'lucide-react'
+import { useClients, useCreateClient, useRecordPayment } from '@/hooks/useClients'
+import { RelanceWhatsApp } from '@/components/crm/RelanceWhatsApp'
+import { RelanceSMS } from '@/components/crm/RelanceSMS'
+import type { Client } from '@/types/api'
 import { toast } from 'sonner'
 
+const MODES_PAIEMENT = ['Espèces', 'Wave', 'Orange Money', 'Free Money', 'Carte bancaire']
+
 export const Clients: React.FC = () => {
+  const [search, setSearch] = useState('')
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState<Client | null>(null)
+
+  // Formulaire client
   const [nom, setNom] = useState('')
   const [telephone, setTelephone] = useState('')
   const [adresse, setAdresse] = useState('')
 
+  // Formulaire règlement
+  const [montantPaiement, setMontantPaiement] = useState('')
+  const [modePaiement, setModePaiement] = useState('Wave')
+
   const { data: clientsData, isLoading } = useClients()
   const createClientMutation = useCreateClient()
+  const recordPaymentMutation = useRecordPayment()
 
   const clients = clientsData?.items || []
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const clientsFiltres = clients.filter(
+    (c) =>
+      c.nom.toLowerCase().includes(search.toLowerCase()) ||
+      (c.telephone && c.telephone.includes(search))
+  )
+
+  const debiteurs = clients.filter((c) => c.totalDu > 0)
+  const totalCreances = debiteurs.reduce((sum, c) => sum + c.totalDu, 0)
+
+  const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nom.trim()) {
-      toast.error('Nom obligatoire')
+      toast.error('Le nom est obligatoire')
       return
     }
 
@@ -32,181 +63,430 @@ export const Clients: React.FC = () => {
         telephone: telephone.trim() || undefined,
         adresse: adresse.trim() || undefined,
       })
+      toast.success('Fiche client créée avec succès')
       setShowAddModal(false)
       setNom('')
       setTelephone('')
       setAdresse('')
     } catch {
-      // Handled in mutation
+      toast.error('Erreur lors de la création du client')
+    }
+  }
+
+  const handleEnregistrerReglement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!showPaymentModal || !montantPaiement) return
+
+    const m = Number(montantPaiement)
+    if (isNaN(m) || m <= 0) {
+      toast.error('Montant invalide')
+      return
+    }
+
+    try {
+      await recordPaymentMutation.mutateAsync({
+        clientId: showPaymentModal.id,
+        montant: m,
+        moyenPaiement: (modePaiement.toUpperCase() === 'ESPÈCES' ? 'ESPECES' : modePaiement.toUpperCase()) as any,
+      })
+      toast.success(`Encaissement de ${m.toLocaleString()} F validé`)
+      setShowPaymentModal(null)
+      setMontantPaiement('')
+    } catch {
+      toast.error("Erreur lors de l'enregistrement du règlement")
     }
   }
 
   return (
-    <div className="space-y-6 pb-8 font-inter">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
+    <div className="space-y-5 font-['Inter',sans-serif]">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="font-poppins font-bold text-[24px] text-[#0F3D5E] leading-tight">
-              Clients & Recouvrement des Créances
-            </h1>
-            <Badge className="bg-danger text-white text-xs font-semibold rounded-full px-3 py-1">Priorité Trésorerie</Badge>
-          </div>
-          <p className="font-inter text-[14px] text-gray-500 mt-1">
-            Surveillance des impayés, historique d'achats et relance instantanée WhatsApp / SMS
+          <h1 className="font-['Poppins',sans-serif] text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+            Gestion des Clients & Créances
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+            {clients.length} clients enregistrés • {debiteurs.length} comptes débiteurs
           </p>
         </div>
 
-        <Button
+        <button
+          type="button"
           onClick={() => setShowAddModal(true)}
-          className="bg-[#0F3D5E] hover:bg-[#0F3D5E]/90 text-white rounded-xl h-11 px-5 text-xs font-semibold gap-2 shadow-xs cursor-pointer self-start sm:self-auto"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold cursor-pointer shadow-sm self-start sm:self-auto"
+          style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
         >
-          <UserPlus className="w-4 h-4" />
-          Nouveau Client
-        </Button>
+          <UserPlus size={15} />
+          <span>Nouveau Client</span>
+        </button>
       </div>
 
-      {/* Debt & Recovery Multichannel Console */}
-      <DebtPanel />
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="font-['Poppins',sans-serif] font-bold text-lg text-red-600">
+            {totalCreances.toLocaleString('fr-FR')} FCFA
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Total des créances dues</div>
+          <div className="h-1 rounded-full mt-2 bg-red-50">
+            <div className="h-full rounded-full w-4/5 bg-red-500" />
+          </div>
+        </div>
 
-      {/* Complete Client Directory */}
-      <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden font-inter">
-        <div className="p-6 border-b border-gray-100 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#1E88E5]/10 flex items-center justify-center text-[#1E88E5] shrink-0">
-              <Users className="w-5 h-5" />
+        <div className="bg-white rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="font-['Poppins',sans-serif] font-bold text-lg text-gray-900">
+            {debiteurs.length}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Clients en souffrance</div>
+          <div className="h-1 rounded-full mt-2 bg-amber-50">
+            <div className="h-full rounded-full w-2/3 bg-amber-500" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="font-['Poppins',sans-serif] font-bold text-lg text-emerald-600">
+            {clients.length - debiteurs.length}
+          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Clients à jour</div>
+          <div className="h-1 rounded-full mt-2 bg-emerald-50">
+            <div className="h-full rounded-full w-full bg-[#22C55E]" />
+          </div>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher par nom de client ou téléphone..."
+          className="w-full pl-10 pr-4 h-11 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1E88E5]/30 focus:border-[#1E88E5]"
+        />
+      </div>
+
+      {/* Grid: 2 Columns on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Left: Client List */}
+        <div className="lg:col-span-7 space-y-2">
+          {isLoading ? (
+            <div className="p-8 text-center text-xs text-gray-400 bg-white rounded-2xl border border-gray-100">
+              Chargement des dossiers clients...
             </div>
-            <div>
-              <h3 className="font-poppins font-bold text-lg text-[#0F3D5E]">
-                Répertoire Général des Clients
-              </h3>
-              <p className="font-inter text-xs text-gray-500">
-                Coordonnées de contact et soldes en compte
+          ) : clientsFiltres.length === 0 ? (
+            <div className="p-8 text-center text-xs text-gray-400 bg-white rounded-2xl border border-gray-100">
+              Aucun client trouvé pour « {search} ».
+            </div>
+          ) : (
+            clientsFiltres.map((client) => {
+              const aDette = client.totalDu > 0
+              const isSelected = selectedClient?.id === client.id
+
+              return (
+                <div
+                  key={client.id}
+                  onClick={() => setSelectedClient(client)}
+                  className={`bg-white rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-[#1E88E5] ring-2 ring-[#1E88E5]/15'
+                      : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{
+                          background: aDette
+                            ? 'linear-gradient(135deg, #EF4444, #F59E0B)'
+                            : 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
+                        }}
+                      >
+                        {client.nom
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .slice(0, 2)}
+                      </div>
+
+                      <div>
+                        <div className="font-semibold text-sm text-gray-900 leading-snug">
+                          {client.nom}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                          {client.telephone && (
+                            <span className="flex items-center gap-1">
+                              <Phone size={11} className="text-gray-400" />
+                              {client.telephone}
+                            </span>
+                          )}
+                          {client.adresse && (
+                            <span>• {client.adresse}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-gray-400">Solde dû</div>
+                      <div
+                        className={`font-['Poppins',sans-serif] font-bold text-sm ${
+                          aDette ? 'text-red-600' : 'text-gray-400'
+                        }`}
+                      >
+                        {client.totalDu.toLocaleString('fr-FR')} FCFA
+                      </div>
+                      {aDette && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setShowPaymentModal(client)
+                          }}
+                          className="mt-1 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+                        >
+                          Encaisser
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Right: Selected Client Detail & Multichannel Reminders */}
+        <div className="lg:col-span-5">
+          {selectedClient ? (
+            <div className="bg-white rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100 space-y-4 sticky top-20">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 className="font-['Poppins',sans-serif] font-bold text-base text-gray-900">
+                  Dossier Client
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedClient(null)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div>
+                <div className="text-lg font-bold text-gray-900">{selectedClient.nom}</div>
+                <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                  <div>Téléphone : {selectedClient.telephone || 'Non renseigné'}</div>
+                  <div>Adresse : {selectedClient.adresse || 'Dakar'}</div>
+                  <div>Réseau : AFD Textile</div>
+                </div>
+              </div>
+
+              {/* Debt Box */}
+              <div
+                className={`p-4 rounded-xl border flex items-center justify-between ${
+                  selectedClient.totalDu > 0
+                    ? 'bg-red-50/60 border-red-200'
+                    : 'bg-emerald-50/60 border-emerald-200'
+                }`}
+              >
+                <div>
+                  <div className="text-xs text-gray-500 font-medium">Solde Débiteur Actuel</div>
+                  <div
+                    className={`font-['Poppins',sans-serif] font-bold text-xl mt-0.5 ${
+                      selectedClient.totalDu > 0 ? 'text-red-600' : 'text-emerald-700'
+                    }`}
+                  >
+                    {selectedClient.totalDu.toLocaleString('fr-FR')} FCFA
+                  </div>
+                </div>
+
+                {selectedClient.totalDu > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentModal(selectedClient)}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-xl text-white shadow-xs cursor-pointer"
+                    style={{ background: 'linear-gradient(135deg, #16a34a, #22C55E)' }}
+                  >
+                    Régler
+                  </button>
+                )}
+              </div>
+
+              {/* Multichannel Notification Reminders */}
+              {selectedClient.totalDu > 0 && (
+                <div className="space-y-3 pt-2">
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    Relances Immédiates
+                  </div>
+                  <RelanceWhatsApp client={selectedClient} />
+                  <RelanceSMS client={selectedClient} />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-8 shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-gray-100 text-center text-gray-400">
+              <CreditCard size={32} className="mx-auto mb-2 opacity-30" />
+              <p className="text-sm font-semibold text-gray-700">Sélectionnez un client</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Consultez le solde, encaissez les créances et déclenchez des relances WhatsApp / SMS.
               </p>
             </div>
-          </div>
-          <Badge variant="outline" className="text-xs text-gray-700 border-gray-200 rounded-full px-3 py-1">
-            {clients.length} comptes
-          </Badge>
+          )}
         </div>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-gray-50 text-gray-500 border-b border-gray-100 text-[12px] uppercase font-semibold tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Nom du Client</th>
-                <th className="px-6 py-4">Numéro WhatsApp / SMS</th>
-                <th className="px-6 py-4">Adresse</th>
-                <th className="px-6 py-4">Solde Dû</th>
-                <th className="px-6 py-4">Statut Compte</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
-                    Chargement du répertoire client...
-                  </td>
-                </tr>
-              ) : clients.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400">
-                    Aucun client enregistré pour l'instant.
-                  </td>
-                </tr>
-              ) : (
-                clients.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50/80 transition-colors">
-                    <td className="px-6 py-4 font-bold text-[#0F3D5E]">{c.nom}</td>
-                    <td className="px-6 py-4 text-gray-600">{c.telephone || '—'}</td>
-                    <td className="px-6 py-4 text-gray-500">{c.adresse || '—'}</td>
-                    <td className="px-6 py-4 font-bold font-poppins">
-                      {c.totalDu > 0 ? (
-                        <span className="text-danger">{c.totalDu.toLocaleString('fr-FR')} FCFA</span>
-                      ) : (
-                        <span className="text-gray-400">0 FCFA</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {c.totalDu > 0 ? (
-                        <Badge variant="outline" className="text-[10px] text-danger border-danger/30 bg-danger/5 font-semibold rounded-full px-2.5 py-0.5">
-                          Créance en cours
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] text-success border-success/30 bg-success/5 font-semibold rounded-full px-2.5 py-0.5">
-                          À jour
-                        </Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* New Client Modal */}
+      {/* Modal Nouveau Client */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <form
-            onSubmit={handleCreate}
-            className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-200 shadow-xl space-y-4"
+            onSubmit={handleCreateClient}
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-100 space-y-4"
           >
-            <h3 className="font-display text-lg font-bold text-slate-900">Nouveau Client</h3>
-            <p className="text-xs text-slate-500">
-              Coordonnées requises pour le suivi des tickets de caisse et les relances.
-            </p>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="font-['Poppins',sans-serif] font-bold text-base text-gray-900">
+                Nouveau Client
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Nom complet * :</label>
-                <Input
+                <label className="font-semibold text-gray-700 block mb-1">Nom complet *</label>
+                <input
                   required
+                  type="text"
                   value={nom}
                   onChange={(e) => setNom(e.target.value)}
                   placeholder="Ex: Awa Ndiaye"
-                  className="h-10 text-xs rounded-xl"
+                  className="w-full h-10 px-3 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:bg-white focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Téléphone (WhatsApp/SMS) :</label>
-                <Input
+                <label className="font-semibold text-gray-700 block mb-1">Téléphone (WhatsApp/SMS)</label>
+                <input
+                  type="text"
                   value={telephone}
                   onChange={(e) => setTelephone(e.target.value)}
                   placeholder="Ex: +221 77 123 45 67"
-                  className="h-10 text-xs rounded-xl"
+                  className="w-full h-10 px-3 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:bg-white focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Adresse :</label>
-                <Input
+                <label className="font-semibold text-gray-700 block mb-1">Adresse</label>
+                <input
+                  type="text"
                   value={adresse}
                   onChange={(e) => setAdresse(e.target.value)}
-                  placeholder="Ex: Dakar, Médina Rue 6"
-                  className="h-10 text-xs rounded-xl"
+                  placeholder="Ex: Dakar, Médina"
+                  className="w-full h-10 px-3 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:bg-white focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={() => setShowAddModal(false)}
-                className="rounded-xl h-10 text-xs font-semibold border-slate-200 cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer"
               >
                 Annuler
-              </Button>
-              <Button
+              </button>
+              <button
                 type="submit"
                 disabled={createClientMutation.isPending}
-                className="bg-primary hover:bg-primary/90 text-white rounded-xl h-10 text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold rounded-xl text-white cursor-pointer shadow-xs"
+                style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
               >
-                {createClientMutation.isPending ? 'Enregistrement...' : 'Créer la fiche'}
-              </Button>
+                {createClientMutation.isPending ? 'Enregistrement...' : 'Créer le client'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal Règlement Créance */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <form
+            onSubmit={handleEnregistrerReglement}
+            className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-gray-100 space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="font-['Poppins',sans-serif] font-bold text-base text-gray-900">
+                Règlement de Créance
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(null)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-gray-800">{showPaymentModal.nom}</p>
+              <p className="text-xs text-red-600 font-bold mt-0.5">
+                Solde dû : {showPaymentModal.totalDu.toLocaleString('fr-FR')} FCFA
+              </p>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-gray-700 block mb-1">Montant versé (FCFA) *</label>
+                <input
+                  required
+                  type="number"
+                  max={showPaymentModal.totalDu}
+                  value={montantPaiement}
+                  onChange={(e) => setMontantPaiement(e.target.value)}
+                  placeholder={showPaymentModal.totalDu.toString()}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-gray-700 block mb-1">Mode de règlement :</label>
+                <select
+                  value={modePaiement}
+                  onChange={(e) => setModePaiement(e.target.value)}
+                  className="w-full h-10 px-3 border border-gray-200 rounded-xl bg-gray-50 text-sm"
+                >
+                  {MODES_PAIEMENT.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(null)}
+                className="px-4 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={recordPaymentMutation.isPending}
+                className="px-4 py-2 text-xs font-semibold rounded-xl text-white cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #16a34a, #22C55E)' }}
+              >
+                {recordPaymentMutation.isPending ? 'Enregistrement...' : 'Valider l’encaissement'}
+              </button>
             </div>
           </form>
         </div>

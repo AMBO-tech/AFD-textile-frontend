@@ -41,6 +41,7 @@ export interface Product {
   prixMinimum?: number
   quantite: number
   unite: UniteStockage
+  seuilAlerte?: number
   nombrePieces?: number
   nombreTonnes?: number
   photoUrl?: string
@@ -109,24 +110,31 @@ export interface Client {
   createdAt: string
 }
 
-export type TransfertStatus = 'EN_ATTENTE' | 'ACCEPTEE' | 'REFUSEE' | 'EN_TRANSIT' | 'LIVREE'
+export type TransfertStatus = 'DEMANDE' | 'EN_ATTENTE' | 'ACCEPTEE' | 'REFUSEE' | 'EN_TRANSIT' | 'LIVREE'
 
 export interface Transfert {
   id: string
   reference: string
-  produitId: string
-  produitNom: string
-  produitReference: string
-  quantite: number
-  unite: UniteStockage
+  produitId?: string
+  produitNom?: string
+  produitReference?: string
+  quantite?: number
+  unite?: UniteStockage
   locationSourceId?: string
   locationSourceNom?: string
-  locationDestinationId: string
-  locationDestinationNom: string
-  demandeurNom: string
+  locationDestinationId?: string
+  locationDestinationNom?: string
+  sourceLocationId?: string
+  sourceLocationNom?: string
+  targetLocationId?: string
+  targetLocationNom?: string
+  demandeurNom?: string
   statut: TransfertStatus
-  priorite: 'NORMALE' | 'URGENTE'
+  priorite?: 'NORMALE' | 'URGENTE'
   motifRefus?: string
+  notes?: string
+  items?: Array<{ produitNom?: string; quantite?: number; unite?: string; [key: string]: any }>
+  lignes?: Array<{ produitNom: string; quantite: number; unite: string }>
   createdAt: string
 }
 

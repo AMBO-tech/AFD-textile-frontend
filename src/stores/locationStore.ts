@@ -8,6 +8,8 @@ interface LocationState {
   currentLocationId: string
   currentLocation: Location
   locations: Location[]
+  currentStore: Location
+  stores: Location[]
   isOnline: boolean
   syncStatus: SyncStatus
   pendingSyncCount: number
@@ -67,11 +69,17 @@ export const useLocationStore = create<LocationState>()(
       currentLocationId: DEFAULT_LOCATIONS[0].id,
       currentLocation: DEFAULT_LOCATIONS[0],
       locations: DEFAULT_LOCATIONS,
+      currentStore: DEFAULT_LOCATIONS[0],
+      stores: DEFAULT_LOCATIONS,
       isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
       syncStatus: 'synced',
       pendingSyncCount: 0,
 
-      setCurrentLocation: (loc) => set({ currentLocationId: loc.id, currentLocation: loc }),
+      setCurrentLocation: (loc) => set({
+        currentLocationId: loc.id,
+        currentLocation: loc,
+        currentStore: loc,
+      }),
       setIsOnline: (isOnline) => set({ isOnline }),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
 

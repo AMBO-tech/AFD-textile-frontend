@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import API, { getErrorMessage } from '@/services/api'
-import type { Transfert, PaginationParams, PaginatedResponse } from '@/types/api'
+import type { Transfert, PaginationParams, PaginatedResponse, TransfertStatus } from '@/types/api'
 import { toast } from 'sonner'
 
 export function useTransferts(params?: PaginationParams & { locationId?: string }) {
@@ -49,3 +49,22 @@ export function useValidateTransfert() {
     },
   })
 }
+
+export const useUpdateTransfertStatut = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, statut }: { id: string; statut: TransfertStatus }) => {
+      const res = await API.patch(`/transferts/${id}/statut`, { statut })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transferts'] })
+      queryClient.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Statut du transfert mis à jour')
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, 'Impossible de modifier le statut'))
+    },
+  })
+}
+

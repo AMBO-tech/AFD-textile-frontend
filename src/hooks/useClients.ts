@@ -46,3 +46,21 @@ export function useSendRelance() {
     },
   })
 }
+
+export function useRecordPayment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ clientId, montant, moyenPaiement }: { clientId: string; montant: number; moyenPaiement: string }) => {
+      const res = await API.post(`/clients/${clientId}/paiements`, { montant, moyenPaiement })
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
+      toast.success('Paiement enregistré avec succès')
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err, 'Erreur lors de l\'enregistrement du paiement'))
+    },
+  })
+}
+
