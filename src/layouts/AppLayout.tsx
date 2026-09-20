@@ -23,6 +23,9 @@ export const AppLayout: React.FC = () => {
   const getScreenFromPath = (path: string): Screen => {
     const p = path.replace(/^\//, '').split('/')[0];
     if (!p || p === 'dashboard') return 'accueil';
+    if (p === 'caisse') return 'ventes';
+    if (p === 'inventaire') return 'stock';
+    if (p === 'recouvrement') return 'clients';
     const validScreens: Screen[] = [
       'accueil', 'produits', 'stock', 'ventes', 'clients', 'demandes',
       'notifications', 'profil', 'dashboard_admin', 'utilisateurs',
@@ -50,7 +53,7 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen bg-[#F5F7FA]">
       <Toaster richColors position="top-right" />
       <Navigation
         role={session.role}

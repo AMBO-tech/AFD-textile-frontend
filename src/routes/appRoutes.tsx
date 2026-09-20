@@ -5,27 +5,29 @@ import RoleProtectedRoute from './RoleProtectedRoute';
 import AppLayout from '../layouts/AppLayout';
 import { Spinner } from '../components/ui/spinner';
 
-// Lazy loading des pages pour optimiser le bundle et la vitesse de chargement
+// Lazy loading des pages réorganisées et optimisées
 const LoginPage = React.lazy(() => import('../pages/login/LoginPage').then(m => ({ default: m.LoginPage })));
 const ActiverComptePage = React.lazy(() => import('../pages/auth/ActiverComptePage').then(m => ({ default: m.ActiverComptePage })));
-const DashboardPage = React.lazy(() => import('../pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const StockPage = React.lazy(() => import('../pages/stock/StockPage').then(m => ({ default: m.StockPage })));
-const SalesPage = React.lazy(() => import('../pages/sales/SalesPage').then(m => ({ default: m.SalesPage })));
-const ClientsPage = React.lazy(() => import('../pages/clients/ClientsPage').then(m => ({ default: m.ClientsPage })));
+
+// Pages réorganisées v2.0 (Architecture Hubs & Rayons unifiés)
+const DashboardReorganizedPage = React.lazy(() => import('../pages/dashboard/DashboardReorganizedPage'));
+const CaissePosPage = React.lazy(() => import('../pages/caisse/CaissePosPage'));
+const InventaireHubPage = React.lazy(() => import('../pages/inventaire/InventaireHubPage'));
+const RecouvrementPage = React.lazy(() => import('../pages/recouvrement/RecouvrementPage'));
+
+// Pages opérationnelles existantes
 const DemandesPage = React.lazy(() => import('../pages/demandes/DemandesPage').then(m => ({ default: m.DemandesPage })));
-const ProductsPage = React.lazy(() => import('../pages/products/ProductsPage').then(m => ({ default: m.ProductsPage })));
 const NotificationsPage = React.lazy(() => import('../pages/notifications/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const ParametresPage = React.lazy(() => import('../pages/parametres/ParametresPage').then(m => ({ default: m.ParametresPage })));
-const EntrepotPage = React.lazy(() => import('../pages/entrepot/EntrepotPage').then(m => ({ default: m.EntrepotPage })));
+const BoutiquesPage = React.lazy(() => import('../pages/boutiques/BoutiquesPage').then(m => ({ default: m.BoutiquesPage })));
 const UsersPage = React.lazy(() => import('../pages/users/UsersPage').then(m => ({ default: m.UsersPage })));
 const RapportsPage = React.lazy(() => import('../pages/rapports/RapportsPage').then(m => ({ default: m.RapportsPage })));
 const HistoriquePage = React.lazy(() => import('../pages/historique/HistoriquePage').then(m => ({ default: m.HistoriquePage })));
-const BoutiquesPage = React.lazy(() => import('../pages/boutiques/BoutiquesPage').then(m => ({ default: m.BoutiquesPage })));
 
 const PageLoader: React.FC = () => (
   <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-slate-500 py-16">
-    <Spinner className="w-8 h-8 text-indigo-600 animate-spin" />
-    <span className="text-sm font-medium">Chargement du module...</span>
+    <Spinner className="w-8 h-8 text-[#1E88E5] animate-spin" />
+    <span className="text-sm font-medium">Chargement du module AFD Textile...</span>
   </div>
 );
 
@@ -33,39 +35,50 @@ export const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Routes publiques : Connexion et Activation de compte */}
+        {/* Routes publiques */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/activer-compte" element={<ActiverComptePage />} />
 
-        {/* Routes protégées : Authentification requise */}
+        {/* Routes protégées */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            {/* Espace commun (Gérant & Boutiquier) */}
-            <Route path="/" element={<DashboardPage />} />
+            {/* 1. Cockpit Exécutif (Accueil réorganisé) */}
+            <Route path="/" element={<DashboardReorganizedPage />} />
             <Route path="/dashboard" element={<Navigate to="/" replace />} />
-            <Route path="/stock" element={<StockPage />} />
-            <Route path="/ventes" element={<SalesPage />} />
-            <Route path="/clients" element={<ClientsPage />} />
+
+            {/* 2. Caisse & Ventes (Terminal POS réorganisé) */}
+            <Route path="/caisse" element={<CaissePosPage />} />
+            <Route path="/ventes" element={<CaissePosPage />} />
+
+            {/* 3. Hub Inventaire (Stock boutique, Entrepôt & Catalogue unifiés) */}
+            <Route path="/inventaire" element={<InventaireHubPage />} />
+            <Route path="/stock" element={<InventaireHubPage />} />
+            <Route path="/produits" element={<InventaireHubPage />} />
+            <Route path="/entrepot" element={<InventaireHubPage />} />
+
+            {/* 4. CRM & Recouvrement (Créances & Relances multicanal) */}
+            <Route path="/recouvrement" element={<RecouvrementPage />} />
+            <Route path="/clients" element={<RecouvrementPage />} />
+
+            {/* 5. Demandes & Approbations Inter-Boutiques */}
             <Route path="/demandes" element={<DemandesPage />} />
-            <Route path="/produits" element={<ProductsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/parametres" element={<ParametresPage />} />
             <Route path="/profil" element={<Navigate to="/parametres" replace />} />
 
-            {/* Espace restreint : Gérant uniquement */}
+            {/* 6. Espace réservé Gérant */}
             <Route element={<RoleProtectedRoute allowedRoles={['gerant']} />}>
               <Route path="/boutiques" element={<BoutiquesPage />} />
-              <Route path="/entrepot" element={<EntrepotPage />} />
               <Route path="/utilisateurs" element={<UsersPage />} />
               <Route path="/rapports" element={<RapportsPage />} />
               <Route path="/historique" element={<HistoriquePage />} />
               <Route path="/sauvegardes" element={<Navigate to="/boutiques" replace />} />
-              <Route path="/dashboard_admin" element={<DashboardPage />} />
+              <Route path="/dashboard_admin" element={<Navigate to="/" replace />} />
             </Route>
           </Route>
         </Route>
 
-        {/* Redirection fallback */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
