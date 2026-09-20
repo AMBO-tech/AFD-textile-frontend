@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  MessageSquare, CheckCircle, Search, Plus, Boxes
+  MessageSquare, CheckCircle, Search, Plus, Boxes, Globe, ArrowLeftRight
 } from 'lucide-react';
-import { useMockStore, type Demande, type Produit } from '../../data/useMockStore';
+import { useMockStore, type Demande, type StockEnriched } from '../../data/useMockStore';
 import { CATEGORIES_DATA } from '../../data/mock';
 import DemandesStockList from './DemandesStockList';
 import DemandesTrackingList from './DemandesTrackingList';
+import DemandesStockConsultation from './DemandesStockConsultation';
 import NewDemandeModal from './NewDemandeModal';
 import DemandeValidationModal from './DemandeValidationModal';
+import { toast } from 'sonner';
 
 type Statut = Demande['statut'];
 
@@ -25,16 +27,19 @@ interface DemandesProps {
   onNavigate?: (s: string) => void;
 }
 
-export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) => {
+export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1', onNavigate }) => {
   const {
     demandes,
-    produits,
     boutiques,
+    session,
     createDemande,
     updateDemandeStatut,
+    getStocksEnriched,
   } = useMockStore();
 
-  const [activeTab, setActiveTab] = useState<'stocks' | 'demandes'>('stocks');
+  const [activeTab, setActiveTab] = useState<'stocks' | 'demandes' | 'reseau'>(
+    role === 'gerant' ? 'demandes' : 'stocks'
+  );
 
   // Filtres
   const [search, setSearch] = useState('');
@@ -43,35 +48,38 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
 
   // Modals
   const [showNew, setShowNew] = useState(false);
-  const [selectedProduit, setSelectedProduit] = useState<Produit | null>(null);
+  const [selectedProduit, setSelectedProduit] = useState<StockEnriched | null>(null);
   const [validation, setValidation] = useState<{ demande: Demande; action: 'acceptee' | 'refusee' } | null>(null);
-  const [qteModif, setQteModif] = useState('');
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const maBoutique = boutiques.find((b) => b.id === boutiqueId) || boutiques[0];
 
   const getBoutiqueName = (id: string) => {
-    if (id === 'entrepot') return 'Entrepôt Central';
+    if (id === 'entrepot' || id === 'b-ent') return 'Entrepôt Central';
     return boutiques.find((b) => b.id === id)?.nom ?? id;
   };
 
-  // Périmètre des stocks selon le rôle
-  const produitsEmplacement = role === 'gerant'
-    ? produits
-    : produits.filter((p) => p.boutique === boutiqueId);
+  // Périmètre des stocks physiques selon le rôle
+  const produitsEmplacement = useMemo(() => {
+    return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
+  }, [getStocksEnriched, role, boutiqueId]);
 
   // Filtrage et tri des stocks (ordre croissant de quantité)
-  const stocksTries = produitsEmplacement
-    .filter((p) => {
-      const matchSearch = p.nom.toLowerCase().includes(search.toLowerCase()) ||
-        p.categorie.toLowerCase().includes(search.toLowerCase()) ||
-        (p.couleur && p.couleur.toLowerCase().includes(search.toLowerCase()));
-      const matchCat = filtreCat === 'toutes' || p.categorie === filtreCat;
-      return matchSearch && matchCat;
-    })
-    .sort((a, b) => a.quantite - b.quantite);
+  const stocksTries = useMemo(() => {
+    return produitsEmplacement
+      .filter((p: StockEnriched) => {
+        const matchSearch =
+          p.nom.toLowerCase().includes(search.toLowerCase()) ||
+          p.categorie.toLowerCase().includes(search.toLowerCase()) ||
+          (p.couleur && p.couleur.toLowerCase().includes(search.toLowerCase()));
+        const matchCat = filtreCat === 'toutes' || p.categorie === filtreCat;
+        return matchSearch && matchCat;
+      })
+      .sort((a: StockEnriched, b: StockEnriched) => a.quantite - b.quantite);
+  }, [produitsEmplacement, search, filtreCat]);
 
-  const stocksCritiques = produitsEmplacement.filter((p) => p.quantite <= p.seuil);
+  const stocksCritiques = useMemo(() => {
+    return produitsEmplacement.filter((p: StockEnriched) => p.quantite <= p.seuil);
+  }, [produitsEmplacement]);
   const demandesEnAttente = demandes.filter((d) => d.statut === 'en_attente');
 
   // Filtrage des demandes
@@ -83,18 +91,52 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
     return matchStatut && matchSearch && matchBoutique;
   });
 
-  const handleOpenDemande = (p?: Produit) => {
+  const handleOpenDemande = (p?: StockEnriched) => {
     setSelectedProduit(p || null);
     setShowNew(true);
   };
 
-  const handleValidation = () => {
-    if (!validation) return;
-    const qteNum = qteModif ? parseFloat(qteModif) : undefined;
-    updateDemandeStatut(validation.demande.id, validation.action, qteNum);
+  const handleConfirmValidation = ({
+    demandeId,
+    action,
+    sourceBoutiqueId,
+    quantite,
+    motifRefus,
+  }: {
+    demandeId: string;
+    action: 'acceptee' | 'refusee';
+    sourceBoutiqueId?: string;
+    quantite?: number;
+    motifRefus?: string;
+  }) => {
+    if (action === 'refusee') {
+      updateDemandeStatut(demandeId, 'refusee', undefined, undefined, session?.nom || 'Gérant');
+      toast.error(`Demande #${demandeId} refusée : ${motifRefus || 'Non accordée'}.`);
+    } else {
+      if (!sourceBoutiqueId) {
+        toast.error("Veuillez sélectionner un emplacement source d'expédition.");
+        return;
+      }
+      const targetDemande = demandes.find((d) => d.id === demandeId);
+      const isEntrepot = sourceBoutiqueId === 'entrepot' || sourceBoutiqueId === 'b-ent';
+      const nomSource = isEntrepot
+        ? 'Entrepôt Central'
+        : (boutiques.find((b) => b.id === sourceBoutiqueId)?.nom || sourceBoutiqueId);
+      const nomDest = getBoutiqueName(targetDemande?.boutique_demande || '');
+
+      updateDemandeStatut(
+        demandeId,
+        'en_transfert',
+        quantite,
+        sourceBoutiqueId,
+        session?.nom || 'Gérant'
+      );
+
+      toast.success(
+        `Transfert validé ! Expédition de ${quantite} ${targetDemande?.unite || 'm'} depuis ${nomSource} vers ${nomDest}.`
+      );
+    }
     setValidation(null);
-    setSuccessMsg(`Demande ${validation.action === 'acceptee' ? 'validée' : 'refusée'}.`);
-    setTimeout(() => setSuccessMsg(null), 3000);
   };
 
   const handleSendDemande = (data: {
@@ -107,16 +149,20 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
       produit: data.produit,
       quantite: data.quantite,
       unite: data.unite,
-      boutique_demande: role === 'boutiquier' ? boutiqueId : 'b1',
-      boutique_source: 'entrepot',
+      boutique_demande: role === 'boutiquier' ? boutiqueId : (session?.boutiqueId || 'b1'),
+      boutique_source: 'reseau',
       priorite: data.priorite,
-      demandeur: role === 'gerant' ? 'Gérant' : 'Boutiquier',
+      demandeur: session?.nom || (role === 'gerant' ? 'Gérant' : 'Boutiquier'),
     });
 
     setShowNew(false);
     setSelectedProduit(null);
-    setSuccessMsg(`Demande de ${data.quantite} ${data.unite} envoyée.`);
-    setTimeout(() => setSuccessMsg(null), 3500);
+    toast.success(`Demande de ${data.quantite} ${data.unite} de ${data.produit} diffusée à tout le réseau.`);
+  };
+
+  const handleConfirmReception = (demande: Demande) => {
+    updateDemandeStatut(demande.id, 'livree', demande.quantite, demande.boutique_source, session?.nom);
+    toast.success(`Réassort réceptionné ! ${demande.quantite} ${demande.unite || 'm'} de ${demande.produit} ajoutés au stock.`);
   };
 
   const getStatutCfg = (s: Statut) => STATUTS.find((st) => st.id === s) || STATUTS[0];
@@ -126,7 +172,9 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
       {/* ── En-tête épuré ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl font-bold text-gray-900">Demandes</h1>
+          <h1 className="font-display text-xl font-bold text-gray-900">
+            {role === 'gerant' ? 'Validation des Réapprovisionnements' : 'Demandes de Réappro'}
+          </h1>
           <p className="text-sm text-gray-500">
             {role === 'boutiquier' ? (
               <span>
@@ -134,33 +182,59 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
               </span>
             ) : (
               <span>
-                {demandesEnAttente.length} en attente · {stocksCritiques.length} stock{stocksCritiques.length !== 1 ? 's' : ''} critique{stocksCritiques.length !== 1 ? 's' : ''}
+                {demandesEnAttente.length} demande{demandesEnAttente.length > 1 ? 's' : ''} en attente de décision · {stocksCritiques.length} stock{stocksCritiques.length > 1 ? 's' : ''} critique{stocksCritiques.length > 1 ? 's' : ''}
               </span>
             )}
           </p>
         </div>
-        <button
-          onClick={() => handleOpenDemande()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md active:scale-95 transition-all"
-          style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
-        >
-          <Plus size={16} /> Demande
-        </button>
+        {/* Le bouton d'action : Demande pour le boutiquier, Nouveau transfert direct pour le gérant */}
+        {role === 'boutiquier' ? (
+          <button
+            onClick={() => handleOpenDemande()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md active:scale-95 transition-all cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+          >
+            <Plus size={16} /> Demande
+          </button>
+        ) : (
+          <button
+            onClick={() => onNavigate?.('entrepot')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md active:scale-95 transition-all cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+            title="Aller vers le module des transferts pour effectuer une expédition directe"
+          >
+            <ArrowLeftRight size={16} /> Nouveau transfert
+          </button>
+        )}
       </div>
-
-      {/* ── Notification ── */}
-      {successMsg && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-3.5 flex items-center gap-2.5 text-green-800 text-sm animate-fade-in shadow-sm">
-          <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
-          <span className="font-medium">{successMsg}</span>
-        </div>
-      )}
 
       {/* ── Onglets bleus unifiés ── */}
       <div className="flex gap-2">
         <button
+          onClick={() => setActiveTab('demandes')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'demandes'
+              ? 'text-white shadow-sm'
+              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+          }`}
+          style={activeTab === 'demandes' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
+        >
+          <MessageSquare size={15} />
+          <span>{role === 'gerant' ? 'Demandes à pourvoir' : 'Suivi des demandes'}</span>
+          {demandesEnAttente.length > 0 && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === 'demandes' ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-700'
+              }`}
+            >
+              {demandesEnAttente.length}
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('stocks')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeTab === 'stocks'
               ? 'text-white shadow-sm'
               : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
@@ -168,7 +242,7 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
           style={activeTab === 'stocks' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
         >
           <Boxes size={15} />
-          <span>Stocks & Réappro</span>
+          <span>{role === 'gerant' ? 'Stocks critiques' : 'Stocks & Réappro'}</span>
           {stocksCritiques.length > 0 && (
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -181,25 +255,16 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
         </button>
 
         <button
-          onClick={() => setActiveTab('demandes')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all ${
-            activeTab === 'demandes'
+          onClick={() => setActiveTab('reseau')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'reseau'
               ? 'text-white shadow-sm'
               : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
           }`}
-          style={activeTab === 'demandes' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
+          style={activeTab === 'reseau' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
         >
-          <MessageSquare size={15} />
-          <span>Suivi des demandes</span>
-          {demandesEnAttente.length > 0 && (
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                activeTab === 'demandes' ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-700'
-              }`}
-            >
-              {demandesEnAttente.length}
-            </span>
-          )}
+          <Globe size={15} />
+          <span>Disponibilités réseau</span>
         </button>
       </div>
 
@@ -255,6 +320,7 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
           <DemandesStockList
             stocks={stocksTries}
             onOpenDemande={handleOpenDemande}
+            role={role}
           />
         </div>
       )}
@@ -284,7 +350,7 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
                 <button
                   key={s.id}
                   onClick={() => setFilterStatut(s.id as Statut | '')}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     active
                       ? 'text-white shadow-sm'
                       : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
@@ -305,13 +371,29 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
             getStatutCfg={getStatutCfg}
             onValidate={(demande, action) => {
               setValidation({ demande, action });
-              setQteModif(action === 'acceptee' ? String(demande.quantite) : '');
             }}
+            onConfirmReception={handleConfirmReception}
           />
         </div>
       )}
 
-      {/* ── MODAL : NOUVELLE DEMANDE ── */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          VUE 3 : DISPONIBILITÉS RÉSEAU (DemandesStockConsultation)
+         ═══════════════════════════════════════════════════════════════════ */}
+      {activeTab === 'reseau' && (
+        <DemandesStockConsultation
+          produits={getStocksEnriched()}
+          boutiques={boutiques}
+          boutiqueCouranteId={boutiqueId}
+          role={role}
+          onNavigate={onNavigate}
+          onCreerDemande={(prod) => {
+            handleOpenDemande(prod);
+          }}
+        />
+      )}
+
+      {/* ── MODAL : NOUVELLE DEMANDE (Boutiquier) ── */}
       <NewDemandeModal
         isOpen={showNew}
         onClose={() => {
@@ -322,13 +404,14 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) =
         onSubmit={handleSendDemande}
       />
 
-      {/* ── MODAL : VALIDATION GÉRANT ── */}
+      {/* ── MODAL : VALIDATION & EXPÉDITION GÉRANT ── */}
       <DemandeValidationModal
         validation={validation}
-        qteModif={qteModif}
-        onQteModifChange={setQteModif}
+        boutiques={boutiques}
+        allStocks={getStocksEnriched()}
+        getBoutiqueName={getBoutiqueName}
         onClose={() => setValidation(null)}
-        onConfirm={handleValidation}
+        onConfirm={handleConfirmValidation}
       />
     </div>
   );
