@@ -50,8 +50,12 @@ API.interceptors.response.use(
 
 export function getErrorMessage(error: unknown, defaultMessage = 'Une erreur inattendue est survenue.'): string {
   if (axios.isAxiosError(error)) {
-    const serverError = error.response?.data as Partial<ApiError> | undefined
-    if (serverError?.message) return serverError.message
+    const serverError = error.response?.data as (Partial<ApiError> & { message?: string | string[] }) | undefined
+    if (serverError?.message) {
+      return Array.isArray(serverError.message)
+        ? serverError.message.join(', ')
+        : serverError.message
+    }
     if (error.response?.status === 404) return 'Ressource introuvable.'
     if (error.response?.status === 403) return 'Accès non autorisé.'
     if (error.response?.status === 500) return 'Erreur interne du serveur.'

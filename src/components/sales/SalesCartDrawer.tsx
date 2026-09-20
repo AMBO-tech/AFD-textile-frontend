@@ -82,19 +82,41 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="flex items-center border border-gray-200 rounded-lg bg-white overflow-hidden">
+                    <div className="flex items-center border border-gray-200 rounded-xl bg-white overflow-hidden shadow-xs">
                       <button
                         type="button"
-                        onClick={() => onUpdateQte(idx, Math.max(1, l.qte - 1))}
-                        className="px-2 py-1 text-xs font-bold text-gray-600 hover:bg-gray-100"
+                        onClick={() => {
+                          const step = l.qte <= 1 ? 0.25 : 0.5;
+                          const next = Math.max(0.25, Math.round((l.qte - step) * 100) / 100);
+                          onUpdateQte(idx, next);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer active:scale-95"
+                        title="Diminuer la coupe"
                       >
                         -
                       </button>
-                      <span className="px-2 py-1 text-xs font-bold text-gray-800">{l.qte}</span>
+                      <input
+                        type="number"
+                        min="0.25"
+                        step="0.25"
+                        value={l.qte}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val > 0) {
+                            onUpdateQte(idx, val);
+                          }
+                        }}
+                        className="w-12 text-center text-xs font-bold text-gray-900 focus:outline-none focus:bg-blue-50/50 py-1"
+                      />
                       <button
                         type="button"
-                        onClick={() => onUpdateQte(idx, l.qte + 1)}
-                        className="px-2 py-1 text-xs font-bold text-gray-600 hover:bg-gray-100"
+                        onClick={() => {
+                          const step = l.qte < 1 ? 0.25 : 0.5;
+                          const next = Math.round((l.qte + step) * 100) / 100;
+                          onUpdateQte(idx, next);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer active:scale-95"
+                        title="Augmenter la coupe"
                       >
                         +
                       </button>
@@ -107,9 +129,10 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => onRemoveItem(idx)}
-                      className="text-gray-400 hover:text-red-500 p-1"
+                      className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Supprimer du panier"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>

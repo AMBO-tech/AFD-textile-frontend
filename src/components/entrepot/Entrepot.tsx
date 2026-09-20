@@ -6,7 +6,7 @@ import EntrepotStockList from './EntrepotStockList';
 import EntrepotTransferHistory from './EntrepotTransferHistory';
 
 export const Entrepot: React.FC = () => {
-  const { boutiques, historique, createTransfert, session, getStocksEnriched } = useMockStore();
+  const { boutiques, historique, createTransfert, session, getStocksEnriched, stocks, produits } = useMockStore();
 
   const [activeTab, setActiveTab] = useState<'transferer' | 'historique'>('transferer');
   const [sourceId, setSourceId] = useState<string>(ENTREPOT_ID);
@@ -19,7 +19,7 @@ export const Entrepot: React.FC = () => {
   // Produits physiques disponibles à l'emplacement source
   const prodsSource = useMemo(() => {
     return getStocksEnriched(sourceId);
-  }, [getStocksEnriched, sourceId]);
+  }, [getStocksEnriched, sourceId, stocks, produits]);
 
   const handleSelectProduit = (p: StockEnriched) => {
     setProduitChoisi(p);

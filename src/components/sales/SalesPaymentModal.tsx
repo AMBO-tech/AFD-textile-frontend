@@ -72,30 +72,30 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   const [nomClient, setNomClient] = useState<string>('');
   const [montantRecu, setMontantRecu] = useState<string>('');
 
-  // Réinitialiser les champs à l'ouverture
-  useEffect(() => {
-    if (isOpen) {
-      setModePaiement('Espèces');
-      setNomClient('');
-      setMontantRecu('');
-    }
-  }, [isOpen]);
-
-  if (!isOpen || !target) return null;
-
   // Calcul du montant total net selon la cible
   const totalNet =
-    target.type === 'direct'
+    target?.type === 'direct'
       ? target.ligne.produit.prix * target.ligne.qte -
         Math.min(target.ligne.remise, target.ligne.produit.prix * target.ligne.qte)
-      : target.panier.reduce(
+      : (target?.panier || []).reduce(
           (s, l) => s + l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
           0
         );
 
+  // Réinitialiser les champs à l'ouverture et pré-remplir avec le montant exact
+  useEffect(() => {
+    if (isOpen && target) {
+      setModePaiement('Espèces');
+      setNomClient('');
+      setMontantRecu(totalNet.toString());
+    }
+  }, [isOpen, target, totalNet]);
+
+  if (!isOpen || !target) return null;
+
   const montantRecuNum = parseFloat(montantRecu) || 0;
   const monnaieARendre = modePaiement === 'Espèces' && montantRecuNum > 0 ? montantRecuNum - totalNet : 0;
-  const isMontantInsuffisant = modePaiement === 'Espèces' && montantRecuNum > 0 && montantRecuNum < totalNet;
+  const isMontantInsuffisant = modePaiement === 'Espèces' && (montantRecuNum <= 0 || montantRecuNum < totalNet);
   const isCreditSansClient = modePaiement === 'Vente à crédit' && !nomClient.trim();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -254,35 +254,42 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
                 </button>
               </div>
 
-              {/* Boutons tactiles rapides de coupures FCFA */}
-              <div className="grid grid-cols-4 gap-1.5">
+              {/* Boutons tactiles rapides de coupures FCFA (BCEAO officielles) */}
+              <div className="grid grid-cols-5 gap-1.5">
                 <button
                   type="button"
                   onClick={() => setMontantRecu(totalNet.toString())}
-                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
                 >
                   Exact
                 </button>
                 <button
                   type="button"
+                  onClick={() => setMontantRecu("1000")}
+                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                >
+                  1 000 F
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMontantRecu("2000")}
+                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                >
+                  2 000 F
+                </button>
+                <button
+                  type="button"
                   onClick={() => setMontantRecu("5000")}
-                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
                 >
                   5 000 F
                 </button>
                 <button
                   type="button"
                   onClick={() => setMontantRecu("10000")}
-                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
                 >
                   10 000 F
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu("20000")}
-                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  20 000 F
                 </button>
               </div>
 
