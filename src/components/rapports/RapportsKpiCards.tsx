@@ -2,11 +2,21 @@ import React from 'react';
 import { TrendingUp, CreditCard } from 'lucide-react';
 import { formatMontant } from '../../data/mock';
 
-export const RapportsKpiCards: React.FC = () => {
+interface RapportsKpiCardsProps {
+  ca?: number;
+  benefice?: number;
+  creances?: number;
+}
+
+export const RapportsKpiCards: React.FC<RapportsKpiCardsProps> = ({
+  ca = 1678000,
+  benefice = 420000,
+  creances = 577500,
+}) => {
   const kpis = [
     {
       label: "Chiffre d'affaires",
-      value: formatMontant(1678000),
+      value: formatMontant(ca),
       icon: TrendingUp,
       color: '#1E88E5',
       bg: '#EBF5FB',
@@ -14,7 +24,7 @@ export const RapportsKpiCards: React.FC = () => {
     },
     {
       label: 'Bénéfice estimé',
-      value: formatMontant(420000),
+      value: formatMontant(benefice),
       icon: TrendingUp,
       color: '#0F3D5E',
       bg: '#EBF0F5',
@@ -22,7 +32,7 @@ export const RapportsKpiCards: React.FC = () => {
     },
     {
       label: 'Créances totales',
-      value: formatMontant(577500),
+      value: formatMontant(creances),
       icon: CreditCard,
       color: '#EF4444',
       bg: '#FEF2F2',

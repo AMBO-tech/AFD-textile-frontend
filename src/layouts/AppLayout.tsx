@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navigation } from '../components/navigation';
 import type { Screen } from '../components/navigation/types';
 import { useMockStore } from '../data/useMockStore';
+import { Toaster } from '../components/ui/sonner';
 
 export const AppLayout: React.FC = () => {
   const { session, setSession, notifications, demandes, boutiques } = useMockStore();
@@ -50,6 +51,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen" style={{ background: '#F5F7FA' }}>
+      <Toaster richColors position="top-right" />
       <Navigation
         role={session.role}
         current={currentScreen}

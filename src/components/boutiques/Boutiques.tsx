@@ -10,7 +10,7 @@ export const Boutiques: React.FC = () => {
   const {
     boutiques,
     utilisateurs,
-    produits,
+    stocks,
     addBoutique,
     updateBoutique,
     toggleBoutiqueActif,
@@ -27,14 +27,19 @@ export const Boutiques: React.FC = () => {
   const boutiquesWithStaff: BoutiqueWithStaff[] = useMemo(() => {
     return boutiques.map((b) => {
       const staff = utilisateurs.filter((u) => u.boutique === b.id);
-      const nbStock = produits.filter((p) => p.boutique === b.id).length;
+      const nbStock = stocks.filter(
+        (s) =>
+          s.boutiqueId === b.id ||
+          ((b.id === 'b-ent' || b.id === 'entrepot') &&
+            (s.boutiqueId === 'b-ent' || s.boutiqueId === 'entrepot'))
+      ).length;
       return {
         ...b,
         personnel: staff,
         nbArticlesStock: nbStock,
       };
     });
-  }, [boutiques, utilisateurs, produits]);
+  }, [boutiques, utilisateurs, stocks]);
 
   const handleOpenCreate = () => {
     setEditingBoutique(null);

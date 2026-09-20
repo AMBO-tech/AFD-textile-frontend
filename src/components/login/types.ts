@@ -5,8 +5,9 @@ export interface DemoCompte {
   pwd: string;
   role: 'gerant' | 'boutiquier';
   nom: string;
+  boutiqueId?: string;
 }
 
 export interface LoginProps {
-  onLogin: (role: 'gerant' | 'boutiquier', nom: string) => void;
+  onLogin: (role: 'gerant' | 'boutiquier', nom: string, boutiqueId?: string) => void;
 }

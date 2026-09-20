@@ -14,17 +14,17 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteDirecte }) => {
-  const { produits, ventes, clients, boutiques, session } = useMockStore();
+  const { produits, ventes, clients, boutiques, session, getStocksEnriched } = useMockStore();
   const boutiqueId = session?.boutiqueId || 'b1';
 
-  // Produits et ventes ciblés selon le rôle
-  const produitsAffiches = useMemo(() => {
-    return role === 'gerant' ? produits : produits.filter((p) => p.boutique === boutiqueId);
-  }, [produits, role, boutiqueId]);
+  // Stocks et ventes ciblés selon le rôle
+  const stocksAffiches = useMemo(() => {
+    return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
+  }, [getStocksEnriched, role, boutiqueId]);
 
   const alertesStock = useMemo(() => {
-    return produitsAffiches.filter((p) => p.quantite <= p.seuil);
-  }, [produitsAffiches]);
+    return stocksAffiches.filter((p) => p.quantite <= p.seuil);
+  }, [stocksAffiches]);
 
   const ventesValidees = useMemo(() => {
     return ventes.filter((v) => {
@@ -40,7 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       .reduce((s, v) => s + v.montant, 0);
 
     const ventesSemaine = VENTES_SEMAINE.reduce((s, v) => s + v.montant, 0);
-    const stockTotal = produitsAffiches.reduce((s, p) => s + p.quantite, 0);
+    const stockTotal = stocksAffiches.reduce((s, p) => s + p.quantite, 0);
     const creancesTotal = clients.reduce((s, c) => {
       const solde = c.creances.reduce((sc, cr) => {
         const paye = cr.paiements.reduce((sp, p) => sp + p.montant, 0);
@@ -56,7 +56,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       stockTotal,
       creancesTotal,
     };
-  }, [ventesValidees, produitsAffiches, clients]);
+  }, [ventesValidees, stocksAffiches, clients]);
 
   return (
     <div className="space-y-2">
@@ -105,21 +105,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
         onVenteDirecte={onVenteDirecte}
       />
 
-      {/* Vue comparative multi-boutiques réservée au Gérant */}
-      {role === 'gerant' && (
-        <DashboardBoutiquesOverview
-          boutiques={boutiques}
-          produits={produits}
-          ventes={ventes}
-          onNavigate={onNavigate}
-        />
-      )}
-
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DashboardSalesChart data={VENTES_SEMAINE} />
         <DashboardTopProducts data={TOP_PRODUITS} />
       </div>
+
+      {/* Vue comparative multi-boutiques réservée au Gérant */}
+      {role === 'gerant' && (
+        <DashboardBoutiquesOverview
+          boutiques={boutiques}
+          produits={stocksAffiches}
+          ventes={ventes}
+          onNavigate={onNavigate}
+        />
+      )}
     </div>
   );
 };

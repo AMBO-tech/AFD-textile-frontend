@@ -6,30 +6,57 @@ import LoginPhoneResetView from './LoginPhoneResetView';
 import LoginOtpView from './LoginOtpView';
 import LoginNewPasswordView from './LoginNewPasswordView';
 
+/**
+ * @constant COMPTES
+ * Comptes de démonstration / mock pour les tests hors-ligne et la prévisualisation.
+ * 
+ * @backend_migration_guide
+ * Lors du branchement sur le backend réel (API NestJS / Express / PostgreSQL) :
+ * 1. Déprécier et supprimer cette constante COMPTES.
+ * 2. Remplacer `handleLoginSubmit` par :
+ *    ```ts
+ *    const { data } = await authApi.post('/api/v1/auth/login', { identifiant, motdepasse });
+ *    // data retourne: { accessToken, user: { id, nom, role, boutiqueId } }
+ *    setSession({ role: data.user.role, nom: data.user.nom, boutiqueId: data.user.boutiqueId });
+ *    ```
+ * 3. Le mot de passe sera vérifié via argon2/bcrypt côté serveur.
+ * 4. Les collaborateurs invités sur /activer-compte auront leur hash en base et pourront se connecter directement.
+ */
 const COMPTES = [
   {
     id: 'amadou.diallo@afd-textile.sn',
     pwd: 'afd2026',
     role: 'gerant' as const,
     nom: 'Amadou Diallo',
+    boutiqueId: undefined,
   },
   {
     id: '+221 77 010 20 30',
     pwd: 'afd2026',
     role: 'gerant' as const,
     nom: 'Amadou Diallo',
+    boutiqueId: undefined,
   },
   {
     id: 'fatou.sow@afd-textile.sn',
     pwd: 'afd2026',
     role: 'gerant' as const,
     nom: 'Fatou Sow',
+    boutiqueId: undefined,
   },
   {
     id: 'ibrahima.sarr@afd-textile.sn',
     pwd: 'afd2026',
     role: 'boutiquier' as const,
     nom: 'Ibrahima Sarr',
+    boutiqueId: 'b1', // Dakar Plateau
+  },
+  {
+    id: 'moussa.fall@afd-textile.sn',
+    pwd: 'afd2026',
+    role: 'boutiquier' as const,
+    nom: 'Moussa Fall',
+    boutiqueId: 'b2', // Médina Rue 6
   },
 ];
 
@@ -57,7 +84,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       );
       if (compte) {
         localStorage.setItem('afd_deja_connecte', '1');
-        onLogin(compte.role, compte.nom);
+        onLogin(compte.role, compte.nom, compte.boutiqueId);
       } else if (!identifiant.trim() || !motdepasse.trim()) {
         setErreur('Veuillez remplir tous les champs.');
       } else {

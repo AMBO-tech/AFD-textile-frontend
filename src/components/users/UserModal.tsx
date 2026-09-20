@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Shield, User, Phone, Mail, Building2 } from 'lucide-react';
+import { X, Shield, User, Phone, Mail, Building2, Store } from 'lucide-react';
 import type { Utilisateur, UserFormData } from './types';
 import type { Boutique } from '../../data/useMockStore';
+import CustomDropdownSelect from '../ui/CustomDropdownSelect';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -213,23 +214,20 @@ export const UserModal: React.FC<UserModalProps> = ({
           {/* 5. Si rôle == Boutiquier */}
           {form.role === 'boutiquier' && (
             <div className="space-y-1.5 animate-scale-up">
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Boutique assignée *
-              </label>
-              <div className="relative">
-                <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600" />
-                <select
-                  value={form.boutique}
-                  onChange={(e) => setForm((f) => ({ ...f, boutique: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-                >
-                  {boutiques.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.nom} ({b.lieu})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <CustomDropdownSelect
+                label="Boutique assignée"
+                menuTitle="Sélectionner la boutique d'affectation"
+                value={form.boutique}
+                onChange={(val) => setForm((f) => ({ ...f, boutique: val }))}
+                options={boutiques.map((b) => ({
+                  value: b.id,
+                  label: b.nom,
+                  sublabel: b.lieu,
+                  badge: b.code || undefined,
+                  icon: <Store size={16} />,
+                }))}
+                icon={<Building2 size={16} />}
+              />
               <p className="text-[11px] text-gray-400 pl-0.5">
                 Le boutiquier effectuera ses ventes et créances pour cette boutique uniquement.
               </p>
