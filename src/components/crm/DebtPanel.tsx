@@ -25,38 +25,41 @@ export const DebtPanel: React.FC = () => {
     : debtors
 
   return (
-    <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-      <CardHeader className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <CardTitle className="font-display text-base font-semibold text-slate-900 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-danger" />
-              Recouvrement des Créances & Relances Multicanal
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Surveillance des soldes débiteurs et notifications en 1 clic
-            </CardDescription>
+    <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden font-inter p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-danger/10 flex items-center justify-center text-danger shrink-0">
+            <CreditCard className="w-5 h-5" />
           </div>
-          <Badge className="bg-danger text-white text-xs font-semibold self-start sm:self-auto">
-            {debtors.length} Dossier{debtors.length > 1 ? 's' : ''} en Souffrance
-          </Badge>
+          <div>
+            <h3 className="font-poppins font-bold text-lg text-[#0F3D5E]">
+              Recouvrement des Créances & Relances Multicanal
+            </h3>
+            <p className="font-inter text-xs text-gray-500">
+              Surveillance des soldes débiteurs et notifications en 1 clic
+            </p>
+          </div>
         </div>
-      </CardHeader>
+        <Badge className="bg-danger text-white text-xs font-semibold self-start sm:self-auto rounded-full px-3 py-1">
+          {debtors.length} Dossier{debtors.length > 1 ? 's' : ''} en Souffrance
+        </Badge>
+      </div>
 
-      <CardContent className="p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Debtor List */}
-        <div className="lg:col-span-5 space-y-3">
+        <div className="lg:col-span-5 space-y-4">
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
+            <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Rechercher débiteur ou téléphone..."
-              className="pl-9 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs"
+              className="w-full h-12 rounded-xl bg-gray-50 border border-gray-200 pl-11 pr-4 font-inter text-sm text-slate-800 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-[#1E88E5] transition-all"
             />
           </div>
 
-          <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+          <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
             {isLoading ? (
               <div className="text-xs text-center py-6 text-slate-400">Chargement des dossiers créances...</div>
             ) : filtered.length === 0 ? (
@@ -138,7 +141,7 @@ export const DebtPanel: React.FC = () => {
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
     </Card>
   )
 }

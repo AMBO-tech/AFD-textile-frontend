@@ -8,25 +8,23 @@ export const NetworkStatus: React.FC = () => {
   const { locations, currentLocation } = useLocationStore()
 
   return (
-    <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-      <CardHeader className="p-4 sm:p-5 border-b border-slate-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="font-display text-base font-semibold text-slate-900 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              État du Réseau AFD Textile
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Synchronisation instantanée des boutiques et de l'entrepôt
-            </CardDescription>
-          </div>
-          <Badge className="bg-primary text-white text-xs font-semibold">
-            {locations.length} Sites Actifs
-          </Badge>
+    <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 font-inter space-y-4">
+      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 className="font-poppins text-lg font-bold text-[#0F3D5E] flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-[#0F3D5E]" />
+            État du Réseau AFD Textile
+          </h3>
+          <p className="font-inter text-xs text-gray-500 mt-0.5">
+            Synchronisation instantanée des boutiques et de l'entrepôt
+          </p>
         </div>
-      </CardHeader>
+        <Badge className="bg-[#0F3D5E] text-white text-xs font-semibold rounded-full px-3 py-1">
+          {locations.length} Sites Actifs
+        </Badge>
+      </div>
 
-      <CardContent className="p-4 sm:p-5 space-y-3">
+      <div className="space-y-3">
         {locations.map((loc) => {
           const isCurrent = loc.id === currentLocation.id
           const isWarehouse = loc.type === 'ENTREPOT'
@@ -70,7 +68,7 @@ export const NetworkStatus: React.FC = () => {
             </div>
           )
         })}
-      </CardContent>
+      </div>
     </Card>
   )
 }

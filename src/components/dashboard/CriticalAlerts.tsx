@@ -19,30 +19,30 @@ export const CriticalAlerts: React.FC<CriticalAlertsProps> = ({
   onViewAll,
 }) => {
   return (
-    <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs">
-      <CardHeader className="p-4 sm:p-5 border-b border-slate-100 flex flex-row items-center justify-between">
+    <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-6 font-inter space-y-4">
+      <div className="flex flex-row items-center justify-between pb-4 border-b border-gray-100">
         <div>
-          <CardTitle className="font-display text-base font-semibold text-slate-900 flex items-center gap-2">
+          <h3 className="font-poppins text-lg font-bold text-[#0F3D5E] flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-warning" />
             Alertes de Réapprovisionnement Critique
-          </CardTitle>
-          <CardDescription className="text-xs text-slate-500">
+          </h3>
+          <p className="font-inter text-xs text-gray-500 mt-0.5">
             Articles dont le stock physique est au seuil d'alerte
-          </CardDescription>
+          </p>
         </div>
         {onViewAll && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onViewAll}
-            className="text-xs text-primary-light hover:text-primary font-semibold gap-1 h-8 cursor-pointer"
+            className="text-xs text-[#1E88E5] hover:text-[#0F3D5E] font-semibold gap-1.5 h-8 cursor-pointer rounded-xl"
           >
             Voir tout <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-4 sm:p-5">
+      <div className="pt-2">
         {isLoading ? (
           <div className="text-xs text-center py-6 text-slate-400">Vérification des niveaux de stock...</div>
         ) : alerts.length === 0 ? (
@@ -81,7 +81,7 @@ export const CriticalAlerts: React.FC<CriticalAlertsProps> = ({
             ))}
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   )
 }

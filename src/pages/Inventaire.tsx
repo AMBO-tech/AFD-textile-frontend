@@ -52,30 +52,30 @@ export const Inventaire: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 font-inter">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
         <div>
-          <h1 className="font-display font-bold text-slate-900 text-xl sm:text-2xl">
+          <h1 className="font-poppins font-bold text-[24px] text-[#0F3D5E] leading-tight">
             Hub d'Inventaire & Chaîne Logistique
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="font-inter text-[14px] text-gray-500 mt-1">
             Supervision unifiée des stocks en rayon, des réserves de l'entrepôt et du catalogue
           </p>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl self-start sm:self-auto overflow-x-auto">
+        {/* Tab Controls: pills avec bg white, border, active bg #0F3D5E text white, rounded-full */}
+        <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-full border border-gray-200 shadow-xs self-start sm:self-auto overflow-x-auto">
           <button
             type="button"
             onClick={() => setTab('boutique')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
               tab === 'boutique'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-[#0F3D5E] text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <Package className="w-4 h-4 text-primary-light" />
+            <Package className={`w-4 h-4 ${tab === 'boutique' ? 'text-white' : 'text-[#1E88E5]'}`} />
             <span>Stock Boutique</span>
           </button>
 
@@ -83,13 +83,13 @@ export const Inventaire: React.FC = () => {
             <button
               type="button"
               onClick={() => setTab('entrepot')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
                 tab === 'entrepot'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[#0F3D5E] text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Warehouse className="w-4 h-4 text-primary" />
+              <Warehouse className={`w-4 h-4 ${tab === 'entrepot' ? 'text-white' : 'text-[#1E88E5]'}`} />
               <span>Entrepôt Central</span>
             </button>
           )}
@@ -97,13 +97,13 @@ export const Inventaire: React.FC = () => {
           <button
             type="button"
             onClick={() => setTab('catalogue')}
-            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer whitespace-nowrap ${
               tab === 'catalogue'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-[#0F3D5E] text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            <Boxes className="w-4 h-4 text-success" />
+            <Boxes className={`w-4 h-4 ${tab === 'catalogue' ? 'text-white' : 'text-success'}`} />
             <span>Catalogue ({products.length})</span>
           </button>
         </div>
@@ -130,32 +130,35 @@ export const Inventaire: React.FC = () => {
       )}
 
       {tab === 'catalogue' && (
-        <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-display font-bold text-base text-slate-900">Catalogue Références Tissus</h3>
-            <Badge variant="outline" className="text-xs font-semibold">
+        <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="font-poppins font-bold text-lg text-[#0F3D5E]">Catalogue Références Tissus</h3>
+              <p className="font-inter text-xs text-gray-500">Tarification officielle et unités de conditionnement</p>
+            </div>
+            <Badge variant="outline" className="text-xs font-semibold rounded-full border-gray-200 px-3 py-1 text-gray-700">
               {products.length} articles
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {loadingProducts ? (
-              <div className="col-span-full text-center py-10 text-xs text-slate-400">Chargement du catalogue...</div>
+              <div className="col-span-full text-center py-10 text-xs text-gray-400">Chargement du catalogue...</div>
             ) : products.length === 0 ? (
-              <div className="col-span-full text-center py-10 text-xs text-slate-400">Catalogue prêt.</div>
+              <div className="col-span-full text-center py-10 text-xs text-gray-400">Catalogue prêt.</div>
             ) : (
               products.map((prod) => (
-                <div key={prod.id} className="p-4 rounded-xl border border-slate-200 bg-white hover:border-primary-light transition-all">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-mono text-xs text-slate-400 font-semibold">{prod.reference}</span>
-                    <Badge variant="secondary" className="text-[10px] bg-primary-light/10 text-primary-light font-bold">
+                <div key={prod.id} className="p-5 rounded-2xl border border-gray-100 bg-white hover:border-[#1E88E5] transition-all shadow-xs">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-mono text-xs text-gray-400 font-semibold">{prod.reference}</span>
+                    <Badge variant="secondary" className="text-[10px] bg-[#1E88E5]/10 text-[#1E88E5] font-bold rounded-full px-2.5">
                       {prod.categorie}
                     </Badge>
                   </div>
-                  <h4 className="font-display font-bold text-sm text-slate-900">{prod.nom}</h4>
-                  <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
-                    <span className="font-bold text-slate-900">{prod.prixVente.toLocaleString('fr-FR')} FCFA</span>
-                    <span className="text-slate-500">{prod.unite}</span>
+                  <h4 className="font-poppins font-bold text-sm text-[#0F3D5E]">{prod.nom}</h4>
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+                    <span className="font-bold text-[#0F3D5E] text-sm">{prod.prixVente.toLocaleString('fr-FR')} FCFA</span>
+                    <span className="text-gray-500 font-medium">{prod.unite}</span>
                   </div>
                 </div>
               ))

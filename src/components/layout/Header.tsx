@@ -14,12 +14,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
   const { user } = useAuthStore()
 
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3 shadow-[0_1px_3px_rgba(15,61,94,0.05)]">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <header className="sticky top-0 z-30 bg-white border-b border-gray-100 min-h-16 h-auto sm:h-16 px-4 sm:px-6 py-2 sm:py-0 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full">
         {/* Left: Boutique identity & live sync status */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-xs">
-            <Store className="w-5 h-5 text-primary-light" />
+          <div className="w-10 h-10 rounded-xl bg-[#0F3D5E] text-white flex items-center justify-center shadow-xs shrink-0">
+            <Store className="w-5 h-5 text-[#1E88E5]" />
           </div>
           <div>
             <div className="flex items-center gap-2">

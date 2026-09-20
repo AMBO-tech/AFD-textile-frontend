@@ -70,30 +70,35 @@ export const POSTerminal: React.FC = () => {
   }
 
   return (
-    <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs flex flex-col h-full">
-      <CardHeader className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-display text-base font-semibold text-slate-900 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-primary-light" />
-            Caisse & Facturation
-          </CardTitle>
-          <Badge className="bg-primary text-white text-xs font-semibold">
-            {cartItems.length} article{cartItems.length > 1 ? 's' : ''}
-          </Badge>
+    <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] flex flex-col h-full font-inter overflow-hidden">
+      <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#1E88E5]/10 flex items-center justify-center text-[#1E88E5] shrink-0">
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-poppins text-lg font-bold text-[#0F3D5E]">
+              Caisse & Facturation
+            </h3>
+            <p className="font-inter text-xs text-gray-500">Panier et règlement</p>
+          </div>
         </div>
-      </CardHeader>
+        <Badge className="bg-[#0F3D5E] text-white text-xs font-semibold rounded-full px-3 py-1">
+          {cartItems.length} article{cartItems.length > 1 ? 's' : ''}
+        </Badge>
+      </div>
 
-      <CardContent className="p-4 sm:p-5 space-y-4 flex-1 overflow-y-auto">
+      <div className="p-6 space-y-5 flex-1 overflow-y-auto">
         {/* Client Selection */}
         <div>
-          <label className="text-xs font-semibold text-slate-700 block mb-1">
+          <label className="text-xs font-semibold text-gray-700 block mb-1.5 font-inter">
             Client associé (Optionnel)
           </label>
           <div className="relative">
             <select
               value={selectedClientId || ''}
               onChange={(e) => setSelectedClientId(e.target.value || null)}
-              className="w-full h-10 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-light/30 focus:border-primary-light"
+              className="w-full h-12 px-4 text-sm font-inter bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-[#1E88E5] transition-all"
             >
               <option value="">Client Comptant (Passage)</option>
               {clients.map((c) => (
@@ -110,29 +115,29 @@ export const POSTerminal: React.FC = () => {
 
         {/* Commercial Discount */}
         {cartItems.length > 0 && (
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-3 border-t border-gray-100">
             <DiscountInput discountPct={discountPct} onChange={setDiscountPct} />
           </div>
         )}
 
         {/* Payment Methods */}
         {cartItems.length > 0 && (
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-3 border-t border-gray-100">
             <PaymentSelector value={paymentMethod} onChange={setPaymentMethod} />
           </div>
         )}
-      </CardContent>
+      </div>
 
-      <CardFooter className="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/50">
+      <div className="p-6 border-t border-gray-100 bg-gray-50/50">
         <Button
           onClick={handleCheckout}
           disabled={cartItems.length === 0 || createSaleMutation.isPending}
-          className="w-full bg-success hover:bg-success/90 text-white rounded-xl h-11 text-sm font-semibold gap-2 shadow-sm cursor-pointer"
+          className="w-full bg-success hover:bg-success/90 text-white rounded-xl h-12 text-sm font-semibold gap-2 shadow-sm cursor-pointer"
         >
           <CheckCircle2 className="w-4 h-4" />
           {createSaleMutation.isPending ? 'Encaissement...' : `Valider l'encaissement (${totalNet.toLocaleString('fr-FR')} FCFA)`}
         </Button>
-      </CardFooter>
+      </div>
     </Card>
   )
 }

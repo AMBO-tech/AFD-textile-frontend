@@ -54,26 +54,26 @@ export const Ventes: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 font-inter">
       {/* Top Bar Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
         <div>
-          <h1 className="font-display font-bold text-slate-900 text-xl sm:text-2xl">
+          <h1 className="font-poppins font-bold text-[24px] text-[#0F3D5E] leading-tight">
             Point de Vente & Caisse Enregistreuse
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="font-inter text-[14px] text-gray-500 mt-1">
             Encaissement immédiat (Wave, Orange Money, Espèces, Virement) et suivi des tickets
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 p-1.5 bg-white rounded-full border border-gray-200 shadow-xs self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setActiveTab('pos')}
-            className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`px-5 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               activeTab === 'pos'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-[#0F3D5E] text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             Encaissement Caisse
@@ -81,10 +81,10 @@ export const Ventes: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('historique')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-5 py-2 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               activeTab === 'historique'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-[#0F3D5E] text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <History className="w-3.5 h-3.5" />
@@ -96,30 +96,31 @@ export const Ventes: React.FC = () => {
       {activeTab === 'pos' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left: Fabric Catalog */}
-          <div className="lg:col-span-7 space-y-4">
+          <div className="lg:col-span-7 space-y-6">
             {/* Search and Filters */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] space-y-4">
               <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <Input
+                <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Recherche rapide de tissu, réf (Bazin, Soie, Coton)..."
-                  className="pl-10 h-10 rounded-xl bg-slate-50 border-slate-200 text-xs"
+                  className="w-full h-12 rounded-xl bg-gray-50 border border-gray-200 pl-11 pr-4 font-inter text-sm text-slate-800 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E88E5] focus:border-[#1E88E5] transition-all"
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {['TOUT', 'Bazin Riche', 'Soie & Satin', 'Coton Voile', 'Dentelle Guipure', 'Wax Hollandais'].map(
                   (cat) => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setCategory(cat)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                         category === cat
-                          ? 'bg-primary text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-[#0F3D5E] text-white shadow-xs'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
                       {cat}
@@ -131,14 +132,14 @@ export const Ventes: React.FC = () => {
 
             {/* Catalog Grid */}
             {loadingStocks ? (
-              <div className="text-center py-12 text-xs text-slate-400">Chargement des rouleaux en boutique...</div>
+              <div className="text-center py-12 text-xs text-gray-400">Chargement des rouleaux en boutique...</div>
             ) : stocks.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200 p-6">
-                <Tag className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-slate-700">Aucun tissu en stock sur ce filtre</p>
+              <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200 p-6">
+                <Tag className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-700 font-inter">Aucun tissu en stock sur ce filtre</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {stocks.map((item) => (
                   <div
                     key={item.id}
@@ -178,25 +179,25 @@ export const Ventes: React.FC = () => {
         </div>
       ) : (
         /* History View */
-        <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-          <div className="p-4 sm:p-5 border-b border-slate-100">
-            <h3 className="font-display font-bold text-base text-slate-900">Journal des Ventes Enregistrées</h3>
-            <p className="text-xs text-slate-500">Traçabilité des factures et annulations sécurisées</p>
+        <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden font-inter">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="font-poppins font-bold text-lg text-[#0F3D5E]">Journal des Ventes Enregistrées</h3>
+            <p className="font-inter text-xs text-gray-500 mt-0.5">Traçabilité des factures et annulations sécurisées</p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 text-slate-500 border-b border-slate-100 font-medium">
+              <thead className="bg-gray-50 text-gray-500 border-b border-gray-100 text-[12px] uppercase font-semibold tracking-wider">
                 <tr>
-                  <th className="p-3.5">Référence Facture</th>
-                  <th className="p-3.5">Date</th>
-                  <th className="p-3.5">Client</th>
-                  <th className="p-3.5">Montant Net</th>
-                  <th className="p-3.5">Règlement</th>
-                  <th className="p-3.5 text-right">Action</th>
+                  <th className="px-6 py-4">Référence Facture</th>
+                  <th className="px-6 py-4">Date</th>
+                  <th className="px-6 py-4">Client</th>
+                  <th className="px-6 py-4">Montant Net</th>
+                  <th className="px-6 py-4">Règlement</th>
+                  <th className="px-6 py-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-gray-100">
                 {loadingSales ? (
                   <tr>
                     <td colSpan={6} className="p-6 text-center text-slate-400">

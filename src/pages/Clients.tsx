@@ -42,24 +42,24 @@ export const Clients: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 font-inter">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display font-bold text-slate-900 text-xl sm:text-2xl">
+          <div className="flex items-center gap-3">
+            <h1 className="font-poppins font-bold text-[24px] text-[#0F3D5E] leading-tight">
               Clients & Recouvrement des Créances
             </h1>
-            <Badge className="bg-danger text-white text-xs font-semibold">Priorité Trésorerie</Badge>
+            <Badge className="bg-danger text-white text-xs font-semibold rounded-full px-3 py-1">Priorité Trésorerie</Badge>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="font-inter text-[14px] text-gray-500 mt-1">
             Surveillance des impayés, historique d'achats et relance instantanée WhatsApp / SMS
           </p>
         </div>
 
         <Button
           onClick={() => setShowAddModal(true)}
-          className="bg-primary hover:bg-primary/90 text-white rounded-xl h-10 px-4 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
+          className="bg-[#0F3D5E] hover:bg-[#0F3D5E]/90 text-white rounded-xl h-11 px-5 text-xs font-semibold gap-2 shadow-xs cursor-pointer self-start sm:self-auto"
         >
           <UserPlus className="w-4 h-4" />
           Nouveau Client
@@ -70,37 +70,41 @@ export const Clients: React.FC = () => {
       <DebtPanel />
 
       {/* Complete Client Directory */}
-      <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-        <CardHeader className="p-4 sm:p-5 border-b border-slate-100 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="font-display text-base font-semibold text-slate-900 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary-light" />
-              Répertoire Général des Clients
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Coordonnées de contact et soldes en compte
-            </CardDescription>
+      <Card className="rounded-2xl border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.05)] overflow-hidden font-inter">
+        <div className="p-6 border-b border-gray-100 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#1E88E5]/10 flex items-center justify-center text-[#1E88E5] shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-poppins font-bold text-lg text-[#0F3D5E]">
+                Répertoire Général des Clients
+              </h3>
+              <p className="font-inter text-xs text-gray-500">
+                Coordonnées de contact et soldes en compte
+              </p>
+            </div>
           </div>
-          <Badge variant="outline" className="text-xs text-slate-600 border-slate-200">
+          <Badge variant="outline" className="text-xs text-gray-700 border-gray-200 rounded-full px-3 py-1">
             {clients.length} comptes
           </Badge>
-        </CardHeader>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-slate-50 text-slate-500 border-b border-slate-100 font-medium">
+            <thead className="bg-gray-50 text-gray-500 border-b border-gray-100 text-[12px] uppercase font-semibold tracking-wider">
               <tr>
-                <th className="p-3.5">Nom du Client</th>
-                <th className="p-3.5">Numéro WhatsApp / SMS</th>
-                <th className="p-3.5">Adresse</th>
-                <th className="p-3.5">Solde Dû</th>
-                <th className="p-3.5">Statut Compte</th>
+                <th className="px-6 py-4">Nom du Client</th>
+                <th className="px-6 py-4">Numéro WhatsApp / SMS</th>
+                <th className="px-6 py-4">Adresse</th>
+                <th className="px-6 py-4">Solde Dû</th>
+                <th className="px-6 py-4">Statut Compte</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-slate-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                     Chargement du répertoire client...
                   </td>
                 </tr>
@@ -112,24 +116,24 @@ export const Clients: React.FC = () => {
                 </tr>
               ) : (
                 clients.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3.5 font-bold text-slate-900">{c.nom}</td>
-                    <td className="p-3.5 text-slate-600">{c.telephone || '—'}</td>
-                    <td className="p-3.5 text-slate-500">{c.adresse || '—'}</td>
-                    <td className="p-3.5 font-bold font-display">
+                  <tr key={c.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-6 py-4 font-bold text-[#0F3D5E]">{c.nom}</td>
+                    <td className="px-6 py-4 text-gray-600">{c.telephone || '—'}</td>
+                    <td className="px-6 py-4 text-gray-500">{c.adresse || '—'}</td>
+                    <td className="px-6 py-4 font-bold font-poppins">
                       {c.totalDu > 0 ? (
                         <span className="text-danger">{c.totalDu.toLocaleString('fr-FR')} FCFA</span>
                       ) : (
-                        <span className="text-slate-400">0 FCFA</span>
+                        <span className="text-gray-400">0 FCFA</span>
                       )}
                     </td>
-                    <td className="p-3.5">
+                    <td className="px-6 py-4">
                       {c.totalDu > 0 ? (
-                        <Badge variant="outline" className="text-[10px] text-danger border-danger/30 bg-danger/5 font-semibold">
+                        <Badge variant="outline" className="text-[10px] text-danger border-danger/30 bg-danger/5 font-semibold rounded-full px-2.5 py-0.5">
                           Créance en cours
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] text-success border-success/30 bg-success/5 font-semibold">
+                        <Badge variant="outline" className="text-[10px] text-success border-success/30 bg-success/5 font-semibold rounded-full px-2.5 py-0.5">
                           À jour
                         </Badge>
                       )}
