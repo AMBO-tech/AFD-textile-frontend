@@ -1,9 +1,9 @@
 import React from 'react';
 import { Package, AlertTriangle, Layers, Plus } from 'lucide-react';
-import type { Produit } from '../../data/useMockStore';
+import type { StockEnriched } from '../../data/useMockStore';
 
 interface StockHeaderProps {
-  produits: Produit[];
+  produits: StockEnriched[];
   role: 'gerant' | 'boutiquier';
   onOpenMiseEnStock: () => void;
 }

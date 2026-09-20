@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ImagePlus } from 'lucide-react';
+import { X, ImagePlus, Layers, Tag } from 'lucide-react';
 import type { Produit, Categorie } from '../../data/useMockStore';
+import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -123,21 +124,20 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Catégorie *
-            </label>
-            <select
+            <CustomDropdownSelect
+              label="Catégorie de tissu"
+              placeholder="Sélectionner une catégorie..."
               value={form.categorie}
-              onChange={(e) => setForm((f) => ({ ...f, categorie: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-            >
-              <option value="">Sélectionner une catégorie</option>
-              {categories.map((c) => (
-                <option key={c.nom} value={c.nom}>
-                  {c.nom}
-                </option>
-              ))}
-            </select>
+              onChange={(cat) => setForm((f) => ({ ...f, categorie: cat }))}
+              icon={<Layers size={15} />}
+              menuTitle="Catégories de tissu"
+              options={categories.map((c) => ({
+                value: c.nom,
+                label: c.nom,
+                sublabel: 'Catégorie de tissu',
+                icon: <Tag size={14} className="text-blue-500" />,
+              }))}
+            />
           </div>
 
           <div>

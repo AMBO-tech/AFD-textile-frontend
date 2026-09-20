@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Send, Package } from 'lucide-react';
-import type { Produit, Demande } from '../../data/useMockStore';
+import { X, Send, Package, Ruler } from 'lucide-react';
+import type { StockEnriched, Demande } from '../../data/useMockStore';
+import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface NewDemandeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedProduit: Produit | null;
+  selectedProduit: StockEnriched | null;
   onSubmit: (data: {
     produit: string;
     quantite: number;
@@ -116,17 +117,22 @@ export const NewDemandeModal: React.FC<NewDemandeModalProps> = ({
                 onChange={(e) => setForm((f) => ({ ...f, quantite: e.target.value }))}
                 min="1"
                 placeholder="20"
-                className="w-28 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-gray-900 focus:outline-none"
+                className="w-28 px-3.5 py-2.5 bg-white rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100/60"
               />
-              <select
-                value={form.unite}
-                onChange={(e) => setForm((f) => ({ ...f, unite: e.target.value }))}
-                className="flex-1 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 text-sm text-gray-700 focus:outline-none"
-              >
-                {['mètre', 'yard', 'kilo', 'rouleau', 'pièce'].map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
+              <div className="flex-1">
+                <CustomDropdownSelect
+                  label="Unité"
+                  value={form.unite}
+                  onChange={(val) => setForm((f) => ({ ...f, unite: val }))}
+                  icon={<Ruler size={14} />}
+                  menuTitle="Unité de mesure"
+                  options={['mètre', 'yard', 'kilo', 'rouleau', 'pièce'].map((u) => ({
+                    value: u,
+                    label: u,
+                    icon: <Ruler size={13} className="text-blue-500" />,
+                  }))}
+                />
+              </div>
             </div>
             {/* Raccourcis */}
             <div className="flex gap-1.5 mt-1.5">

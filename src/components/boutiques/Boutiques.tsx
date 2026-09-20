@@ -3,13 +3,14 @@ import { useMockStore } from '../../data/useMockStore';
 import type { BoutiqueFilter, BoutiqueFormData, BoutiqueWithStaff } from './types';
 import BoutiquesList from './BoutiquesList';
 import BoutiqueModal from './BoutiqueModal';
+import BoutiqueStaffModal from './BoutiqueStaffModal';
 import { CheckCircle2 } from 'lucide-react';
 
 export const Boutiques: React.FC = () => {
   const {
     boutiques,
     utilisateurs,
-    produits,
+    stocks,
     addBoutique,
     updateBoutique,
     toggleBoutiqueActif,
@@ -19,20 +20,26 @@ export const Boutiques: React.FC = () => {
   const [filtre, setFiltre] = useState<BoutiqueFilter>('tous');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBoutique, setEditingBoutique] = useState<BoutiqueWithStaff | null>(null);
+  const [staffModalBoutique, setStaffModalBoutique] = useState<BoutiqueWithStaff | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
   // Construction des données enrichies (personnel + stock par boutique)
   const boutiquesWithStaff: BoutiqueWithStaff[] = useMemo(() => {
     return boutiques.map((b) => {
       const staff = utilisateurs.filter((u) => u.boutique === b.id);
-      const nbStock = produits.filter((p) => p.boutique === b.id).length;
+      const nbStock = stocks.filter(
+        (s) =>
+          s.boutiqueId === b.id ||
+          ((b.id === 'b-ent' || b.id === 'entrepot') &&
+            (s.boutiqueId === 'b-ent' || s.boutiqueId === 'entrepot'))
+      ).length;
       return {
         ...b,
         personnel: staff,
         nbArticlesStock: nbStock,
       };
     });
-  }, [boutiques, utilisateurs, produits]);
+  }, [boutiques, utilisateurs, stocks]);
 
   const handleOpenCreate = () => {
     setEditingBoutique(null);
@@ -114,6 +121,7 @@ export const Boutiques: React.FC = () => {
         onOpenCreateModal={handleOpenCreate}
         onEditBoutique={handleOpenEdit}
         onToggleStatus={handleToggleStatus}
+        onViewStaff={setStaffModalBoutique}
       />
 
       {/* Modal d'ajout / modification */}
@@ -125,6 +133,13 @@ export const Boutiques: React.FC = () => {
         }}
         editingBoutique={editingBoutique}
         onSave={handleSave}
+      />
+
+      {/* Modal d'affichage des vendeurs / personnel */}
+      <BoutiqueStaffModal
+        isOpen={Boolean(staffModalBoutique)}
+        onClose={() => setStaffModalBoutique(null)}
+        boutique={staffModalBoutique}
       />
     </div>
   );

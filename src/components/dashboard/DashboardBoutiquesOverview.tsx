@@ -1,11 +1,11 @@
 import React from 'react';
 import { Warehouse, ChevronRight } from 'lucide-react';
-import type { Boutique, Produit, Vente } from '../../data/useMockStore';
+import type { Boutique, StockEnriched, Vente } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
 
 interface DashboardBoutiquesOverviewProps {
   boutiques: Boutique[];
-  produits: Produit[];
+  produits: StockEnriched[];
   ventes: Vente[];
   onNavigate?: (s: string) => void;
 }
@@ -40,7 +40,7 @@ export const DashboardBoutiquesOverview: React.FC<DashboardBoutiquesOverviewProp
             .reduce((s, v) => s + v.montant, 0);
 
           const stockBoutique = produits
-            .filter((p) => p.boutique === b.id)
+            .filter((p) => p.boutique === b.id || p.boutiqueId === b.id)
             .reduce((s, p) => s + p.quantite, 0);
 
           return (

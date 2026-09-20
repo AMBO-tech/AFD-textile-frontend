@@ -10,10 +10,6 @@ interface SalesCartDrawerProps {
   panier: LigneVente[];
   onUpdateQte: (index: number, newQte: number) => void;
   onRemoveItem: (index: number) => void;
-  modePaiement: string;
-  onModePaiementChange: (mode: string) => void;
-  nomClient: string;
-  onNomClientChange: (nom: string) => void;
   onCheckout: () => void;
 }
 
@@ -23,10 +19,6 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
   panier,
   onUpdateQte,
   onRemoveItem,
-  modePaiement,
-  onModePaiementChange,
-  nomClient,
-  onNomClientChange,
   onCheckout,
 }) => {
   if (!isOpen) return null;
@@ -127,54 +119,22 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
         </div>
 
         {panier.length > 0 && (
-          <div className="pt-3 border-t border-gray-100 space-y-3 flex-shrink-0">
-            {/* Nom du client ou Passage */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Client bénéficiaire
-                </label>
-                <input
-                  type="text"
-                  value={nomClient}
-                  onChange={(e) => onNomClientChange(e.target.value)}
-                  placeholder="Passage (Comptoir)"
-                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Moyen d'encaissement
-                </label>
-                <select
-                  value={modePaiement}
-                  onChange={(e) => onModePaiementChange(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-                >
-                  {MODES_PAIEMENT.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
+          <div className="pt-3 border-t border-gray-100 flex-shrink-0">
             {/* Total et encaissement */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 border border-gray-100">
               <div>
                 <div className="text-xs text-gray-500">Montant total net :</div>
-                <div className="font-display font-bold text-xl text-gray-900">{formatMontant(total)}</div>
+                <div className="font-display font-bold text-xl text-blue-900">{formatMontant(total)}</div>
               </div>
 
               <button
                 type="button"
                 onClick={onCheckout}
-                className="px-5 py-2.5 rounded-xl text-white font-semibold text-sm shadow-sm hover:opacity-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-xs shadow-sm hover:opacity-95 transition-all cursor-pointer"
+                style={{ background: '#0F3D5E' }}
               >
-                Encaisser la vente
+                <CreditCard size={15} />
+                <span>Passer à l'encaissement</span>
               </button>
             </div>
           </div>

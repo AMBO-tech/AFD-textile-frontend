@@ -20,16 +20,48 @@ export const CATEGORIES_DATA = [
 
 export const CATEGORIES = CATEGORIES_DATA.map(c => c.nom);
 
-export const PRODUITS = [
-  { id: 'p1', nom: 'Wax Holland Premium', categorie: 'Wax', couleur: 'Multicolore', prix: 4500, quantite: 120, unite: 'mètre', pieces: 6, boutique: 'b1', seuil: 20, photo: 'https://images.unsplash.com/photo-1655682614757-a9a33fa45c93?w=600&q=80' },
-  { id: 'p2', nom: 'Bazin Riche Brodé', categorie: 'Bazin', couleur: 'Bleu Ciel', prix: 6800, quantite: 45, unite: 'mètre', pieces: 3, boutique: 'b1', seuil: 10, photo: 'https://images.unsplash.com/photo-1578509566163-068acd11b8e7?w=600&q=80' },
-  { id: 'p3', nom: 'Satin Imperial', categorie: 'Satin', couleur: 'Champagne', prix: 3200, quantite: 8, unite: 'mètre', pieces: 1, boutique: 'b1', seuil: 15, photo: 'https://images.unsplash.com/photo-1606259458027-54d2a728b6ab?w=600&q=80' },
-  { id: 'p4', nom: 'Ankara Print Vivid', categorie: 'Ankara', couleur: 'Rouge & Or', prix: 3800, quantite: 200, unite: 'mètre', pieces: 10, boutique: 'b2', seuil: 30, photo: 'https://images.unsplash.com/photo-1768212565424-efa3a3852b81?w=600&q=80' },
-  { id: 'p5', nom: 'Kente Tissé Main', categorie: 'Kente', couleur: 'Or & Vert', prix: 12000, quantite: 25, unite: 'yard', pieces: 5, boutique: 'b2', seuil: 5, photo: 'https://images.unsplash.com/photo-1775688425836-be1637ea6292?w=600&q=80' },
-  { id: 'p6', nom: 'Bogolan Authentique', categorie: 'Bogolan', couleur: 'Terre & Crème', prix: 5500, quantite: 3, unite: 'mètre', pieces: 1, boutique: 'b3', seuil: 8, photo: 'https://images.unsplash.com/photo-1591957974074-68daffbf8df8?w=600&q=80' },
-  { id: 'p7', nom: 'Dentelle Française', categorie: 'Dentelle', couleur: 'Blanc Ivoire', prix: 8900, quantite: 60, unite: 'mètre', pieces: 4, boutique: 'b1', seuil: 10, photo: 'https://images.unsplash.com/photo-1634225234360-7c921a9d2400?w=600&q=80' },
-  { id: 'p8', nom: 'Mousseline Légère', categorie: 'Mousseline', couleur: 'Rose Poudré', prix: 2100, quantite: 180, unite: 'mètre', pieces: 9, boutique: 'b3', seuil: 20, photo: 'https://images.unsplash.com/photo-1627052045672-be78a58fcd37?w=600&q=80' },
+export const CATALOGUE_PRODUITS = [
+  { id: 'p1', reference: 'WAX-HOL-001', nom: 'Wax Holland Premium', categorie: 'Wax', couleur: 'Multicolore', motif: 'Motif floral royal', photo: 'https://images.unsplash.com/photo-1655682614757-a9a33fa45c93?w=600&q=80' },
+  { id: 'p2', reference: 'BAZ-RIC-002', nom: 'Bazin Riche Brodé', categorie: 'Bazin', couleur: 'Bleu Ciel', motif: 'Brodé fil argent', photo: 'https://images.unsplash.com/photo-1578509566163-068acd11b8e7?w=600&q=80' },
+  { id: 'p3', reference: 'SAT-IMP-003', nom: 'Satin Imperial', categorie: 'Satin', couleur: 'Champagne', motif: 'Uni soyeux', photo: 'https://images.unsplash.com/photo-1606259458027-54d2a728b6ab?w=600&q=80' },
+  { id: 'p4', reference: 'ANK-VIV-004', nom: 'Ankara Print Vivid', categorie: 'Ankara', couleur: 'Rouge & Or', motif: 'Géométrique vibrant', photo: 'https://images.unsplash.com/photo-1768212565424-efa3a3852b81?w=600&q=80' },
+  { id: 'p5', reference: 'KEN-TIS-005', nom: 'Kente Tissé Main', categorie: 'Kente', couleur: 'Or & Vert', motif: 'Tissage traditionnel Ashanti', photo: 'https://images.unsplash.com/photo-1775688425836-be1637ea6292?w=600&q=80' },
+  { id: 'p6', reference: 'BOG-AUT-006', nom: 'Bogolan Authentique', categorie: 'Bogolan', couleur: 'Terre & Crème', motif: 'Symboles rituels Bambara', photo: 'https://images.unsplash.com/photo-1591957974074-68daffbf8df8?w=600&q=80' },
+  { id: 'p7', reference: 'DEN-FRA-007', nom: 'Dentelle Française', categorie: 'Dentelle', couleur: 'Blanc Ivoire', motif: 'Guipure fine', photo: 'https://images.unsplash.com/photo-1634225234360-7c921a9d2400?w=600&q=80' },
+  { id: 'p8', reference: 'MOU-LEG-008', nom: 'Mousseline Légère', categorie: 'Mousseline', couleur: 'Rose Poudré', motif: 'Voile vaporeux', photo: 'https://images.unsplash.com/photo-1627052045672-be78a58fcd37?w=600&q=80' },
 ];
+
+export const INITIAL_STOCKS = [
+  // Entrepôt Central (b-ent) : Stocks de réserve de gros AFD
+  { id: 'stk_ent_p1', produitId: 'p1', boutiqueId: 'b-ent', quantite: 500, unite: 'mètre', prixVente: 4000, prixMinimal: 3500, seuil: 50, pieces: 25 },
+  { id: 'stk_ent_p2', produitId: 'p2', boutiqueId: 'b-ent', quantite: 300, unite: 'mètre', prixVente: 6000, prixMinimal: 5500, seuil: 30, pieces: 20 },
+  { id: 'stk_ent_p3', produitId: 'p3', boutiqueId: 'b-ent', quantite: 200, unite: 'mètre', prixVente: 2800, prixMinimal: 2500, seuil: 20, pieces: 12 },
+  { id: 'stk_ent_p4', produitId: 'p4', boutiqueId: 'b-ent', quantite: 400, unite: 'mètre', prixVente: 3200, prixMinimal: 2900, seuil: 40, pieces: 20 },
+  { id: 'stk_ent_p5', produitId: 'p5', boutiqueId: 'b-ent', quantite: 150, unite: 'yard', prixVente: 10000, prixMinimal: 9000, seuil: 15, pieces: 30 },
+  { id: 'stk_ent_p6', produitId: 'p6', boutiqueId: 'b-ent', quantite: 80, unite: 'mètre', prixVente: 4800, prixMinimal: 4200, seuil: 10, pieces: 8 },
+  { id: 'stk_ent_p7', produitId: 'p7', boutiqueId: 'b-ent', quantite: 120, unite: 'mètre', prixVente: 7800, prixMinimal: 7000, seuil: 15, pieces: 10 },
+  { id: 'stk_ent_p8', produitId: 'p8', boutiqueId: 'b-ent', quantite: 350, unite: 'mètre', prixVente: 1800, prixMinimal: 1500, seuil: 30, pieces: 18 },
+
+  // Boutique Dakar Plateau (b1)
+  { id: 'stk_b1_p1', produitId: 'p1', boutiqueId: 'b1', quantite: 120, unite: 'mètre', prixVente: 4500, prixMinimal: 4000, seuil: 20, pieces: 6 },
+  { id: 'stk_b1_p2', produitId: 'p2', boutiqueId: 'b1', quantite: 45, unite: 'mètre', prixVente: 6800, prixMinimal: 6200, seuil: 10, pieces: 3 },
+  { id: 'stk_b1_p3', produitId: 'p3', boutiqueId: 'b1', quantite: 8, unite: 'mètre', prixVente: 3200, prixMinimal: 2900, seuil: 15, pieces: 1 },
+  { id: 'stk_b1_p7', produitId: 'p7', boutiqueId: 'b1', quantite: 60, unite: 'mètre', prixVente: 8900, prixMinimal: 8000, seuil: 10, pieces: 4 },
+
+  // Boutique Pikine (b2)
+  { id: 'stk_b2_p1', produitId: 'p1', boutiqueId: 'b2', quantite: 80, unite: 'mètre', prixVente: 4500, prixMinimal: 4000, seuil: 15, pieces: 4 },
+  { id: 'stk_b2_p4', produitId: 'p4', boutiqueId: 'b2', quantite: 200, unite: 'mètre', prixVente: 3800, prixMinimal: 3400, seuil: 30, pieces: 10 },
+  { id: 'stk_b2_p5', produitId: 'p5', boutiqueId: 'b2', quantite: 25, unite: 'yard', prixVente: 12000, prixMinimal: 11000, seuil: 5, pieces: 5 },
+
+  // Boutique Thiès (b3)
+  { id: 'stk_b3_p2', produitId: 'p2', boutiqueId: 'b3', quantite: 30, unite: 'mètre', prixVente: 6800, prixMinimal: 6200, seuil: 10, pieces: 2 },
+  { id: 'stk_b3_p6', produitId: 'p6', boutiqueId: 'b3', quantite: 3, unite: 'mètre', prixVente: 5500, prixMinimal: 5000, seuil: 8, pieces: 1 },
+  { id: 'stk_b3_p8', produitId: 'p8', boutiqueId: 'b3', quantite: 180, unite: 'mètre', prixVente: 2100, prixMinimal: 1900, seuil: 20, pieces: 9 },
+];
+
+// Alias rétrocompatible pour les imports existants
+export const PRODUITS = CATALOGUE_PRODUITS;
+export const STOCKS = INITIAL_STOCKS;
 
 export const CLIENTS = [
   { id: 'c1', nom: 'Mariama Fall', telephone: '+221 77 123 45 67', adresse: 'Dakar, Médina', solde: 125000, boutique: 'b1' },

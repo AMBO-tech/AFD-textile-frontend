@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import {
   BOUTIQUES,
   CATEGORIES_DATA,
-  PRODUITS,
+  CATALOGUE_PRODUITS,
+  INITIAL_STOCKS,
   CLIENTS,
   VENTES,
   DEMANDES,
@@ -15,7 +16,52 @@ import {
   formatMontant,
 } from './mock';
 
-export type Produit = typeof PRODUITS[0];
+export interface Produit {
+  id: string;
+  reference?: string;
+  nom: string;
+  categorie: string;
+  couleur?: string;
+  motif?: string;
+  photo?: string;
+  description?: string;
+  // Champs optionnels de rétrocompatibilité pour interfaces legacy
+  prix?: number;
+  prixVente?: number;
+  prixMinimal?: number;
+  quantite?: number;
+  unite?: string;
+  seuil?: number;
+  pieces?: number;
+  boutique?: string;
+}
+
+export interface StockItem {
+  id: string;
+  produitId: string;
+  boutiqueId: string;
+  quantite: number;
+  unite: string;
+  prixVente: number;
+  prixMinimal: number;
+  seuil: number;
+  pieces?: number;
+}
+
+export interface StockEnriched extends Produit {
+  stockId: string;
+  produitId: string;
+  boutiqueId: string;
+  boutique: string;
+  quantite: number;
+  unite: string;
+  prix: number;
+  prixVente: number;
+  prixMinimal: number;
+  seuil: number;
+  pieces?: number;
+}
+
 export type Boutique = typeof BOUTIQUES[0];
 export type Categorie = typeof CATEGORIES_DATA[0];
 export type Demande = typeof DEMANDES[0] & { unite?: string };
@@ -69,9 +115,18 @@ export interface SessionUser {
   boutiqueId?: string;
 }
 
+const matchesLocation = (a?: string, b?: string) => {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const isEntrepotA = a === 'entrepot' || a === 'b-ent';
+  const isEntrepotB = b === 'entrepot' || b === 'b-ent';
+  return isEntrepotA && isEntrepotB;
+};
+
 interface MockStoreState {
   session: SessionUser | null;
   produits: Produit[];
+  stocks: StockItem[];
   categories: Categorie[];
   boutiques: Boutique[];
   ventes: Vente[];
@@ -82,13 +137,29 @@ interface MockStoreState {
   notifications: NotificationItem[];
   historique: HistoriqueItem[];
 
+  // Selectors
+  getStocksEnriched: (boutiqueId?: string) => StockEnriched[];
+  getStockItem: (produitId: string, boutiqueId: string) => StockItem | undefined;
+  getCatalogueProduit: (produitId: string) => Produit | undefined;
+
   // Actions
   setSession: (session: SessionUser | null) => void;
   
-  // Stock
-  adjustStock: (produitId: string, qteChange: number, motif: string, auteur?: string) => void;
+  // Stock & Catalogue
+  adjustStock: (produitOrStockId: string, qteChange: number, motif: string, auteur?: string, boutiqueId?: string) => void;
+  upsertStockItem: (item: {
+    produitId: string;
+    boutiqueId: string;
+    quantite: number;
+    unite: string;
+    prixVente: number;
+    prixMinimal?: number;
+    seuil?: number;
+    pieces?: number;
+  }) => StockItem;
   addProduit: (nouveauProduit: Omit<Produit, 'id'>) => Produit;
   updateProduit: (id: string, modifs: Partial<Produit>) => void;
+  deleteProduit: (id: string) => void;
   addCategorie: (nouvelleCat: Categorie) => void;
   
   // Ventes
@@ -121,7 +192,13 @@ interface MockStoreState {
 
   // Demandes & Transferts
   createDemande: (nouvelleDemande: Omit<Demande, 'id' | 'statut' | 'date'>) => Demande;
-  updateDemandeStatut: (demandeId: string, statut: Demande['statut'], qteAccordee?: number) => void;
+  updateDemandeStatut: (
+    demandeId: string,
+    statut: Demande['statut'],
+    qteAccordee?: number,
+    sourceBoutiqueId?: string,
+    managerName?: string
+  ) => void;
   createTransfert: (params: { produitNom: string; sourceId: string; destId: string; quantite: number; unite: string; pieces?: number; auteur: string }) => void;
 
   // Notifications
@@ -148,7 +225,7 @@ const INITIAL_CLIENTS: ClientDetailed[] = CLIENTS.map((c) => ({
     id: 'cr_init_' + c.id,
     date: '12/09/2026',
     lignes: [{
-      produitId: '',
+      produitId: 'p1',
       nom: 'Marchandises diverses',
       quantite: 1,
       unite: 'pièce',
@@ -161,7 +238,8 @@ const INITIAL_CLIENTS: ClientDetailed[] = CLIENTS.map((c) => ({
 
 export const useMockStore = create<MockStoreState>((set, get) => ({
   session: null,
-  produits: [...PRODUITS],
+  produits: [...CATALOGUE_PRODUITS],
+  stocks: [...INITIAL_STOCKS],
   categories: [...CATEGORIES_DATA],
   boutiques: [...BOUTIQUES],
   ventes: [...VENTES],
@@ -174,16 +252,71 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
   setSession: (session) => set({ session }),
 
-  adjustStock: (produitId, qteChange, motif, auteur) => {
-    const state = get();
-    const target = state.produits.find((p) => p.id === produitId);
-    if (!target) return;
+  getStocksEnriched: (boutiqueId?: string) => {
+    const { produits, stocks } = get();
+    const filteredStocks = boutiqueId && boutiqueId !== 'tous'
+      ? stocks.filter((s) => matchesLocation(s.boutiqueId, boutiqueId))
+      : stocks;
 
-    const nouvelleQte = Math.max(0, target.quantite + qteChange);
-    const updatedProduits = state.produits.map((p) =>
-      p.id === produitId ? { ...p, quantite: nouvelleQte } : p
+    return filteredStocks.map((s) => {
+      const p = produits.find((prod) => prod.id === s.produitId) || {
+        id: s.produitId,
+        nom: 'Tissu inconnu',
+        categorie: 'Général',
+        couleur: '',
+        photo: '',
+        reference: '',
+      };
+
+      const enriched: StockEnriched = {
+        ...p,
+        stockId: s.id,
+        produitId: s.produitId,
+        boutiqueId: s.boutiqueId,
+        boutique: s.boutiqueId,
+        quantite: s.quantite,
+        unite: s.unite,
+        prix: s.prixVente,
+        prixVente: s.prixVente,
+        prixMinimal: s.prixMinimal,
+        seuil: s.seuil,
+        pieces: s.pieces,
+      };
+      return enriched;
+    });
+  },
+
+  getStockItem: (produitId: string, boutiqueId: string) => {
+    return get().stocks.find(
+      (s) => s.produitId === produitId && matchesLocation(s.boutiqueId, boutiqueId)
     );
+  },
 
+  getCatalogueProduit: (produitId: string) => {
+    return get().produits.find((p) => p.id === produitId);
+  },
+
+  adjustStock: (produitOrStockId, qteChange, motif, auteur, boutiqueId) => {
+    const state = get();
+    const targetBoutique = boutiqueId || state.session?.boutiqueId;
+
+    let targetStock: StockItem | undefined;
+    const updatedStocks = state.stocks.map((s) => {
+      const isMatch =
+        s.id === produitOrStockId ||
+        (s.produitId === produitOrStockId &&
+          (!targetBoutique || matchesLocation(s.boutiqueId, targetBoutique)));
+
+      if (isMatch && !targetStock) {
+        targetStock = s;
+        return { ...s, quantite: Math.max(0, s.quantite + qteChange) };
+      }
+      return s;
+    });
+
+    if (!targetStock) return;
+
+    const prod = state.produits.find((p) => p.id === targetStock?.produitId);
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const heureStr = now.toTimeString().slice(0, 5);
@@ -192,23 +325,86 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const newHisto: HistoriqueItem = {
       id: 'h' + (state.historique.length + 1),
       action: qteChange > 0 ? 'Entrée stock' : 'Ajustement stock',
-      details: `${motif} (${qteChange > 0 ? '+' : ''}${qteChange} ${target.unite} sur ${target.nom})`,
+      details: `${motif} (${qteChange > 0 ? '+' : ''}${qteChange} ${targetStock.unite} sur ${prod?.nom || targetStock.produitId})`,
       utilisateur: currentUser,
-      boutique: target.boutique,
+      boutique: targetStock.boutiqueId,
       date: `${dateStr} ${heureStr}`,
       typeAction: 'stock',
     };
 
     set({
-      produits: updatedProduits,
+      stocks: updatedStocks,
       historique: [newHisto, ...state.historique],
     });
+  },
+
+  upsertStockItem: (item) => {
+    const state = get();
+    const existingIndex = state.stocks.findIndex(
+      (s) => s.produitId === item.produitId && matchesLocation(s.boutiqueId, item.boutiqueId)
+    );
+    let updatedStocks: StockItem[];
+    let resultingItem: StockItem;
+
+    if (existingIndex >= 0) {
+      const existing = state.stocks[existingIndex];
+      resultingItem = {
+        ...existing,
+        quantite: existing.quantite + item.quantite,
+        prixVente: item.prixVente || existing.prixVente,
+        prixMinimal: item.prixMinimal ?? existing.prixMinimal,
+        unite: item.unite || existing.unite,
+        seuil: item.seuil ?? existing.seuil,
+        pieces: item.pieces ?? existing.pieces,
+      };
+      updatedStocks = [...state.stocks];
+      updatedStocks[existingIndex] = resultingItem;
+    } else {
+      resultingItem = {
+        id: `stk_${item.boutiqueId}_${item.produitId}_${Date.now()}`,
+        produitId: item.produitId,
+        boutiqueId: item.boutiqueId,
+        quantite: item.quantite,
+        unite: item.unite,
+        prixVente: item.prixVente,
+        prixMinimal: item.prixMinimal ?? Math.round(item.prixVente * 0.9),
+        seuil: item.seuil ?? 10,
+        pieces: item.pieces ?? Math.ceil(item.quantite / 20),
+      };
+      updatedStocks = [...state.stocks, resultingItem];
+    }
+
+    const prod = state.produits.find((p) => p.id === item.produitId);
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 5);
+
+    const newHisto: HistoriqueItem = {
+      id: 'h' + (state.historique.length + 1),
+      action: 'Mise en stock',
+      details: `Mise en stock de ${item.quantite} ${item.unite} sur ${prod?.nom || item.produitId} (${formatMontant(item.prixVente)}/u, Min: ${formatMontant(resultingItem.prixMinimal)})`,
+      utilisateur: state.session?.nom || 'Gérant',
+      boutique: item.boutiqueId,
+      date: `${dateStr} ${heureStr}`,
+      typeAction: 'stock',
+    };
+
+    set({
+      stocks: updatedStocks,
+      historique: [newHisto, ...state.historique],
+    });
+
+    return resultingItem;
   },
 
   addProduit: (nouveauProduit) => {
     const state = get();
     const newId = 'p' + (state.produits.length + 1);
-    const fullProd: Produit = { ...nouveauProduit, id: newId };
+    const fullProd: Produit = {
+      ...nouveauProduit,
+      id: newId,
+      reference: nouveauProduit.reference || `REF-${newId.toUpperCase()}`,
+    };
 
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
@@ -217,10 +413,10 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     const newHisto: HistoriqueItem = {
       id: 'h' + (state.historique.length + 1),
-      action: 'Ajout produit',
-      details: `Nouveau modèle créé : ${fullProd.nom} (${fullProd.categorie})`,
+      action: 'Ajout catalogue',
+      details: `Nouveau modèle de tissu créé : ${fullProd.nom} (${fullProd.categorie})`,
       utilisateur: currentUser,
-      boutique: fullProd.boutique,
+      boutique: 'Catalogue AFD',
       date: `${dateStr} ${heureStr}`,
       typeAction: 'catalogue',
     };
@@ -239,6 +435,13 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     }));
   },
 
+  deleteProduit: (id) => {
+    set((state) => ({
+      produits: state.produits.filter((p) => p.id !== id),
+      stocks: state.stocks.filter((s) => s.produitId !== id),
+    }));
+  },
+
   addCategorie: (nouvelleCat) => {
     set((state) => ({
       categories: [nouvelleCat, ...state.categories],
@@ -249,13 +452,23 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const state = get();
     const newId = 'v' + (state.ventes.length + 1);
     const fullVente: Vente = { ...nouvelleVente, id: newId };
+    const targetBoutique = fullVente.boutique || state.session?.boutiqueId || 'b1';
 
-    // Décrémenter le stock du produit vendu
-    const updatedProduits = state.produits.map((p) => {
-      if (p.id === fullVente.produitId || p.nom.toLowerCase() === fullVente.produit.toLowerCase()) {
-        return { ...p, quantite: Math.max(0, p.quantite - fullVente.quantite) };
+    // Décrémenter le stock physique de la boutique correspondante
+    const updatedStocks = state.stocks.map((s) => {
+      const isTargetProd =
+        s.produitId === fullVente.produitId ||
+        s.id === fullVente.produitId ||
+        state.produits.find((p) => p.id === s.produitId)?.nom.toLowerCase() ===
+          fullVente.produit.toLowerCase();
+
+      if (isTargetProd && matchesLocation(s.boutiqueId, targetBoutique)) {
+        return {
+          ...s,
+          quantite: Math.max(0, s.quantite - fullVente.quantite),
+        };
       }
-      return p;
+      return s;
     });
 
     // Journal d'audit
@@ -264,14 +477,14 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       action: 'Vente',
       details: `Vente ${fullVente.typeVente === 'credit' ? 'à crédit' : 'validée'} - ${fullVente.produit} - ${fullVente.quantite}${fullVente.unite} - ${formatMontant(fullVente.montant)} (${fullVente.paiement}) - Client ${fullVente.client}`,
       utilisateur: fullVente.vendeur,
-      boutique: fullVente.boutique,
+      boutique: targetBoutique,
       date: `${fullVente.date} ${fullVente.heure}`,
       typeAction: 'vente',
     };
 
     set({
       ventes: [fullVente, ...state.ventes],
-      produits: updatedProduits,
+      stocks: updatedStocks,
       historique: [newHisto, ...state.historique],
     });
 
@@ -283,13 +496,41 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const target = state.ventes.find((v) => v.id === venteId);
     if (!target || target.statut === 'annulée') return;
 
-    // Réinjecter le stock
-    const updatedProduits = state.produits.map((p) => {
-      if (p.id === target.produitId || p.nom.toLowerCase() === target.produit.toLowerCase()) {
-        return { ...p, quantite: p.quantite + target.quantite };
+    const targetBoutique = target.boutique || state.session?.boutiqueId || 'b1';
+
+    // Réinjecter dans le stock physique de la boutique correspondante
+    let stockFound = false;
+    let updatedStocks = state.stocks.map((s) => {
+      const isTargetProd =
+        s.produitId === target.produitId ||
+        s.id === target.produitId ||
+        state.produits.find((p) => p.id === s.produitId)?.nom.toLowerCase() ===
+          target.produit.toLowerCase();
+
+      if (isTargetProd && matchesLocation(s.boutiqueId, targetBoutique)) {
+        stockFound = true;
+        return {
+          ...s,
+          quantite: s.quantite + target.quantite,
+        };
       }
-      return p;
+      return s;
     });
+
+    // Si aucun stock existant n'est trouvé pour ce produit dans cette boutique, création d'une ligne
+    if (!stockFound && target.produitId) {
+      const newStockRow: StockItem = {
+        id: `stk_${targetBoutique}_${target.produitId}_${Date.now()}`,
+        produitId: target.produitId,
+        boutiqueId: targetBoutique,
+        quantite: target.quantite,
+        unite: target.unite || 'mètre',
+        prixVente: Math.round(target.montant / target.quantite),
+        prixMinimal: Math.round((target.montant / target.quantite) * 0.9),
+        seuil: 10,
+      };
+      updatedStocks = [...updatedStocks, newStockRow];
+    }
 
     const updatedVentes = state.ventes.map((v) =>
       v.id === venteId ? { ...v, statut: 'annulée' as const } : v
@@ -303,16 +544,34 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const newHisto: HistoriqueItem = {
       id: 'h' + (state.historique.length + 1),
       action: 'Annulation',
-      details: `Annulation vente #${venteId} - ${target.produit} (${target.quantite}${target.unite}) - Motif : ${motif}`,
+      details: `Annulation vente #${venteId} - ${target.produit} (${target.quantite}${target.unite}) - Réinjection stock ${targetBoutique} - Motif : ${motif}`,
       utilisateur: currentUser,
-      boutique: target.boutique,
+      boutique: targetBoutique,
       date: `${dateStr} ${heureStr}`,
       typeAction: 'annulation',
     };
 
+    // Si c'est une vente à crédit, réajuster le dossier client
+    let updatedClients = state.clients;
+    if (target.typeVente === 'credit' && target.client) {
+      updatedClients = state.clients.map((c) => {
+        if (c.nom.toLowerCase() !== target.client.toLowerCase()) return c;
+        return {
+          ...c,
+          creances: c.creances.filter((cr) => {
+            const matchProd = cr.lignes.some(
+              (l) => l.produitId === target.produitId || l.nom.toLowerCase() === target.produit.toLowerCase()
+            );
+            return !(matchProd && Math.abs(cr.montantTotal - target.montant) < 100);
+          }),
+        };
+      });
+    }
+
     set({
       ventes: updatedVentes,
-      produits: updatedProduits,
+      stocks: updatedStocks,
+      clients: updatedClients,
       historique: [newHisto, ...state.historique],
     });
   },
@@ -388,13 +647,17 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       typeVente: 'credit',
     };
 
-    // 3. Décrémentation physique du stock pour chaque produit commandé
-    const updatedProduits = state.produits.map((p) => {
-      const ligneAchetee = lignes.find((l) => l.produitId === p.id);
-      if (!ligneAchetee) return p;
+    // 3. Décrémentation physique du stock dans la boutique du client
+    const updatedStocks = state.stocks.map((s) => {
+      const ligneAchetee = lignes.find(
+        (l) =>
+          (l.produitId === s.produitId || l.produitId === s.id) &&
+          matchesLocation(s.boutiqueId, boutiqueId)
+      );
+      if (!ligneAchetee) return s;
       return {
-        ...p,
-        quantite: Math.max(0, p.quantite - ligneAchetee.quantite),
+        ...s,
+        quantite: Math.max(0, s.quantite - ligneAchetee.quantite),
       };
     });
 
@@ -418,7 +681,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     set({
       ventes: [newVente, ...state.ventes],
-      produits: updatedProduits,
+      stocks: updatedStocks,
       clients: updatedClients,
       historique: [newHisto, ...state.historique],
     });
@@ -466,21 +729,26 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const state = get();
     const newId = 'd' + (state.demandes.length + 1);
     const dateStr = new Date().toISOString().split('T')[0];
+    const nomBoutiqueDemande =
+      state.boutiques.find((b) => b.id === nouvelleDemande.boutique_demande)?.nom ||
+      nouvelleDemande.boutique_demande;
+
     const fullDemande: Demande = {
       ...nouvelleDemande,
       id: newId,
       statut: 'en_attente',
       date: dateStr,
+      boutique_source: nouvelleDemande.boutique_source || 'reseau',
     };
 
-    // Notification associée
+    // Notification diffusée à tous les gérants du réseau
     const newNotif: NotificationItem = {
       id: 'n' + (state.notifications.length + 1),
       type: 'demande',
-      message: `Nouvelle demande de ${fullDemande.demandeur} : ${fullDemande.produit} (${fullDemande.quantite}m)`,
+      message: `Nouvelle demande réseau de ${fullDemande.demandeur} (${nomBoutiqueDemande}) : ${fullDemande.produit} (${fullDemande.quantite} ${fullDemande.unite || 'm'})`,
       date: `${dateStr} ${new Date().toTimeString().slice(0, 5)}`,
       lu: false,
-      boutique: fullDemande.boutique_source,
+      boutique: 'tous',
     };
 
     set({
@@ -491,17 +759,136 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     return fullDemande;
   },
 
-  updateDemandeStatut: (demandeId, statut, qteAccordee) => {
-    set((state) => ({
+  updateDemandeStatut: (demandeId, statut, qteAccordee, sourceBoutiqueId, managerName) => {
+    const state = get();
+    const target = state.demandes.find((d) => d.id === demandeId);
+    if (!target) return;
+
+    const qte = qteAccordee !== undefined ? qteAccordee : target.quantite;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 5);
+
+    let updatedStocks = [...state.stocks];
+    const newHistoItems: HistoriqueItem[] = [];
+    const newNotifs: NotificationItem[] = [];
+
+    // 1. Prise en charge et expédition par le premier gérant :
+    if (statut === 'en_transfert' && sourceBoutiqueId) {
+      updatedStocks = updatedStocks.map((s) => {
+        const isMatch =
+          (s.produitId === target.produit ||
+            s.id === target.produit ||
+            state.produits.find((p) => p.id === s.produitId)?.nom.toLowerCase() ===
+              target.produit.toLowerCase()) &&
+          matchesLocation(s.boutiqueId, sourceBoutiqueId);
+
+        if (isMatch) {
+          return { ...s, quantite: Math.max(0, s.quantite - qte) };
+        }
+        return s;
+      });
+
+      const nomSource =
+        state.boutiques.find((b) => b.id === sourceBoutiqueId)?.nom || sourceBoutiqueId;
+      const nomDest =
+        state.boutiques.find((b) => b.id === target.boutique_demande)?.nom || target.boutique_demande;
+
+      newHistoItems.push({
+        id: 'h' + (state.historique.length + 1),
+        action: 'Transfert réassort',
+        details: `Prise en charge réassort #${demandeId} : ${qte} ${target.unite || 'm'} de ${target.produit} expédiés depuis ${nomSource} vers ${nomDest}`,
+        utilisateur: managerName || 'Gérant',
+        boutique: sourceBoutiqueId,
+        date: `${dateStr} ${heureStr}`,
+        typeAction: 'transfert',
+      });
+
+      newNotifs.push({
+        id: 'n' + (state.notifications.length + 1),
+        type: 'transfert' as any,
+        message: `${nomSource} a pris en charge votre demande de ${target.produit} (${qte} ${target.unite || 'm'}). Expédition en cours.`,
+        date: `${dateStr} ${heureStr}`,
+        lu: false,
+        boutique: target.boutique_demande,
+      });
+    }
+
+    // 2. Réception confirmée par la boutique demandeuse :
+    if (statut === 'livree') {
+      let destFound = false;
+      updatedStocks = updatedStocks.map((s) => {
+        const isMatch =
+          (s.produitId === target.produit ||
+            s.id === target.produit ||
+            state.produits.find((p) => p.id === s.produitId)?.nom.toLowerCase() ===
+              target.produit.toLowerCase()) &&
+          matchesLocation(s.boutiqueId, target.boutique_demande);
+
+        if (isMatch) {
+          destFound = true;
+          return { ...s, quantite: s.quantite + qte };
+        }
+        return s;
+      });
+
+      if (!destFound) {
+        const prodObj = state.produits.find(
+          (p) =>
+            p.nom.toLowerCase() === target.produit.toLowerCase() ||
+            p.id === target.produit
+        );
+        if (prodObj) {
+          updatedStocks.push({
+            id: `stk_${target.boutique_demande}_${prodObj.id}_${Date.now()}`,
+            produitId: prodObj.id,
+            boutiqueId: target.boutique_demande,
+            quantite: qte,
+            unite: target.unite || 'mètre',
+            prixVente: 5000,
+            prixMinimal: 4500,
+            seuil: 10,
+          });
+        }
+      }
+
+      const nomDest =
+        state.boutiques.find((b) => b.id === target.boutique_demande)?.nom || target.boutique_demande;
+
+      newHistoItems.push({
+        id: 'h' + (state.historique.length + 1),
+        action: 'Réception réassort',
+        details: `Réception réassort #${demandeId} : ${qte} ${target.unite || 'm'} de ${target.produit} ajoutés à ${nomDest}`,
+        utilisateur: managerName || 'Boutiquier',
+        boutique: target.boutique_demande,
+        date: `${dateStr} ${heureStr}`,
+        typeAction: 'transfert',
+      });
+
+      newNotifs.push({
+        id: 'n' + (state.notifications.length + 1),
+        type: 'validation',
+        message: `Réassort livré : ${qte} ${target.unite || 'm'} de ${target.produit} ajoutés à votre stock physique.`,
+        date: `${dateStr} ${heureStr}`,
+        lu: false,
+        boutique: target.boutique_demande,
+      });
+    }
+
+    set({
       demandes: state.demandes.map((d) => {
         if (d.id !== demandeId) return d;
         return {
           ...d,
           statut,
-          quantite: qteAccordee !== undefined ? qteAccordee : d.quantite,
+          quantite: qte,
+          boutique_source: sourceBoutiqueId || d.boutique_source,
         };
       }),
-    }));
+      stocks: updatedStocks,
+      historique: [...newHistoItems, ...state.historique],
+      notifications: [...newNotifs, ...state.notifications],
+    });
   },
 
   createTransfert: ({ produitNom, sourceId, destId, quantite, unite, pieces, auteur }) => {
@@ -510,21 +897,55 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const dateStr = now.toISOString().split('T')[0];
     const heureStr = now.toTimeString().slice(0, 5);
 
-    // Ajuster le stock source (diminuer) et destination (augmenter)
-    const updatedProduits = state.produits.map((p) => {
-      if (p.nom.toLowerCase() === produitNom.toLowerCase()) {
-        if (p.boutique === sourceId) {
-          return { ...p, quantite: Math.max(0, p.quantite - quantite) };
-        }
-        if (p.boutique === destId) {
-          return { ...p, quantite: p.quantite + quantite };
-        }
+    const prod = state.produits.find(
+      (p) => p.nom.toLowerCase() === produitNom.toLowerCase()
+    );
+    const prodId = prod?.id;
+
+    let sourceStockItem: StockItem | undefined;
+    let destStockFound = false;
+
+    // 1. Décrémenter la source
+    let updatedStocks = state.stocks.map((s) => {
+      const matchProd = prodId ? s.produitId === prodId : false;
+      if (matchProd && matchesLocation(s.boutiqueId, sourceId)) {
+        sourceStockItem = s;
+        return { ...s, quantite: Math.max(0, s.quantite - quantite) };
       }
-      return p;
+      return s;
     });
 
+    // 2. Incrémenter la destination ou créer la ligne de stock
+    updatedStocks = updatedStocks.map((s) => {
+      const matchProd = prodId ? s.produitId === prodId : false;
+      if (matchProd && matchesLocation(s.boutiqueId, destId)) {
+        destStockFound = true;
+        return {
+          ...s,
+          quantite: s.quantite + quantite,
+          pieces: pieces ? (s.pieces || 0) + pieces : s.pieces,
+        };
+      }
+      return s;
+    });
+
+    if (!destStockFound && prodId) {
+      const newStockRow: StockItem = {
+        id: `stk_${destId}_${prodId}_${Date.now()}`,
+        produitId: prodId,
+        boutiqueId: destId,
+        quantite,
+        unite: unite || sourceStockItem?.unite || 'mètre',
+        prixVente: sourceStockItem?.prixVente || 4500,
+        prixMinimal: sourceStockItem?.prixMinimal || 4000,
+        seuil: 10,
+        pieces: pieces || Math.ceil(quantite / 20),
+      };
+      updatedStocks = [...updatedStocks, newStockRow];
+    }
+
     const getNomEmplacement = (id: string) => {
-      if (id === 'entrepot') return 'Entrepôt Central';
+      if (id === 'entrepot' || id === 'b-ent') return 'Entrepôt Central Yoff';
       return state.boutiques.find((b) => b.id === id)?.nom || id;
     };
 
@@ -539,7 +960,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     };
 
     set({
-      produits: updatedProduits,
+      stocks: updatedStocks,
       historique: [newHisto, ...state.historique],
     });
   },
@@ -626,7 +1047,6 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
   addUtilisateur: (nouvelUtilisateur) => {
     const state = get();
     const newId = 'u' + (state.utilisateurs.length + 1);
-    // Génération du token cryptographique fictif de 64 caractères
     const randomHex = Array.from({ length: 4 }, () =>
       Math.random().toString(36).substring(2, 15)
     ).join('').slice(0, 64);
@@ -729,4 +1149,3 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 }));
 
 export { VENTES_SEMAINE, TOP_PRODUITS, formatMontant };
-

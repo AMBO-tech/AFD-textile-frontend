@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useMockStore, type Produit } from '../../data/useMockStore';
+import { toast } from 'sonner';
+import { useMockStore, type Produit, type StockEnriched } from '../../data/useMockStore';
 import StockHeader from './StockHeader';
 import StockFilters from './StockFilters';
 import StockCategoryGroup from './StockCategoryGroup';
@@ -24,9 +25,10 @@ export const Stock: React.FC<StockProps> = ({
     categories,
     boutiques,
     adjustStock,
+    upsertStockItem,
     addProduit,
-    updateProduit,
     addCategorie,
+    getStocksEnriched,
   } = useMockStore();
 
   const [search, setSearch] = useState('');
@@ -42,18 +44,17 @@ export const Stock: React.FC<StockProps> = ({
   const [showMiseEnStock, setShowMiseEnStock] = useState(false);
   const [showQuickCatModal, setShowQuickCatModal] = useState(false);
   const [showQuickProdModal, setShowQuickProdModal] = useState(false);
-  const [modalEntreeRapide, setModalEntreeRapide] = useState<Produit | null>(null);
+  const [modalEntreeRapide, setModalEntreeRapide] = useState<StockEnriched | null>(null);
 
-  // Filtrage selon le rôle et les critères
+  // Stocks physiques enrichis selon l'emplacement
+  const stocksEnriched = useMemo(() => {
+    const targetLoc = role === 'boutiquier' ? boutiqueId : filtreEmplacement;
+    return getStocksEnriched(targetLoc);
+  }, [getStocksEnriched, role, boutiqueId, filtreEmplacement]);
+
+  // Filtrage selon la catégorie et la recherche
   const produitsFiltres = useMemo(() => {
-    return produits.filter((p) => {
-      // Filtre emplacement selon le rôle
-      if (role === 'boutiquier') {
-        if (p.boutique !== boutiqueId) return false;
-      } else if (filtreEmplacement !== 'tous') {
-        if (p.boutique !== filtreEmplacement) return false;
-      }
-
+    return stocksEnriched.filter((p) => {
       // Filtre catégorie
       if (filtreCat !== 'toutes' && p.categorie !== filtreCat) {
         return false;
@@ -65,13 +66,14 @@ export const Stock: React.FC<StockProps> = ({
         return (
           p.nom.toLowerCase().includes(query) ||
           p.categorie.toLowerCase().includes(query) ||
-          p.couleur.toLowerCase().includes(query)
+          (p.couleur && p.couleur.toLowerCase().includes(query)) ||
+          (p.reference && p.reference.toLowerCase().includes(query))
         );
       }
 
       return true;
     });
-  }, [produits, role, boutiqueId, filtreEmplacement, filtreCat, search]);
+  }, [stocksEnriched, filtreCat, search]);
 
   const toggleCategory = (catNom: string) => {
     setOuvertes((prev) => {
@@ -134,6 +136,8 @@ export const Stock: React.FC<StockProps> = ({
               onToggle={() => toggleCategory(categorie.nom)}
               onEntreeRapide={(prod) => setModalEntreeRapide(prod)}
               onVenteRapide={(id) => onNavigate?.('ventes')}
+              boutiques={boutiques}
+              afficherEmplacement={role === 'gerant' || filtreEmplacement === 'tous'}
             />
           ))
         )}
@@ -148,36 +152,35 @@ export const Stock: React.FC<StockProps> = ({
         boutiques={boutiques}
         role={role}
         boutiqueId={boutiqueId}
+        emplacementInitial={filtreEmplacement !== 'tous' ? filtreEmplacement : (role === 'boutiquier' ? boutiqueId : 'entrepot')}
         onOpenNewCat={() => setShowQuickCatModal(true)}
         onOpenNewProd={() => setShowQuickProdModal(true)}
-        onSubmit={({ produitId, quantite, prix, unite, seuil, emplacement }) => {
-          // Si le produit existe déjà à cet emplacement, on ajuste, sinon on met à jour
-          const existing = produits.find((p) => p.id === produitId);
-          if (existing && existing.boutique === emplacement) {
-            adjustStock(produitId, quantite, 'Mise en stock wizard');
-            updateProduit(produitId, { prix, unite, seuil });
-          } else if (existing) {
-            // Créer une déclinaison pour cette boutique
-            addProduit({
-              nom: existing.nom,
-              categorie: existing.categorie,
-              couleur: existing.couleur,
-              prix,
-              quantite,
-              unite,
-              pieces: Math.ceil(quantite / 20),
-              boutique: emplacement,
-              seuil,
-              photo: existing.photo,
-            });
-          }
+        onSubmit={({ produitId, quantite, prix, prixMinimal, unite, pieces, seuil, emplacement }) => {
+          upsertStockItem({
+            produitId,
+            boutiqueId: emplacement,
+            quantite,
+            prixVente: prix,
+            prixMinimal,
+            unite,
+            pieces,
+            seuil,
+          });
+          const prodNom = produits.find((p) => p.id === produitId)?.nom || 'Produit';
+          const nomCible = emplacement === 'entrepot'
+            ? 'Entrepôt Central'
+            : (boutiques.find((b) => b.id === emplacement)?.nom || emplacement);
+          toast.success(`Mise en stock réussie à ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
         }}
       />
 
       <QuickCategoryModal
         isOpen={showQuickCatModal}
         onClose={() => setShowQuickCatModal(false)}
-        onSubmit={(cat) => addCategorie(cat)}
+        onSubmit={(cat) => {
+          addCategorie(cat);
+          toast.success(`Catégorie "${cat.nom}" créée avec succès`);
+        }}
       />
 
       <QuickProductModal
@@ -186,22 +189,30 @@ export const Stock: React.FC<StockProps> = ({
         categories={categories}
         onSubmit={(prod) => {
           addProduit({
-            ...prod,
-            prix: 4000,
-            quantite: 0,
-            unite: 'mètre',
-            pieces: 0,
-            boutique: role === 'boutiquier' ? boutiqueId : 'entrepot',
-            seuil: 15,
+            nom: prod.nom,
+            categorie: prod.categorie,
+            couleur: prod.couleur,
+            photo: prod.photo,
           });
+          toast.success(`Tissu "${prod.nom}" ajouté au catalogue`);
         }}
       />
 
       <QuickStockAdjustmentModal
         produit={modalEntreeRapide}
+        boutiques={boutiques}
         onClose={() => setModalEntreeRapide(null)}
         onSubmit={(prodId, qte, motif) => {
-          adjustStock(prodId, qte, motif);
+          adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
+          const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique;
+          const nomCible = bId === 'entrepot' || bId === 'b-ent'
+            ? 'Entrepôt Central'
+            : (boutiques.find((b) => b.id === bId)?.nom || 'la boutique');
+          if (qte > 0) {
+            toast.success(`Entrée de stock validée à ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
+          } else {
+            toast.warning(`Sortie / perte enregistrée à ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
+          }
         }}
       />
     </div>
