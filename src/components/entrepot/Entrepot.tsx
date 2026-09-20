@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useMockStore, type Produit, type StockEnriched } from '../../data/useMockStore';
+import { BOUTIQUE_IDS, ENTREPOT_ID } from '../../data/mock';
 import EntrepotTransferForm from './EntrepotTransferForm';
 import EntrepotStockList from './EntrepotStockList';
 import EntrepotTransferHistory from './EntrepotTransferHistory';
@@ -8,8 +9,8 @@ export const Entrepot: React.FC = () => {
   const { boutiques, historique, createTransfert, session, getStocksEnriched } = useMockStore();
 
   const [activeTab, setActiveTab] = useState<'transferer' | 'historique'>('transferer');
-  const [sourceId, setSourceId] = useState('entrepot');
-  const [destId, setDestId] = useState('b1');
+  const [sourceId, setSourceId] = useState<string>(ENTREPOT_ID);
+  const [destId, setDestId] = useState<string>(BOUTIQUE_IDS.PLATEAU);
   const [produitChoisi, setProduitChoisi] = useState<StockEnriched | null>(null);
   const [quantite, setQuantite] = useState('20');
   const [unite, setUnite] = useState('mètre');
