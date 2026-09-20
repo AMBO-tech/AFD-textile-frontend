@@ -22,6 +22,7 @@ export const Stock: React.FC<StockProps> = ({
 }) => {
   const {
     produits,
+    stocks,
     categories,
     boutiques,
     adjustStock,
@@ -35,7 +36,13 @@ export const Stock: React.FC<StockProps> = ({
   const [filtreEmplacement, setFiltreEmplacement] = useState<string>(
     role === 'boutiquier' ? boutiqueId : 'tous'
   );
-  const [filtreCat, setFiltreCat] = useState<string>('toutes');
+  const [filtreCat, setFiltreCat] = useState('toutes');
+
+  // Catégories existantes + celles dérivées des produits
+  const allCategories = Array.from(
+    new Set(categories.map((c) => c.nom))
+  );
+
   const [ouvertes, setOuvertes] = useState<Set<string>>(
     new Set(categories.map((c) => c.nom))
   );
@@ -46,11 +53,11 @@ export const Stock: React.FC<StockProps> = ({
   const [showQuickProdModal, setShowQuickProdModal] = useState(false);
   const [modalEntreeRapide, setModalEntreeRapide] = useState<StockEnriched | null>(null);
 
-  // Stocks physiques enrichis selon l'emplacement
+  // Stocks physiques enrichis selon l'emplacement (réactif à toute modification de stocks ou produits)
   const stocksEnriched = useMemo(() => {
     const targetLoc = role === 'boutiquier' ? boutiqueId : filtreEmplacement;
     return getStocksEnriched(targetLoc);
-  }, [getStocksEnriched, role, boutiqueId, filtreEmplacement]);
+  }, [getStocksEnriched, role, boutiqueId, filtreEmplacement, stocks, produits]);
 
   // Filtrage selon la catégorie et la recherche
   const produitsFiltres = useMemo(() => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, CheckCircle2, ShoppingBag, ShoppingCart, User, Banknote, Smartphone } from 'lucide-react';
+import { X, CreditCard, CheckCircle2, ShoppingBag, ShoppingCart, User, Banknote, Smartphone, FileText } from 'lucide-react';
 import type { LigneVente } from './types';
 import { formatMontant } from '../../data/mock';
+import { useMockStore } from '../../data/useMockStore';
 import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
 
 const OPTIONS_PAIEMENT: DropdownOption[] = [
@@ -40,6 +41,13 @@ const OPTIONS_PAIEMENT: DropdownOption[] = [
     badge: 'TPE',
     icon: <CreditCard size={16} />,
   },
+  {
+    value: 'Vente à crédit',
+    label: 'Vente à crédit / Compte client',
+    sublabel: 'Enregistrement en créance sur la fiche du client',
+    badge: 'CRÉDIT',
+    icon: <FileText size={16} />,
+  },
 ];
 
 export type PaymentTarget =
@@ -59,6 +67,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   target,
   onConfirmPayment,
 }) => {
+  const { clients } = useMockStore();
   const [modePaiement, setModePaiement] = useState<string>('Espèces');
   const [nomClient, setNomClient] = useState<string>('');
   const [montantRecu, setMontantRecu] = useState<string>('');
@@ -87,10 +96,11 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   const montantRecuNum = parseFloat(montantRecu) || 0;
   const monnaieARendre = modePaiement === 'Espèces' && montantRecuNum > 0 ? montantRecuNum - totalNet : 0;
   const isMontantInsuffisant = modePaiement === 'Espèces' && montantRecuNum > 0 && montantRecuNum < totalNet;
+  const isCreditSansClient = modePaiement === 'Vente à crédit' && !nomClient.trim();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isMontantInsuffisant) return;
+    if (isMontantInsuffisant || isCreditSansClient) return;
     onConfirmPayment(nomClient.trim() || 'Passage', modePaiement);
   };
 
@@ -178,23 +188,42 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
             <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1">
                 <User size={13} className="text-gray-400" />
-                Client bénéficiaire
+                Client bénéficiaire {modePaiement === 'Vente à crédit' && <span className="text-rose-600 font-bold">* (Obligatoire pour crédit)</span>}
               </span>
-              <button
-                type="button"
-                onClick={() => setNomClient('')}
-                className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
-              >
-                Client de passage
-              </button>
+              {modePaiement !== 'Vente à crédit' && (
+                <button
+                  type="button"
+                  onClick={() => setNomClient('')}
+                  className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
+                >
+                  Client de passage
+                </button>
+              )}
             </label>
             <input
               type="text"
+              list="clients-comptoir-list"
               value={nomClient}
               onChange={(e) => setNomClient(e.target.value)}
-              placeholder="Passage (Comptoir)"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:border-blue-500 bg-white"
+              placeholder={modePaiement === 'Vente à crédit' ? "Rechercher ou saisir le client (ex: Cheikh Ndiaye)..." : "Passage (Comptoir)"}
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none bg-white transition-all ${
+                modePaiement === 'Vente à crédit' && !nomClient.trim()
+                  ? 'border-amber-400 focus:border-amber-500 ring-2 ring-amber-100'
+                  : 'border-gray-200 focus:border-blue-500'
+              }`}
             />
+            <datalist id="clients-comptoir-list">
+              {clients.map((c) => (
+                <option key={c.id} value={c.nom}>
+                  {c.nom} ({c.telephone || 'Sans tel'})
+                </option>
+              ))}
+            </datalist>
+            {modePaiement === 'Vente à crédit' && (
+              <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1 font-medium">
+                ⚠️ Une créance de {formatMontant(totalNet)} sera inscrite sur la fiche de ce client.
+              </p>
+            )}
           </div>
 
           {/* Sélection du mode de paiement (Même design que BoutiqueSelector) */}
@@ -209,9 +238,9 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
             />
           </div>
 
-          {/* Calcul de monnaie si Espèces */}
+          {/* Calcul de monnaie si Espèces avec touches rapides FCFA */}
           {modePaiement === 'Espèces' && (
-            <div className="p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2">
+            <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-emerald-900">
                   Espèces reçues du client
@@ -221,7 +250,39 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
                   onClick={() => setMontantRecu(totalNet.toString())}
                   className="text-[10px] text-emerald-700 hover:underline font-bold cursor-pointer"
                 >
-                  Montant exact
+                  Montant exact ({formatMontant(totalNet)})
+                </button>
+              </div>
+
+              {/* Boutons tactiles rapides de coupures FCFA */}
+              <div className="grid grid-cols-4 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setMontantRecu(totalNet.toString())}
+                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                >
+                  Exact
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMontantRecu("5000")}
+                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                >
+                  5 000 F
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMontantRecu("10000")}
+                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                >
+                  10 000 F
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMontantRecu("20000")}
+                  className="px-2 py-2 rounded-xl bg-white border border-emerald-200 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
+                >
+                  20 000 F
                 </button>
               </div>
 
@@ -233,7 +294,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
                   value={montantRecu}
                   onChange={(e) => setMontantRecu(e.target.value)}
                   placeholder={`Ex: ${formatMontant(Math.ceil(totalNet / 1000) * 1000)}`}
-                  className="w-full px-3.5 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-emerald-200 bg-white text-sm font-bold text-gray-900 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -242,7 +303,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
                 <div className="pt-1 flex items-center justify-between text-xs">
                   {monnaieARendre >= 0 ? (
                     <>
-                      <span className="text-gray-600">Monnaie à rendre :</span>
+                      <span className="text-gray-600 font-medium">Monnaie à rendre :</span>
                       <span className="font-extrabold text-emerald-700 text-sm">
                         {formatMontant(monnaieARendre)}
                       </span>
