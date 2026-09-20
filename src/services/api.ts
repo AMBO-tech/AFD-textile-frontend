@@ -24,10 +24,13 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Response Interceptor: handle 401
+// Response Interceptor: handle 401 & log offline warnings
 API.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    console.warn(
+      `[AFD API] Network call to ${error.config?.url || 'endpoint'} failed (${error.message || 'Offline'}). Using fallback demo data.`
+    )
     if (error.response?.status === 401) {
       localStorage.removeItem('afd_token')
       localStorage.removeItem('afd_user')
