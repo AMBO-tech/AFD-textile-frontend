@@ -1,31 +1,16 @@
-import React, { useEffect } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore'
+import React from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useMockStore } from '../data/useMockStore';
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
-  const location = useLocation()
+export const ProtectedRoute: React.FC = () => {
+  const { session } = useMockStore();
+  const location = useLocation();
 
-  useEffect(() => {
-    checkAuth()
-  }, [checkAuth])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#1E88E5]/30 border-t-[#1E88E5] rounded-full animate-spin" />
-          <span className="text-sm font-medium text-gray-500">Chargement de la session...</span>
-        </div>
-      </div>
-    )
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
+  return <Outlet />;
+};
 
-  return <>{children}</>
-}
-
-export default ProtectedRoute
+export default ProtectedRoute;
