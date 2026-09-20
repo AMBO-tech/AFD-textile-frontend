@@ -14,6 +14,12 @@ import {
   VENTES_SEMAINE,
   TOP_PRODUITS,
   formatMontant,
+  BOUTIQUE_IDS,
+  DEFAULT_BOUTIQUE_ID,
+  ENTREPOT_ID,
+  PRODUIT_IDS,
+  CLIENT_IDS,
+  USER_IDS,
 } from './mock';
 
 export interface Produit {
@@ -62,26 +68,115 @@ export interface StockEnriched extends Produit {
   pieces?: number;
 }
 
-export type Boutique = typeof BOUTIQUES[0];
-export type Categorie = typeof CATEGORIES_DATA[0];
-export type Demande = typeof DEMANDES[0] & { unite?: string };
-export type Vente = typeof VENTES[0] & { panierRef?: string };
-export type ClientItem = typeof CLIENTS[0];
-export type NotificationItem = typeof NOTIFICATIONS[0];
-export type HistoriqueItem = typeof HISTORIQUE[0];
-export type UtilisateurItem = typeof UTILISATEURS[0] & {
+export interface Boutique {
+  id: string;
+  code: string;
+  nom: string;
+  type: 'BOUTIQUE' | 'ENTREPOT';
+  lieu: string;
+  adresse: string;
+  telephone: string;
+  gerant: string;
+  actif: boolean;
+}
+
+export interface Categorie {
+  nom: string;
+  photo: string;
+}
+
+export interface Demande {
+  id: string;
+  produit: string;
+  quantite: number;
+  unite?: string;
+  boutique_demande: string;
+  boutique_source: string;
+  statut: 'en_attente' | 'acceptee' | 'en_transfert' | 'livree' | 'refusee';
+  priorite: 'basse' | 'normale' | 'haute';
+  date: string;
+  demandeur: string;
+}
+
+export interface Vente {
+  id: string;
+  client: string;
+  produit: string;
+  produitId: string;
+  quantite: number;
+  unite: string;
+  montant: number;
+  remise: number;
+  paiement: string;
+  date: string;
+  heure: string;
+  statut: 'validée' | 'annulée';
+  boutique: string;
+  vendeur: string;
+  typeVente: 'comptant' | 'credit';
+  panierRef?: string;
+}
+
+export interface ClientItem {
+  id: string;
+  nom: string;
+  telephone: string;
+  adresse: string;
+  solde: number;
+  boutique: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'stock_faible' | 'demande' | 'creance' | 'validation' | 'boutique' | 'transfert' | string;
+  message: string;
+  date: string;
+  lu: boolean;
+  boutique: string;
+}
+
+export interface HistoriqueItem {
+  id: string;
+  action: string;
+  details: string;
+  utilisateur: string;
+  boutique: string;
+  date: string;
+  typeAction: 'vente' | 'stock' | 'connexion' | 'transfert' | 'annulation' | 'creance' | 'catalogue' | string;
+}
+
+export interface UtilisateurItem {
+  id: string;
+  nom: string;
+  email: string;
+  telephone: string;
+  role: 'gerant' | 'boutiquier';
+  boutique: string;
+  actif: boolean;
+  derniereConnexion: string;
   invitationToken?: string;
   invitationExpiresAt?: string;
   premiereConnexion?: boolean;
-};
-export type EntrepotItem = typeof ENTREPOT[0];
+}
+
+export interface EntrepotItem {
+  id: string;
+  nom: string;
+  quantite: number;
+  pieces: number;
+  tonnes: number;
+  dateReception: string;
+  fournisseur: string;
+}
 
 export interface LigneProduitCreance {
+  id?: string;
   produitId: string;
   nom: string;
   quantite: number;
   unite: string;
   prixUnitaire: number;
+  totalLigne?: number;
 }
 
 export interface PaiementCreance {
@@ -115,11 +210,38 @@ export interface SessionUser {
   boutiqueId?: string;
 }
 
+export const generateUUID = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+const LEGACY_LOCATION_MAP: Record<string, string> = {
+  b1: BOUTIQUE_IDS.PLATEAU,
+  b2: BOUTIQUE_IDS.PIKINE,
+  b3: BOUTIQUE_IDS.THIES,
+  'b-ent': BOUTIQUE_IDS.ENTREPOT,
+  entrepot: BOUTIQUE_IDS.ENTREPOT,
+};
+
+export const normalizeLocationId = (id?: string): string => {
+  if (!id) return DEFAULT_BOUTIQUE_ID;
+  return LEGACY_LOCATION_MAP[id] || id;
+};
+
 const matchesLocation = (a?: string, b?: string) => {
   if (!a || !b) return false;
   if (a === b) return true;
-  const isEntrepotA = a === 'entrepot' || a === 'b-ent';
-  const isEntrepotB = b === 'entrepot' || b === 'b-ent';
+  const normA = normalizeLocationId(a);
+  const normB = normalizeLocationId(b);
+  if (normA === normB) return true;
+  const isEntrepotA = normA === ENTREPOT_ID || a === 'entrepot' || a === 'b-ent';
+  const isEntrepotB = normB === ENTREPOT_ID || b === 'entrepot' || b === 'b-ent';
   return isEntrepotA && isEntrepotB;
 };
 
@@ -222,11 +344,11 @@ const INITIAL_CLIENTS: ClientDetailed[] = CLIENTS.map((c) => ({
   boutique: c.boutique,
   boutiqueId: c.boutique,
   creances: c.solde > 0 ? [{
-    id: 'cr_init_' + c.id,
-    date: '12/09/2026',
+    id: generateUUID(),
+    date: '18/09/2026',
     lignes: [{
-      produitId: 'p1',
-      nom: 'Marchandises diverses',
+      produitId: PRODUIT_IDS.WAX_HOLLANDAIS,
+      nom: 'Marchandises diverses (Tissus de qualité)',
       quantite: 1,
       unite: 'pièce',
       prixUnitaire: c.solde,
@@ -323,7 +445,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const currentUser = auteur || state.session?.nom || 'Système';
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: qteChange > 0 ? 'Entrée stock' : 'Ajustement stock',
       details: `${motif} (${qteChange > 0 ? '+' : ''}${qteChange} ${targetStock.unite} sur ${prod?.nom || targetStock.produitId})`,
       utilisateur: currentUser,
@@ -361,9 +483,9 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       updatedStocks[existingIndex] = resultingItem;
     } else {
       resultingItem = {
-        id: `stk_${item.boutiqueId}_${item.produitId}_${Date.now()}`,
+        id: generateUUID(),
         produitId: item.produitId,
-        boutiqueId: item.boutiqueId,
+        boutiqueId: normalizeLocationId(item.boutiqueId),
         quantite: item.quantite,
         unite: item.unite,
         prixVente: item.prixVente,
@@ -380,7 +502,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const heureStr = now.toTimeString().slice(0, 5);
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Mise en stock',
       details: `Mise en stock de ${item.quantite} ${item.unite} sur ${prod?.nom || item.produitId} (${formatMontant(item.prixVente)}/u, Min: ${formatMontant(resultingItem.prixMinimal)})`,
       utilisateur: state.session?.nom || 'Gérant',
@@ -399,11 +521,11 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
   addProduit: (nouveauProduit) => {
     const state = get();
-    const newId = 'p' + (state.produits.length + 1);
+    const newId = generateUUID();
     const fullProd: Produit = {
       ...nouveauProduit,
       id: newId,
-      reference: nouveauProduit.reference || `REF-${newId.toUpperCase()}`,
+      reference: nouveauProduit.reference || `AFD-${newId.slice(0, 8).toUpperCase()}`,
     };
 
     const now = new Date();
@@ -412,7 +534,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const currentUser = state.session?.nom || 'Gérant';
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Ajout catalogue',
       details: `Nouveau modèle de tissu créé : ${fullProd.nom} (${fullProd.categorie})`,
       utilisateur: currentUser,
@@ -450,9 +572,9 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
   addVente: (nouvelleVente) => {
     const state = get();
-    const newId = 'v' + (state.ventes.length + 1);
+    const newId = generateUUID();
     const fullVente: Vente = { ...nouvelleVente, id: newId };
-    const targetBoutique = fullVente.boutique || state.session?.boutiqueId || 'b1';
+    const targetBoutique = normalizeLocationId(fullVente.boutique || state.session?.boutiqueId);
 
     // Décrémenter le stock physique de la boutique correspondante
     const updatedStocks = state.stocks.map((s) => {
@@ -473,7 +595,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     // Journal d'audit
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Vente',
       details: `Vente ${fullVente.typeVente === 'credit' ? 'à crédit' : 'validée'} - ${fullVente.produit} - ${fullVente.quantite}${fullVente.unite} - ${formatMontant(fullVente.montant)} (${fullVente.paiement}) - Client ${fullVente.client}`,
       utilisateur: fullVente.vendeur,
@@ -496,7 +618,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const target = state.ventes.find((v) => v.id === venteId);
     if (!target || target.statut === 'annulée') return;
 
-    const targetBoutique = target.boutique || state.session?.boutiqueId || 'b1';
+    const targetBoutique = normalizeLocationId(target.boutique || state.session?.boutiqueId);
 
     // Réinjecter dans le stock physique de la boutique correspondante
     let stockFound = false;
@@ -520,7 +642,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     // Si aucun stock existant n'est trouvé pour ce produit dans cette boutique, création d'une ligne
     if (!stockFound && target.produitId) {
       const newStockRow: StockItem = {
-        id: `stk_${targetBoutique}_${target.produitId}_${Date.now()}`,
+        id: generateUUID(),
         produitId: target.produitId,
         boutiqueId: targetBoutique,
         quantite: target.quantite,
@@ -542,7 +664,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const currentUser = auteur || state.session?.nom || 'Gérant';
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Annulation',
       details: `Annulation vente #${venteId} - ${target.produit} (${target.quantite}${target.unite}) - Réinjection stock ${targetBoutique} - Motif : ${motif}`,
       utilisateur: currentUser,
@@ -578,14 +700,15 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
   addClient: (nouveauClient) => {
     const state = get();
-    const newId = 'c' + (state.clients.length + 1);
+    const newId = generateUUID();
+    const targetBoutique = normalizeLocationId(nouveauClient.boutiqueId);
     const fullClient: ClientDetailed = {
       id: newId,
       nom: nouveauClient.nom,
       telephone: nouveauClient.telephone,
       adresse: nouveauClient.adresse,
-      boutique: nouveauClient.boutiqueId,
-      boutiqueId: nouveauClient.boutiqueId,
+      boutique: targetBoutique,
+      boutiqueId: targetBoutique,
       creances: [],
     };
 
@@ -602,13 +725,13 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const montantTotal = lignes.reduce((s, l) => s + l.quantite * l.prixUnitaire, 0);
     const targetClient = state.clients.find((c) => c.id === clientId);
     const clientNom = targetClient?.nom || 'Client Externe';
-    const boutiqueId = targetClient?.boutiqueId || state.session?.boutiqueId || 'b1';
+    const boutiqueId = normalizeLocationId(targetClient?.boutiqueId || state.session?.boutiqueId);
 
     // 1. Initialisation des paiements sur cette créance si un acompte est versé
     const initialPaiements: PaiementCreance[] = [];
     if (acompte > 0) {
       initialPaiements.push({
-        id: 'p' + Date.now(),
+        id: generateUUID(),
         montant: acompte,
         mode: modeAcompte,
         date: dateStr,
@@ -616,7 +739,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     }
 
     const newCreance: Creance = {
-      id: 'cr' + Date.now(),
+      id: generateUUID(),
       date: dateStr,
       lignes,
       montantTotal,
@@ -630,7 +753,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
         : `${lignes.length} articles en gros (${lignes.map((l) => `${l.quantite}${l.unite}`).join(', ')})`;
 
     const newVente: Vente = {
-      id: 'v' + (state.ventes.length + 1),
+      id: generateUUID(),
       client: clientNom,
       produit: descriptionProduits,
       produitId: lignes[0]?.produitId || '',
@@ -668,7 +791,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     // 5. Enregistrement dans l'historique d'audit
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Vente à crédit',
       details: `Commande gros / Crédit de ${formatMontant(montantTotal)} (${lignes.length} produit(s)) pour ${clientNom}${
         acompte > 0 ? ` · Acompte versé: ${formatMontant(acompte)}` : ''
@@ -694,7 +817,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const targetClient = state.clients.find((c) => c.id === clientId);
 
     const newPaiement: PaiementCreance = {
-      id: 'p' + Date.now(),
+      id: generateUUID(),
       montant,
       mode,
       date: dateStr,
@@ -710,11 +833,11 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     });
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Paiement créance',
       details: `Règlement créance : ${targetClient?.nom} a versé ${formatMontant(montant)} via ${mode}`,
       utilisateur: auteur || state.session?.nom || 'Vendeur',
-      boutique: targetClient?.boutiqueId || 'b1',
+      boutique: normalizeLocationId(targetClient?.boutiqueId),
       date: `${now.toISOString().split('T')[0]} ${now.toTimeString().slice(0, 5)}`,
       typeAction: 'creance',
     };
@@ -727,10 +850,10 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
   createDemande: (nouvelleDemande) => {
     const state = get();
-    const newId = 'd' + (state.demandes.length + 1);
+    const newId = generateUUID();
     const dateStr = new Date().toISOString().split('T')[0];
     const nomBoutiqueDemande =
-      state.boutiques.find((b) => b.id === nouvelleDemande.boutique_demande)?.nom ||
+      state.boutiques.find((b) => matchesLocation(b.id, nouvelleDemande.boutique_demande))?.nom ||
       nouvelleDemande.boutique_demande;
 
     const fullDemande: Demande = {
@@ -743,7 +866,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     // Notification diffusée à tous les gérants du réseau
     const newNotif: NotificationItem = {
-      id: 'n' + (state.notifications.length + 1),
+      id: generateUUID(),
       type: 'demande',
       message: `Nouvelle demande réseau de ${fullDemande.demandeur} (${nomBoutiqueDemande}) : ${fullDemande.produit} (${fullDemande.quantite} ${fullDemande.unite || 'm'})`,
       date: `${dateStr} ${new Date().toTimeString().slice(0, 5)}`,
@@ -790,14 +913,14 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       });
 
       const nomSource =
-        state.boutiques.find((b) => b.id === sourceBoutiqueId)?.nom || sourceBoutiqueId;
+        state.boutiques.find((b) => matchesLocation(b.id, sourceBoutiqueId))?.nom || sourceBoutiqueId;
       const nomDest =
-        state.boutiques.find((b) => b.id === target.boutique_demande)?.nom || target.boutique_demande;
+        state.boutiques.find((b) => matchesLocation(b.id, target.boutique_demande))?.nom || target.boutique_demande;
 
       newHistoItems.push({
-        id: 'h' + (state.historique.length + 1),
+        id: generateUUID(),
         action: 'Transfert réassort',
-        details: `Prise en charge réassort #${demandeId} : ${qte} ${target.unite || 'm'} de ${target.produit} expédiés depuis ${nomSource} vers ${nomDest}`,
+        details: `Prise en charge réassort #${demandeId.slice(0, 8)} : ${qte} ${target.unite || 'm'} de ${target.produit} expédiés depuis ${nomSource} vers ${nomDest}`,
         utilisateur: managerName || 'Gérant',
         boutique: sourceBoutiqueId,
         date: `${dateStr} ${heureStr}`,
@@ -805,7 +928,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       });
 
       newNotifs.push({
-        id: 'n' + (state.notifications.length + 1),
+        id: generateUUID(),
         type: 'transfert' as any,
         message: `${nomSource} a pris en charge votre demande de ${target.produit} (${qte} ${target.unite || 'm'}). Expédition en cours.`,
         date: `${dateStr} ${heureStr}`,
@@ -840,7 +963,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
         );
         if (prodObj) {
           updatedStocks.push({
-            id: `stk_${target.boutique_demande}_${prodObj.id}_${Date.now()}`,
+            id: generateUUID(),
             produitId: prodObj.id,
             boutiqueId: target.boutique_demande,
             quantite: qte,
@@ -853,12 +976,12 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       }
 
       const nomDest =
-        state.boutiques.find((b) => b.id === target.boutique_demande)?.nom || target.boutique_demande;
+        state.boutiques.find((b) => matchesLocation(b.id, target.boutique_demande))?.nom || target.boutique_demande;
 
       newHistoItems.push({
-        id: 'h' + (state.historique.length + 1),
+        id: generateUUID(),
         action: 'Réception réassort',
-        details: `Réception réassort #${demandeId} : ${qte} ${target.unite || 'm'} de ${target.produit} ajoutés à ${nomDest}`,
+        details: `Réception réassort #${demandeId.slice(0, 8)} : ${qte} ${target.unite || 'm'} de ${target.produit} ajoutés à ${nomDest}`,
         utilisateur: managerName || 'Boutiquier',
         boutique: target.boutique_demande,
         date: `${dateStr} ${heureStr}`,
@@ -866,7 +989,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
       });
 
       newNotifs.push({
-        id: 'n' + (state.notifications.length + 1),
+        id: generateUUID(),
         type: 'validation',
         message: `Réassort livré : ${qte} ${target.unite || 'm'} de ${target.produit} ajoutés à votre stock physique.`,
         date: `${dateStr} ${heureStr}`,
@@ -931,7 +1054,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     if (!destStockFound && prodId) {
       const newStockRow: StockItem = {
-        id: `stk_${destId}_${prodId}_${Date.now()}`,
+        id: generateUUID(),
         produitId: prodId,
         boutiqueId: destId,
         quantite,
@@ -945,12 +1068,12 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     }
 
     const getNomEmplacement = (id: string) => {
-      if (id === 'entrepot' || id === 'b-ent') return 'Entrepôt Central Yoff';
-      return state.boutiques.find((b) => b.id === id)?.nom || id;
+      if (id === 'entrepot' || id === 'b-ent' || id === ENTREPOT_ID) return 'Entrepôt Central Yoff';
+      return state.boutiques.find((b) => matchesLocation(b.id, id))?.nom || id;
     };
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Transfert',
       details: `Transfert expédié : ${quantite}${unite} ${produitNom} (${getNomEmplacement(sourceId)} → ${getNomEmplacement(destId)})`,
       utilisateur: auteur || state.session?.nom || 'Gérant',
@@ -982,7 +1105,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
   // Boutiques & Emplacements
   addBoutique: (nouvelleBoutique) => {
     const state = get();
-    const newId = 'b' + (state.boutiques.length + 1);
+    const newId = generateUUID();
     const fullBoutique: Boutique = {
       id: newId,
       code: nouvelleBoutique.code,
@@ -1000,7 +1123,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const heureStr = now.toTimeString().slice(0, 5);
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Boutique',
       details: `Création du nouvel emplacement : ${fullBoutique.nom} (${fullBoutique.code})`,
       utilisateur: state.session?.nom || 'Gérant',
@@ -1010,7 +1133,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     };
 
     const newNotif: NotificationItem = {
-      id: 'n' + (state.notifications.length + 1),
+      id: generateUUID(),
       type: 'boutique',
       message: `Nouvel emplacement créé : ${fullBoutique.nom} (${fullBoutique.type})`,
       date: `${dateStr} ${heureStr}`,
@@ -1046,7 +1169,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
   // Utilisateurs & Invitations (Flow A)
   addUtilisateur: (nouvelUtilisateur) => {
     const state = get();
-    const newId = 'u' + (state.utilisateurs.length + 1);
+    const newId = generateUUID();
     const randomHex = Array.from({ length: 4 }, () =>
       Math.random().toString(36).substring(2, 15)
     ).join('').slice(0, 64);
@@ -1055,6 +1178,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const fullUser: UtilisateurItem = {
       ...nouvelUtilisateur,
       id: newId,
+      boutique: normalizeLocationId(nouvelUtilisateur.boutique),
       derniereConnexion: 'Jamais (Invitation en attente)',
       invitationToken: randomHex,
       invitationExpiresAt: expires,
@@ -1067,11 +1191,11 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
     const heureStr = now.toTimeString().slice(0, 5);
 
     const newHisto: HistoriqueItem = {
-      id: 'h' + (state.historique.length + 1),
+      id: generateUUID(),
       action: 'Invitation',
       details: `Invitation envoyée à ${fullUser.nom} (${fullUser.telephone}) - Rôle: ${fullUser.role}`,
       utilisateur: state.session?.nom || 'Gérant',
-      boutique: fullUser.boutique || 'b1',
+      boutique: fullUser.boutique,
       date: `${dateStr} ${heureStr}`,
       typeAction: 'connexion',
     };

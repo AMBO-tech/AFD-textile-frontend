@@ -14,7 +14,7 @@ export const AppLayout: React.FC = () => {
   if (!session) return null;
 
   const boutiqueCourante =
-    boutiques.find((b) => b.id === (session.boutiqueId || 'b1')) || boutiques[0];
+    boutiques.find((b) => b.id === (session.boutiqueId || boutiques[0]?.id)) || boutiques[0];
 
   const unreadNotifs = notifications.filter((n) => !n.lu).length;
   const pendingDemandes = demandes.filter((d) => d.statut === 'en_attente').length;
@@ -73,7 +73,7 @@ export const AppLayout: React.FC = () => {
           }}
           className="lg:[padding-top:0] lg:[padding-bottom:0]"
         >
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 lg:py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
             <Outlet />
           </div>
         </main>

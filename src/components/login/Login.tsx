@@ -5,6 +5,7 @@ import LoginFormView from './LoginFormView';
 import LoginPhoneResetView from './LoginPhoneResetView';
 import LoginOtpView from './LoginOtpView';
 import LoginNewPasswordView from './LoginNewPasswordView';
+import { BOUTIQUE_IDS } from '../../data/mock';
 
 /**
  * @constant COMPTES
@@ -49,14 +50,14 @@ const COMPTES = [
     pwd: 'afd2026',
     role: 'boutiquier' as const,
     nom: 'Ibrahima Sarr',
-    boutiqueId: 'b1', // Dakar Plateau
+    boutiqueId: BOUTIQUE_IDS.PLATEAU, // Dakar Plateau
   },
   {
     id: 'moussa.fall@afd-textile.sn',
     pwd: 'afd2026',
     role: 'boutiquier' as const,
     nom: 'Moussa Fall',
-    boutiqueId: 'b2', // Médina Rue 6
+    boutiqueId: BOUTIQUE_IDS.PIKINE, // Pikine Marché Zinc
   },
 ];
 

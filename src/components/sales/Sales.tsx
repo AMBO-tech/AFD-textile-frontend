@@ -26,10 +26,14 @@ export const Sales: React.FC<SalesProps> = ({
 }) => {
   const {
     produits,
+    stocks,
+    clients,
     categories,
     boutiques,
     ventes,
     addVente,
+    addCreance,
+    addClient,
     cancelVente,
     session,
     getStocksEnriched,
@@ -43,7 +47,10 @@ export const Sales: React.FC<SalesProps> = ({
   // Boutique active (configurable pour le gérant, fixée pour le boutiquier)
   const defaultPhysicalBoutique = session?.boutiqueId || boutiques.find((b) => b.type === 'BOUTIQUE')?.id || 'b1';
   const [selectedBoutiqueId, setSelectedBoutiqueId] = useState<string>(defaultPhysicalBoutique);
-  const boutiqueActive = role === 'gerant' ? selectedBoutiqueId : (session?.boutiqueId || 'b1');
+
+  // L'utilisateur boutiquier est strictement confiné à sa boutique physique
+  const isBoutiquier = session?.role === 'boutiquier';
+  const boutiqueActive = isBoutiquier ? (session?.boutiqueId || defaultPhysicalBoutique) : selectedBoutiqueId;
 
   const handleTabChange = (newTab: SalesTab) => {
     setTab(newTab);
@@ -64,10 +71,10 @@ export const Sales: React.FC<SalesProps> = ({
   const [successData, setSuccessData] = useState<{ montant: number; paiement: string; client: string } | null>(null);
   const [venteToCancel, setVenteToCancel] = useState<Vente | null>(null);
 
-  // Stocks physiques disponibles dans la boutique active
+  // Stocks physiques disponibles dans la boutique active (réactif dès qu'une vente ou ajustement change les stocks)
   const stocksBoutique = useMemo(() => {
     return getStocksEnriched(boutiqueActive);
-  }, [getStocksEnriched, boutiqueActive]);
+  }, [getStocksEnriched, boutiqueActive, stocks, produits]);
 
   // Gestion navigation directe depuis accueil
   useEffect(() => {
@@ -141,8 +148,32 @@ export const Sales: React.FC<SalesProps> = ({
         statut: 'validée',
         boutique: targetBoutique,
         vendeur: session?.nom || 'Vendeur',
-        typeVente: 'comptant',
+        typeVente: modeChoisi === 'Vente à crédit' ? 'credit' : 'comptant',
       });
+
+      // Si vente à crédit, inscription automatique dans le dossier de créance du client
+      if (modeChoisi === 'Vente à crédit') {
+        let clientObj = clients.find((c) => c.nom.toLowerCase() === clientNom.toLowerCase());
+        if (!clientObj) {
+          clientObj = addClient({
+            nom: clientNom,
+            telephone: '',
+            adresse: 'Dakar',
+            boutiqueId: targetBoutique,
+          });
+        }
+        addCreance(clientObj.id, [
+          {
+            id: 'lp_' + Date.now(),
+            produitId: ligne.produit.produitId || ligne.produit.id,
+            nom: ligne.produit.nom,
+            quantite: ligne.qte,
+            unite: ligne.unite,
+            prixUnitaire: ligne.produit.prix,
+            totalLigne: montantLigne,
+          },
+        ]);
+      }
 
       setSuccessData({
         montant: montantLigne,
@@ -150,12 +181,18 @@ export const Sales: React.FC<SalesProps> = ({
         client: clientNom,
       });
 
-      toast.success(`Vente validée : ${formatMontant(montantLigne)} (${modeChoisi})`);
+      toast.success(
+        modeChoisi === 'Vente à crédit'
+          ? `Vente à crédit enregistrée pour ${clientNom} : ${formatMontant(montantLigne)}`
+          : `Vente validée : ${formatMontant(montantLigne)} (${modeChoisi})`
+      );
       setPendingPayment(null);
       setProduitSelectionne(null);
       onReset?.();
     } else {
       const clientActuel = clientNom;
+      const isCredit = modeChoisi === 'Vente à crédit';
+
       for (const ligne of pendingPayment.panier) {
         const ligneNet =
           ligne.produit.prix * ligne.qte - Math.min(ligne.remise, ligne.produit.prix * ligne.qte);
@@ -176,8 +213,31 @@ export const Sales: React.FC<SalesProps> = ({
           statut: 'validée',
           boutique: targetBoutique,
           vendeur: session?.nom || 'Vendeur',
-          typeVente: 'comptant',
+          typeVente: isCredit ? 'credit' : 'comptant',
         });
+      }
+
+      // Si panier validé à crédit, inscription de toutes les lignes dans le dossier de créance
+      if (isCredit) {
+        let clientObj = clients.find((c) => c.nom.toLowerCase() === clientActuel.toLowerCase());
+        if (!clientObj) {
+          clientObj = addClient({
+            nom: clientActuel,
+            telephone: '',
+            adresse: 'Dakar',
+            boutiqueId: boutiqueActive || 'b1',
+          });
+        }
+        const lignesCreance = pendingPayment.panier.map((l, idx) => ({
+          id: `lp_${Date.now()}_${idx}`,
+          produitId: l.produit.produitId || l.produit.id,
+          nom: l.produit.nom,
+          quantite: l.qte,
+          unite: l.unite,
+          prixUnitaire: l.produit.prix,
+          totalLigne: l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
+        }));
+        addCreance(clientObj.id, lignesCreance);
       }
 
       setSuccessData({
@@ -187,7 +247,9 @@ export const Sales: React.FC<SalesProps> = ({
       });
 
       toast.success(
-        `Panier encaissé avec succès : ${panier.length} article(s) pour ${formatMontant(totalPanier)} (${modeChoisi})`
+        isCredit
+          ? `Vente à crédit groupée enregistrée pour ${clientActuel} (${panier.length} articles, ${formatMontant(totalPanier)})`
+          : `Panier encaissé avec succès : ${panier.length} article(s) pour ${formatMontant(totalPanier)} (${modeChoisi})`
       );
       setPanier([]);
       setVuePanier(false);

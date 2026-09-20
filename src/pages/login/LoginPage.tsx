@@ -17,6 +17,8 @@ import { useMockStore } from '../../data/useMockStore';
  * - Le JWT d'authentification sera persisté en cookie sécurisé HttpOnly (recommandé) ou dans `useAuthStore`.
  * - L'affectation de la boutique (`boutiqueId`) ne sera plus statique mais découle des autorisations attribuées dans la table `users_boutiques`.
  */
+import { DEFAULT_BOUTIQUE_ID } from '../../data/mock';
+
 export const LoginPage: React.FC = () => {
   const { session, setSession } = useMockStore();
   const navigate = useNavigate();
@@ -29,7 +31,7 @@ export const LoginPage: React.FC = () => {
     setSession({
       role,
       nom,
-      boutiqueId: boutiqueId || (role === 'boutiquier' ? 'b1' : undefined),
+      boutiqueId: boutiqueId || (role === 'boutiquier' ? DEFAULT_BOUTIQUE_ID : undefined),
     });
     navigate('/');
   };

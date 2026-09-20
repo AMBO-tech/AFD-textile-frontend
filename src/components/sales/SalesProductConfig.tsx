@@ -105,7 +105,7 @@ const SalesProductConfigModal: React.FC<InnerModalProps> = ({
                   type="button"
                   disabled={isRupture}
                   onClick={() => setQte((q) => Math.max(0.5, Math.round((q - 0.5) * 10) / 10))}
-                  className="w-9 h-9 flex items-center justify-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
+                  className="w-11 h-11 flex items-center justify-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 font-bold text-lg text-gray-700 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
                 >
                   -
                 </button>
@@ -121,13 +121,13 @@ const SalesProductConfigModal: React.FC<InnerModalProps> = ({
                     if (isNaN(val)) setQte(0);
                     else setQte(Math.min(produit.quantite, Math.max(0.1, Math.round(val * 100) / 100)));
                   }}
-                  className="w-full h-9 border border-gray-200 text-center font-bold text-sm focus:outline-none disabled:bg-gray-100"
+                  className="w-full h-11 border border-gray-200 text-center font-bold text-base focus:outline-none disabled:bg-gray-100"
                 />
                 <button
                   type="button"
                   disabled={isRupture}
                   onClick={() => setQte((q) => Math.min(produit.quantite, Math.round((q + 0.5) * 10) / 10))}
-                  className="w-9 h-9 flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
+                  className="w-11 h-11 flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-gray-50 font-bold text-lg text-gray-700 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
                 >
                   +
                 </button>
