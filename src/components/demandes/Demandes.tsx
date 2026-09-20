@@ -35,6 +35,8 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1', onN
     createDemande,
     updateDemandeStatut,
     getStocksEnriched,
+    stocks,
+    produits,
   } = useMockStore();
 
   const [activeTab, setActiveTab] = useState<'stocks' | 'demandes' | 'reseau'>(
@@ -48,6 +50,8 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1', onN
 
   // Modals
   const [showNew, setShowNew] = useState(false);
+  const [showValidationModal, setShowValidationModal] = useState(false);
+  const [demandeToValidate, setDemandeToValidate] = useState<Demande | null>(null);
   const [selectedProduit, setSelectedProduit] = useState<StockEnriched | null>(null);
   const [validation, setValidation] = useState<{ demande: Demande; action: 'acceptee' | 'refusee' } | null>(null);
 
@@ -61,7 +65,7 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1', onN
   // Périmètre des stocks physiques selon le rôle
   const produitsEmplacement = useMemo(() => {
     return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
-  }, [getStocksEnriched, role, boutiqueId]);
+  }, [getStocksEnriched, role, boutiqueId, stocks, produits]);
 
   // Filtrage et tri des stocks (ordre croissant de quantité)
   const stocksTries = useMemo(() => {

@@ -14,13 +14,13 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteDirecte }) => {
-  const { produits, ventes, clients, boutiques, session, getStocksEnriched } = useMockStore();
+  const { stocks, produits, ventes, clients, boutiques, session, getStocksEnriched } = useMockStore();
   const boutiqueId = session?.boutiqueId || 'b1';
 
   // Stocks et ventes ciblés selon le rôle
   const stocksAffiches = useMemo(() => {
     return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
-  }, [getStocksEnriched, role, boutiqueId]);
+  }, [getStocksEnriched, role, boutiqueId, stocks, produits]);
 
   const alertesStock = useMemo(() => {
     return stocksAffiches.filter((p) => p.quantite <= p.seuil);
