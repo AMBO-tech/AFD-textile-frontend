@@ -7,7 +7,10 @@ import ClientDetailModal from './ClientDetailModal';
 import NewClientModal from './NewClientModal';
 import NewDebtModal from './NewDebtModal';
 import RecordPaymentModal from './RecordPaymentModal';
+import PaymentReceiptModal, { type PaymentReceiptData } from './PaymentReceiptModal';
 import { soldeClient } from './types';
+import { formatMontant } from '../../data/mock';
+import { toast } from 'sonner';
 
 interface ClientsProps {
   role?: 'gerant' | 'boutiquier';
@@ -26,6 +29,7 @@ export const Clients: React.FC<ClientsProps> = ({
     addCreance,
     recordPaiement,
     session,
+    getStocksEnriched,
   } = useMockStore();
 
   const [search, setSearch] = useState('');
@@ -39,6 +43,7 @@ export const Clients: React.FC<ClientsProps> = ({
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [showNewDebtModal, setShowNewDebtModal] = useState(false);
   const [selectedCreanceForPayment, setSelectedCreanceForPayment] = useState<Creance | null>(null);
+  const [receiptData, setReceiptData] = useState<PaymentReceiptData | null>(null);
 
   // Synchronisation du client sélectionné après mutation
   const activeClient = useMemo(() => {
@@ -123,6 +128,7 @@ export const Clients: React.FC<ClientsProps> = ({
       {/* Modals modulaires */}
       <ClientDetailModal
         client={activeClient}
+        boutiqueNom={activeClient ? getBoutiqueNom(activeClient.boutiqueId) : undefined}
         onClose={() => setSelectedClient(null)}
         onOpenNewDebt={() => setShowNewDebtModal(true)}
         onOpenPayment={(cr) => setSelectedCreanceForPayment(cr)}
@@ -136,6 +142,7 @@ export const Clients: React.FC<ClientsProps> = ({
         role={role}
         onSubmit={(nouveau) => {
           const c = addClient(nouveau);
+          toast.success(`Client "${c.nom}" enregistré avec succès`);
           setSelectedClient(c);
         }}
       />
@@ -145,9 +152,10 @@ export const Clients: React.FC<ClientsProps> = ({
           isOpen={showNewDebtModal}
           onClose={() => setShowNewDebtModal(false)}
           client={activeClient}
-          produits={produits}
+          produits={getStocksEnriched(activeClient.boutiqueId)}
           onSubmit={(lignes, acompte, modeAcompte) => {
             addCreance(activeClient.id, lignes, undefined, acompte, modeAcompte);
+            toast.success(`Nouvelle vente à crédit créée pour ${activeClient.nom}`);
           }}
         />
       )}
@@ -167,10 +175,38 @@ export const Clients: React.FC<ClientsProps> = ({
                 mode,
                 session?.nom
               );
+
+              const totalPaye = selectedCreanceForPayment.paiements.reduce((s, p) => s + p.montant, 0) + montant;
+              const resteDuApres = Math.max(0, selectedCreanceForPayment.montantTotal - totalPaye);
+
+              toast.success(`Règlement de ${formatMontant(montant)} enregistré pour ${activeClient.nom}`);
+
+              setReceiptData({
+                receiptId: `REC-${Date.now().toString().slice(-6)}`,
+                clientNom: activeClient.nom,
+                clientTelephone: activeClient.telephone,
+                dossierRef: selectedCreanceForPayment.id,
+                montantVerse: montant,
+                resteDuApres,
+                modePaiement: mode,
+                datePaiement: new Date().toLocaleDateString('fr-FR'),
+                heurePaiement: new Date().toTimeString().slice(0, 5),
+                encaisseur: session?.nom || 'Caissier',
+                boutiqueNom: boutiques.find((b) => b.id === activeClient.boutiqueId)?.nom || 'AFD Textile',
+              });
+
+              setSelectedCreanceForPayment(null);
             }
           }}
         />
       )}
+
+      {/* Reçu thermique et quittance de règlement */}
+      <PaymentReceiptModal
+        isOpen={Boolean(receiptData)}
+        onClose={() => setReceiptData(null)}
+        receiptData={receiptData}
+      />
     </div>
   );
 };

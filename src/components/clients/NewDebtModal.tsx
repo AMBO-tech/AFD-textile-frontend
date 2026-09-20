@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, DollarSign } from 'lucide-react';
-import type { ClientDetailed, Produit, LigneProduitCreance } from '../../data/useMockStore';
+import { X, Plus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, DollarSign, Package, Banknote, Smartphone, CreditCard, Building2 } from 'lucide-react';
+import type { ClientDetailed, StockEnriched, LigneProduitCreance } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
+import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface NewDebtModalProps {
   isOpen: boolean;
   onClose: () => void;
   client: ClientDetailed;
-  produits: Produit[];
+  produits: StockEnriched[];
   onSubmit: (lignes: LigneProduitCreance[], acompte: number, modeAcompte: string) => void;
 }
 
@@ -48,10 +49,10 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
     setLignes((prev) => [
       ...prev,
       {
-        produitId: selectedProd.id,
+        produitId: selectedProd.produitId || selectedProd.id,
         nom: selectedProd.nom,
         quantite: qteNum,
-        unite: selectedProd.unite,
+        unite: selectedProd.unite || 'mètre',
         prixUnitaire: prixNum,
       },
     ]);
@@ -121,34 +122,43 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label className="block text-[11px] font-medium text-gray-600">
-                Tissu / Article en stock
-              </label>
-              <select
+              <CustomDropdownSelect
+                label="Tissu / Article en stock"
                 value={selectedProdId}
-                onChange={(e) => {
-                  setSelectedProdId(e.target.value);
-                  const p = produits.find((pr) => pr.id === e.target.value);
+                onChange={(val) => {
+                  setSelectedProdId(val);
+                  const p = produits.find((pr) => pr.id === val);
                   if (p) setPrixUnitaire(p.prix.toString());
                   setErrorStock(null);
                 }}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                {produits.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nom} — {p.categorie} ({p.couleur}) · Dispo: {p.quantite} {p.unite}
-                  </option>
-                ))}
-              </select>
+                icon={<Package size={15} />}
+                menuTitle="Articles disponibles"
+                options={produits.map((p) => ({
+                  value: p.id,
+                  label: p.nom,
+                  sublabel: `${p.categorie} (${p.couleur}) · Dispo: ${p.quantite} ${p.unite}`,
+                  badge: `${p.quantite} ${p.unite}`,
+                  icon: <Package size={14} />,
+                }))}
+              />
               {selectedProd && (
-                <div className="text-[11px] text-gray-500 flex justify-between px-1">
+                <div className="text-[11px] text-gray-500 flex flex-wrap justify-between gap-1 px-1">
                   <span>
-                    Stock actuel :{' '}
+                    Stock boutique :{' '}
                     <strong className={selectedProd.quantite < 10 ? 'text-amber-600' : 'text-green-600'}>
                       {selectedProd.quantite} {selectedProd.unite}
                     </strong>
                   </span>
-                  <span>Prix catalogue : {formatMontant(selectedProd.prix)}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span>
+                      Prix vente : <strong className="text-gray-800">{formatMontant(selectedProd.prix)}</strong>
+                    </span>
+                    {selectedProd.prixMinimal && (
+                      <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 rounded-md">
+                        Plancher : {formatMontant(selectedProd.prixMinimal)}
+                      </span>
+                    )}
+                  </span>
                 </div>
               )}
             </div>
@@ -182,6 +192,15 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
                 />
               </div>
             </div>
+
+            {selectedProd?.prixMinimal && parseFloat(prixUnitaire) < selectedProd.prixMinimal && (
+              <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-1.5">
+                <AlertTriangle size={13} className="flex-shrink-0 text-amber-600" />
+                <span>
+                  Attention : Prix négocié ({formatMontant(parseFloat(prixUnitaire) || 0)}) inférieur au plancher autorisé ({formatMontant(selectedProd.prixMinimal)}).
+                </span>
+              </div>
+            )}
 
             {errorStock && (
               <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
@@ -260,19 +279,21 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-gray-500">Mode de règlement</label>
-                  <select
+                  <CustomDropdownSelect
+                    label="Mode de règlement"
                     value={modeAcompte}
-                    onChange={(e) => setModeAcompte(e.target.value)}
+                    onChange={setModeAcompte}
                     disabled={acompteNum === 0}
-                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                  >
-                    <option value="Espèces">Espèces</option>
-                    <option value="Wave">Wave</option>
-                    <option value="Orange Money">Orange Money</option>
-                    <option value="Chèque">Chèque</option>
-                    <option value="Virement">Virement</option>
-                  </select>
+                    icon={<Banknote size={15} />}
+                    menuTitle="Mode de paiement acompte"
+                    options={[
+                      { value: 'Espèces', label: 'Espèces', sublabel: 'Paiement direct en liquide', icon: <Banknote size={14} className="text-emerald-600" />, badge: 'Direct' },
+                      { value: 'Wave', label: 'Wave', sublabel: 'Paiement mobile instantané', icon: <Smartphone size={14} className="text-sky-500" />, badge: 'Mobile' },
+                      { value: 'Orange Money', label: 'Orange Money', sublabel: 'Paiement mobile sécurisé', icon: <Smartphone size={14} className="text-orange-500" />, badge: 'Mobile' },
+                      { value: 'Chèque', label: 'Chèque', sublabel: 'Chèque bancaire certifié', icon: <CreditCard size={14} className="text-indigo-500" />, badge: 'Banque' },
+                      { value: 'Virement', label: 'Virement', sublabel: 'Virement bancaire direct', icon: <Building2 size={14} className="text-purple-500" />, badge: 'Banque' },
+                    ]}
+                  />
                 </div>
               </div>
 

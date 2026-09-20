@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Phone, MapPin } from 'lucide-react';
+import { X, UserPlus, Phone, MapPin, Store } from 'lucide-react';
 import type { Boutique } from '../../data/useMockStore';
+import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface NewClientModalProps {
   isOpen: boolean;
@@ -110,20 +111,19 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
 
           {role === 'gerant' && (
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Boutique d'enregistrement
-              </label>
-              <select
+              <CustomDropdownSelect
+                label="Boutique d'enregistrement"
                 value={boutiqueId}
-                onChange={(e) => setBoutiqueId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
-              >
-                {boutiques.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.nom} ({b.lieu})
-                  </option>
-                ))}
-              </select>
+                onChange={setBoutiqueId}
+                icon={<Store size={15} />}
+                menuTitle="Boutique d'affectation"
+                options={boutiques.map((b) => ({
+                  value: b.id,
+                  label: b.nom,
+                  sublabel: b.lieu,
+                  icon: <Store size={14} />,
+                }))}
+              />
             </div>
           )}
 

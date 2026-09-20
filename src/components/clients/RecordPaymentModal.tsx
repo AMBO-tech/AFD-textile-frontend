@@ -1,8 +1,46 @@
 import React, { useState } from 'react';
-import { X, CreditCard } from 'lucide-react';
+import { X, CreditCard, Banknote, Smartphone } from 'lucide-react';
 import type { ClientDetailed, Creance } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
-import { MODES_PAIEMENT } from './types';
+import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
+
+const OPTIONS_PAIEMENT: DropdownOption[] = [
+  {
+    value: 'Espèces',
+    label: 'Espèces (Cash)',
+    sublabel: 'Règlement physique de la dette',
+    badge: 'CASH',
+    icon: <Banknote size={16} />,
+  },
+  {
+    value: 'Wave',
+    label: 'Wave Mobile Money',
+    sublabel: 'Règlement sans frais par Wave',
+    badge: 'WAVE',
+    icon: <Smartphone size={16} />,
+  },
+  {
+    value: 'Orange Money',
+    label: 'Orange Money (OM)',
+    sublabel: "Transfert d'argent mobile OM",
+    badge: 'OM',
+    icon: <Smartphone size={16} />,
+  },
+  {
+    value: 'Free Money',
+    label: 'Free Money',
+    sublabel: 'Portefeuille électronique Free',
+    badge: 'FREE',
+    icon: <Smartphone size={16} />,
+  },
+  {
+    value: 'Carte bancaire',
+    label: 'Carte Bancaire / TPE',
+    sublabel: 'Terminal bancaire ou virement',
+    badge: 'TPE',
+    icon: <CreditCard size={16} />,
+  },
+];
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
@@ -86,20 +124,14 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Mode de règlement *
-            </label>
-            <select
+            <CustomDropdownSelect
+              label="Mode de règlement"
+              menuTitle="Modes de règlement acceptés"
               value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
-            >
-              {MODES_PAIEMENT.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+              onChange={setMode}
+              options={OPTIONS_PAIEMENT}
+              icon={<CreditCard size={16} />}
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
