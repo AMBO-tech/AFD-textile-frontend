@@ -27,6 +27,7 @@ function setStoredUser(user: User | null): void {
 
 interface AuthState {
   token: string | null;
+  refreshToken: string | null;
   user: User | null;
   isInitialized: boolean;
   isAuthenticated: boolean;
@@ -34,7 +35,7 @@ interface AuthState {
   // Actions
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
-  setAuth: (token: string, user?: User | null) => void;
+  setAuth: (token: string, user?: User | null, refreshToken?: string | null) => void;
   clearAuth: () => void;
   setInitialized: (initialized: boolean) => void;
 
@@ -47,10 +48,12 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => {
   const initialToken = tokenStore.get();
+  const initialRefreshToken = tokenStore.getRefreshToken();
   const initialUser = getStoredUser();
 
   return {
     token: initialToken,
+    refreshToken: initialRefreshToken,
     user: initialUser,
     isInitialized: Boolean(initialToken),
     isAuthenticated: Boolean(initialToken),
@@ -69,11 +72,13 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ user });
     },
 
-    setAuth: (token, user = null) => {
+    setAuth: (token, user = null, refreshToken = null) => {
       tokenStore.set(token);
+      if (refreshToken) tokenStore.setRefreshToken(refreshToken);
       setStoredUser(user);
       set({
         token,
+        refreshToken,
         user,
         isAuthenticated: true,
         isInitialized: true,
@@ -85,6 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       setStoredUser(null);
       set({
         token: null,
+        refreshToken: null,
         user: null,
         isAuthenticated: false,
         isInitialized: true,

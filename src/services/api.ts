@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tokenStore } from '@/lib/tokenStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import type { ApiError } from '@/types/api';
@@ -27,19 +27,87 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ─── Response Interceptor (Handle 401 & Session Expiry) ───────────────────────
+// ─── Silent Refresh Infrastructure ────────────────────────────────────────────
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null = null): void {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token!);
+    }
+  });
+  failedQueue = [];
+}
+
+async function attemptRefresh(): Promise<string> {
+  const refreshToken = tokenStore.getRefreshToken();
+  if (!refreshToken) throw new Error('No refresh token available');
+
+  const response = await axios.post<{ accessToken: string; refreshToken?: string }>(
+    `${API_URL}/auth/refresh`,
+    { refreshToken },
+  );
+
+  const { accessToken, refreshToken: newRefreshToken } = response.data;
+  tokenStore.set(accessToken);
+  if (newRefreshToken) tokenStore.setRefreshToken(newRefreshToken);
+  useAuthStore.getState().setAuth(accessToken, useAuthStore.getState().user, newRefreshToken ?? refreshToken);
+  return accessToken;
+}
+
+// ─── Response Interceptor (Handle 401 with Queue-based Silent Refresh) ────────
 
 API.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().clearAuth();
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-      const currentPath = window.location.pathname;
-      if (!currentPath.startsWith('/login') && !currentPath.startsWith('/register')) {
-        window.location.href = '/login';
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Queue this request until the ongoing refresh completes
+        return new Promise<string>((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return API(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newToken = await attemptRefresh();
+        processQueue(null, newToken);
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
+        return API(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        // Refresh failed → logout
+        useAuthStore.getState().clearAuth();
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith('/login') && !currentPath.startsWith('/register')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );

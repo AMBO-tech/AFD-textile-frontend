@@ -1,69 +1,77 @@
 /**
- * tokenStore — Stockage sécurisé du JWT en mémoire
+ * tokenStore — Stockage sécurisé du JWT d'accès et de refresh en mémoire
  *
- * Le token est stocké dans une variable de module, invisible depuis la
- * console du navigateur (contrairement à localStorage). Il n'est pas
- * persisté entre les rechargements de page intentionnellement pour
- * maximiser la sécurité contre les attaques XSS.
+ * - Access token  → mémoire module + sessionStorage (effacé à la fermeture d'onglet)
+ * - Refresh token → mémoire module + sessionStorage (même politique)
  *
- * Pour la persistance de session, on utilise sessionStorage (effacé à la
- * fermeture de l'onglet) plutôt que localStorage (persistant indéfiniment).
+ * La variable de module est invisible depuis la console du navigateur.
+ * Aucune donnée n'est persistée dans localStorage pour limiter l'exposition XSS.
  */
 
 const SESSION_KEY = '__rsk_session__'
+const REFRESH_KEY = '__rsk_refresh__'
 
 let _token: string | null = null
+let _refreshToken: string | null = null
 
-/**
- * Initialise le store depuis sessionStorage au premier import du module.
- * Appelé une seule fois au démarrage de l'app.
- */
+/** Initialise les deux tokens depuis sessionStorage au premier import du module. */
 function init(): void {
   try {
     _token = sessionStorage.getItem(SESSION_KEY)
+    _refreshToken = sessionStorage.getItem(REFRESH_KEY)
   } catch {
-    // sessionStorage peut être bloqué (mode privé strict, sandboxed iframe)
     _token = null
+    _refreshToken = null
   }
 }
 
 init()
 
 export const tokenStore = {
-  /**
-   * Stocke le token en mémoire ET dans sessionStorage.
-   */
+  // ─── Access Token ────────────────────────────────────────────────────────────
+
   set(token: string): void {
     _token = token
     try {
       sessionStorage.setItem(SESSION_KEY, token)
     } catch {
-      // On continue sans persistance si sessionStorage est bloqué
+      // Silencieux si sessionStorage est bloqué
     }
   },
 
-  /**
-   * Retourne le token courant (depuis la mémoire — pas de lecture I/O).
-   */
   get(): string | null {
     return _token
   },
 
-  /**
-   * Supprime le token de la mémoire et du sessionStorage.
-   */
-  clear(): void {
-    _token = null
+  // ─── Refresh Token ───────────────────────────────────────────────────────────
+
+  setRefreshToken(token: string): void {
+    _refreshToken = token
     try {
-      sessionStorage.removeItem(SESSION_KEY)
+      sessionStorage.setItem(REFRESH_KEY, token)
     } catch {
       // Silencieux
     }
   },
 
-  /**
-   * Indique si un token est actuellement stocké.
-   */
+  getRefreshToken(): string | null {
+    return _refreshToken
+  },
+
+  // ─── Utilitaires ─────────────────────────────────────────────────────────────
+
+  /** Supprime les deux tokens de la mémoire et du sessionStorage. */
+  clear(): void {
+    _token = null
+    _refreshToken = null
+    try {
+      sessionStorage.removeItem(SESSION_KEY)
+      sessionStorage.removeItem(REFRESH_KEY)
+    } catch {
+      // Silencieux
+    }
+  },
+
   hasToken(): boolean {
     return _token !== null
   },
