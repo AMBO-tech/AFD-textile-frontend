@@ -77,31 +77,16 @@ export const Sales: React.FC<SalesProps> = ({
 
       {/* Contenu selon onglet */}
       {tab === 'vente' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Grille catalogue */}
-          <div className="lg:col-span-7 xl:col-span-8">
-            <SalesCatalog
-              categories={categories}
-              produits={stocksBoutique}
-              categorieChoisie={categorieChoisie}
-              onSelectCategorie={setCategorieChoisie}
-              searchProd={searchProd}
-              onSearchChange={setSearchProd}
-              onSelectProduit={setProduitSelectionne}
-              role={role}
-            />
-          </div>
-
-          {/* Panneau latéral : Configuration produit sélectionné */}
-          <div className="lg:col-span-5 xl:col-span-4">
-            <SalesProductConfig
-              produit={produitSelectionne}
-              onClose={() => setProduitSelectionne(null)}
-              onAddToCart={handleAddToCart}
-              onDirectSale={handleDirectSale}
-            />
-          </div>
-        </div>
+        <SalesCatalog
+          categories={categories}
+          produits={stocksBoutique}
+          categorieChoisie={categorieChoisie}
+          onSelectCategorie={setCategorieChoisie}
+          searchProd={searchProd}
+          onSearchChange={setSearchProd}
+          onSelectProduit={setProduitSelectionne}
+          role={role}
+        />
       ) : (
         /* Historique des ventes de la boutique active */
         <SalesHistoryTable
@@ -112,6 +97,17 @@ export const Sales: React.FC<SalesProps> = ({
           boutiqueActive={boutiqueActive}
         />
       )}
+
+      {/* Modal Configuration Produit */}
+      <SalesProductConfig
+        produit={produitSelectionne}
+        onClose={() => {
+          setProduitSelectionne(null);
+          onReset?.();
+        }}
+        onAddToCart={handleAddToCart}
+        onDirectSale={handleDirectSale}
+      />
 
       {/* Tiroir Panier */}
       <SalesCartDrawer

@@ -12,6 +12,7 @@ interface StockCategoryGroupProps {
   onVenteRapide?: (produitId: string) => void;
   boutiques?: Boutique[];
   afficherEmplacement?: boolean;
+  role?: 'gerant' | 'boutiquier';
 }
 
 export const StockCategoryGroup: React.FC<StockCategoryGroupProps> = ({
@@ -23,6 +24,7 @@ export const StockCategoryGroup: React.FC<StockCategoryGroupProps> = ({
   onVenteRapide,
   boutiques = [],
   afficherEmplacement = false,
+  role = 'gerant',
 }) => {
   const totalStockCat = produits.reduce((s, p) => s + p.quantite, 0);
   const alertesCat = produits.filter((p) => p.quantite <= p.seuil).length;
@@ -87,6 +89,7 @@ export const StockCategoryGroup: React.FC<StockCategoryGroupProps> = ({
                   onVenteRapide={onVenteRapide}
                   nomEmplacement={afficherEmplacement ? nomEmp : undefined}
                   typeEmplacement={isEntrepot ? 'entrepot' : 'boutique'}
+                  role={role}
                 />
               );
             })

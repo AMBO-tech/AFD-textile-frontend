@@ -5,22 +5,24 @@ import type { Produit, Boutique } from '../../../data/useMockStore';
 
 const UNITES_STOCK = ['mètre', 'yard', 'kilo', 'rouleau'] as const;
 
+export interface StockInFormData {
+  emplacement: string;
+  quantite: string;
+  unite: typeof UNITES_STOCK[number];
+  prix: string;
+  prixMinimal: string;
+  pieces: string;
+  seuil: string;
+}
+
 interface StockInConfigStepProps {
   produitChoisi: Produit;
   role: 'gerant' | 'boutiquier';
   boutiqueId?: string;
   boutiques: Boutique[];
   optionsEmplacement: DropdownOption[];
-  form: {
-    emplacement: string;
-    quantite: string;
-    unite: typeof UNITES_STOCK[number];
-    prix: string;
-    prixMinimal: string;
-    pieces: string;
-    seuil: string;
-  };
-  setForm: React.Dispatch<React.SetStateAction<any>>;
+  form: StockInFormData;
+  setForm: React.Dispatch<React.SetStateAction<StockInFormData>>;
   onSubmit: (e: React.FormEvent) => void;
   onBack: () => void;
 }
@@ -58,7 +60,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
             label="Emplacement récepteur"
             menuTitle="Point de stockage de destination"
             value={form.emplacement}
-            onChange={(val) => setForm((f: any) => ({ ...f, emplacement: val }))}
+            onChange={(val) => setForm((f) => ({ ...f, emplacement: val }))}
             options={optionsEmplacement}
             icon={<Warehouse size={16} />}
           />
@@ -135,7 +137,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
             onChange={(e) => {
               const newPrix = e.target.value;
               const num = parseFloat(newPrix);
-              setForm((prev: any) => ({
+              setForm((prev) => ({
                 ...prev,
                 prix: newPrix,
                 prixMinimal:

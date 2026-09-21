@@ -1,24 +1,32 @@
 import { API } from './api';
+import type { Produit, CreateProduitDto, UpdateProduitDto, ProductQueryParams } from '@/types/products';
+import type { PaginatedResponse } from '@/types/api';
 
 export const productsService = {
-  getAll: async (params?: any) => {
-    const res = await API.get('/produits', { params });
+  getAll: async (params?: ProductQueryParams) => {
+    const res = await API.get<PaginatedResponse<Produit>>('/produits', { params });
     return res.data;
   },
   getById: async (id: string) => {
-    const res = await API.get(`/produits/${id}`);
+    const res = await API.get<Produit>(`/produits/${id}`);
     return res.data;
   },
-  create: async (data: any) => {
-    const res = await API.post('/produits', data);
+  getByReference: async (ref: string) => {
+    const res = await API.get<Produit>(`/produits/reference/${ref}`);
     return res.data;
   },
-  update: async (id: string, data: any) => {
-    const res = await API.put(`/produits/${id}`, data);
+  create: async (data: CreateProduitDto) => {
+    const res = await API.post<Produit>('/produits', data);
     return res.data;
   },
-  delete: async (id: string) => {
-    const res = await API.delete(`/produits/${id}`);
+  update: async (id: string, data: UpdateProduitDto) => {
+    const res = await API.patch<Produit>(`/produits/${id}`, data);
+    return res.data;
+  },
+  archive: async (id: string) => {
+    const res = await API.patch<Produit>(`/produits/${id}/archiver`);
     return res.data;
   },
 };
+
+export default productsService;

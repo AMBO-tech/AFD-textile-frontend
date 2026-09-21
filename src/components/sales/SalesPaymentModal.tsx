@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, CheckCircle2, ShoppingBag, ShoppingCart, User, Banknote, Smartphone, FileText } from 'lucide-react';
+import { X, CreditCard, CheckCircle2, ShoppingBag, ShoppingCart, User } from 'lucide-react';
 import type { LigneVente } from './types';
 import BceaoCashKeypad from '../../features/pos/components/BceaoCashKeypad';
 import { formatMontant } from '../../data/mock';
 import { useMockStore } from '../../data/useMockStore';
-import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
+import CustomDropdownSelect from '../ui/CustomDropdownSelect';
 
 import { OPTIONS_PAIEMENT } from '../../features/pos/types';
 

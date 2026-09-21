@@ -82,7 +82,7 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
       ...prev,
       prix: prod.prix ? prod.prix.toString() : '',
       prixMinimal: prod.prix ? Math.round(prod.prix * 0.9).toString() : '',
-      unite: (prod.unite as any) || 'mètre',
+      unite: (prod.unite as typeof UNITES_STOCK[number]) || 'mètre',
     }));
     setEtape('config');
   };

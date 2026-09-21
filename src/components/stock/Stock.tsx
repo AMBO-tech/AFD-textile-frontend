@@ -145,83 +145,88 @@ export const Stock: React.FC<StockProps> = ({
               onVenteRapide={(id) => onNavigate?.('ventes')}
               boutiques={boutiques}
               afficherEmplacement={role === 'gerant' || filtreEmplacement === 'tous'}
+              role={role}
             />
           ))
         )}
       </div>
 
-      {/* Modals modulaires */}
-      <StockInWizardModal
-        isOpen={showMiseEnStock}
-        onClose={() => setShowMiseEnStock(false)}
-        categories={categories}
-        produitsCatalogue={produits}
-        boutiques={boutiques}
-        role={role}
-        boutiqueId={boutiqueId}
-        emplacementInitial={filtreEmplacement !== 'tous' ? filtreEmplacement : (role === 'boutiquier' ? boutiqueId : 'entrepot')}
-        onOpenNewCat={() => setShowQuickCatModal(true)}
-        onOpenNewProd={() => setShowQuickProdModal(true)}
-        onSubmit={({ produitId, quantite, prix, prixMinimal, unite, pieces, seuil, emplacement }) => {
-          upsertStockItem({
-            produitId,
-            boutiqueId: emplacement,
-            quantite,
-            prixVente: prix,
-            prixMinimal,
-            unite,
-            pieces,
-            seuil,
-          });
-          const prodNom = produits.find((p) => p.id === produitId)?.nom || 'Produit';
-          const nomCible = emplacement === 'entrepot'
-            ? 'Entrepôt Central'
-            : (boutiques.find((b) => b.id === emplacement)?.nom || emplacement);
-          toast.success(`Mise en stock réussie à ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
-        }}
-      />
+      {/* Modals modulaires d'approvisionnement et d'ajustement - Réservées au Gérant */}
+      {role === 'gerant' && (
+        <>
+          <StockInWizardModal
+            isOpen={showMiseEnStock}
+            onClose={() => setShowMiseEnStock(false)}
+            categories={categories}
+            produitsCatalogue={produits}
+            boutiques={boutiques}
+            role={role}
+            boutiqueId={boutiqueId}
+            emplacementInitial={filtreEmplacement !== 'tous' ? filtreEmplacement : 'entrepot'}
+            onOpenNewCat={() => setShowQuickCatModal(true)}
+            onOpenNewProd={() => setShowQuickProdModal(true)}
+            onSubmit={({ produitId, quantite, prix, prixMinimal, unite, pieces, seuil, emplacement }) => {
+              upsertStockItem({
+                produitId,
+                boutiqueId: emplacement,
+                quantite,
+                prixVente: prix,
+                prixMinimal,
+                unite,
+                pieces,
+                seuil,
+              });
+              const prodNom = produits.find((p) => p.id === produitId)?.nom || 'Produit';
+              const nomCible = emplacement === 'entrepot'
+                ? 'Entrepôt Central'
+                : (boutiques.find((b) => b.id === emplacement)?.nom || emplacement);
+              toast.success(`Mise en stock réussie à ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
+            }}
+          />
 
-      <QuickCategoryModal
-        isOpen={showQuickCatModal}
-        onClose={() => setShowQuickCatModal(false)}
-        onSubmit={(cat) => {
-          addCategorie(cat);
-          toast.success(`Catégorie "${cat.nom}" créée avec succès`);
-        }}
-      />
+          <QuickCategoryModal
+            isOpen={showQuickCatModal}
+            onClose={() => setShowQuickCatModal(false)}
+            onSubmit={(cat) => {
+              addCategorie(cat);
+              toast.success(`Catégorie "${cat.nom}" créée avec succès`);
+            }}
+          />
 
-      <QuickProductModal
-        isOpen={showQuickProdModal}
-        onClose={() => setShowQuickProdModal(false)}
-        categories={categories}
-        onSubmit={(prod) => {
-          addProduit({
-            nom: prod.nom,
-            categorie: prod.categorie,
-            couleur: prod.couleur,
-            photo: prod.photo,
-          });
-          toast.success(`Tissu "${prod.nom}" ajouté au catalogue`);
-        }}
-      />
+          <QuickProductModal
+            isOpen={showQuickProdModal}
+            onClose={() => setShowQuickProdModal(false)}
+            categories={categories}
+            onSubmit={(prod) => {
+              addProduit({
+                nom: prod.nom,
+                categorie: prod.categorie,
+                couleur: prod.couleur,
+                photo: prod.photo,
+              });
+              toast.success(`Tissu "${prod.nom}" ajouté au catalogue`);
+            }}
+          />
 
-      <QuickStockAdjustmentModal
-        produit={modalEntreeRapide}
-        boutiques={boutiques}
-        onClose={() => setModalEntreeRapide(null)}
-        onSubmit={(prodId, qte, motif) => {
-          adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
-          const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique;
-          const nomCible = bId === 'entrepot' || bId === 'b-ent'
-            ? 'Entrepôt Central'
-            : (boutiques.find((b) => b.id === bId)?.nom || 'la boutique');
-          if (qte > 0) {
-            toast.success(`Entrée de stock validée à ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
-          } else {
-            toast.warning(`Sortie / perte enregistrée à ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
-          }
-        }}
-      />
+          <QuickStockAdjustmentModal
+            produit={modalEntreeRapide}
+            boutiques={boutiques}
+            onClose={() => setModalEntreeRapide(null)}
+            onSubmit={(prodId, qte, motif) => {
+              adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
+              const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique;
+              const nomCible = bId === 'entrepot' || bId === 'b-ent'
+                ? 'Entrepôt Central'
+                : (boutiques.find((b) => b.id === bId)?.nom || 'la boutique');
+              if (qte > 0) {
+                toast.success(`Entrée de stock validée à ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
+              } else {
+                toast.warning(`Sortie / perte enregistrée à ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
+              }
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };
