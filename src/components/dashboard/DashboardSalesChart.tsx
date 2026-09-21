@@ -46,7 +46,7 @@ export const DashboardSalesChart: React.FC<DashboardSalesChartProps> = ({ data }
               tickFormatter={(v) => `${v / 1000}k`}
             />
             <Tooltip
-              formatter={(v: any) => [
+              formatter={(v: unknown) => [
                 formatMontant(typeof v === 'number' ? v : Number(v) || 0),
                 'Ventes',
               ]}

@@ -929,7 +929,7 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
       newNotifs.push({
         id: generateUUID(),
-        type: 'transfert' as any,
+        type: 'transfert',
         message: `${nomSource} a pris en charge votre demande de ${target.produit} (${qte} ${target.unite || 'm'}). Expédition en cours.`,
         date: `${dateStr} ${heureStr}`,
         lu: false,

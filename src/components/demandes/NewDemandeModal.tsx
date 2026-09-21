@@ -164,7 +164,7 @@ export const NewDemandeModal: React.FC<NewDemandeModalProps> = ({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, priorite: p.id as any }))}
+                  onClick={() => setForm((f) => ({ ...f, priorite: p.id as Demande['priorite'] }))}
                   className={`py-2 rounded-xl text-xs font-medium transition-all ${
                     form.priorite === p.id
                       ? 'text-white shadow-sm'

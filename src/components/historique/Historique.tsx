@@ -33,7 +33,8 @@ export const Historique: React.FC<HistoriqueProps> = ({
 
   // Déterminer la catégorie d'action d'un élément
   const getActionCategory = (item: HistoryItem): string => {
-    if ((item as any).typeAction) return (item as any).typeAction;
+    const rawItem = item as unknown as Record<string, unknown>;
+    if (typeof rawItem.typeAction === 'string') return rawItem.typeAction;
     const act = item.action.toLowerCase();
     if (act.includes('vente')) return 'vente';
     if (act.includes('stock') || act.includes('réception')) return 'stock';

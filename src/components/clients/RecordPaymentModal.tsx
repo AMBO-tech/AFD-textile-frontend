@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Banknote, Smartphone } from 'lucide-react';
 import type { ClientDetailed, Creance } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
@@ -57,13 +57,22 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   creance,
   onSubmit,
 }) => {
+  const [montant, setMontant] = useState('');
+  const [mode, setMode] = useState<string>('Espèces');
+
+  useEffect(() => {
+    if (creance) {
+      const paye = creance.paiements.reduce((s, p) => s + p.montant, 0);
+      const reste = Math.max(0, creance.montantTotal - paye);
+      setMontant(reste.toString());
+      setMode('Espèces');
+    }
+  }, [creance, isOpen]);
+
   if (!isOpen || !creance) return null;
 
   const totalPaye = creance.paiements.reduce((s, p) => s + p.montant, 0);
   const resteDu = Math.max(0, creance.montantTotal - totalPaye);
-
-  const [montant, setMontant] = useState(resteDu.toString());
-  const [mode, setMode] = useState<string>('Espèces');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

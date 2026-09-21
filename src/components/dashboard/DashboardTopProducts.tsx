@@ -37,7 +37,7 @@ export const DashboardTopProducts: React.FC<DashboardTopProductsProps> = ({ data
               width={85}
             />
             <Tooltip
-              formatter={(v: any) => [`${v} unités vendues`, 'Volume']}
+              formatter={(v: unknown) => [`${String(v)} unités vendues`, 'Volume']}
               contentStyle={{
                 borderRadius: '12px',
                 border: 'none',
