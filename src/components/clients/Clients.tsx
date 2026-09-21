@@ -11,6 +11,10 @@ import PaymentReceiptModal, { type PaymentReceiptData } from './PaymentReceiptMo
 import { soldeClient } from './types';
 import { formatMontant } from '../../data/mock';
 import { toast } from 'sonner';
+import {
+  useCreateClientMutation,
+  useRecordPaymentMutation,
+} from '../../hooks/queries/useClientsQuery';
 
 interface ClientsProps {
   role?: 'gerant' | 'boutiquier';
@@ -44,6 +48,9 @@ export const Clients: React.FC<ClientsProps> = ({
   const [showNewDebtModal, setShowNewDebtModal] = useState(false);
   const [selectedCreanceForPayment, setSelectedCreanceForPayment] = useState<Creance | null>(null);
   const [receiptData, setReceiptData] = useState<PaymentReceiptData | null>(null);
+
+  const { mutate: createClientApi } = useCreateClientMutation();
+  const { mutate: recordPaymentApi } = useRecordPaymentMutation();
 
   // Synchronisation du client sélectionné après mutation
   const activeClient = useMemo(() => {
@@ -142,6 +149,14 @@ export const Clients: React.FC<ClientsProps> = ({
         role={role}
         onSubmit={(nouveau) => {
           const c = addClient(nouveau);
+
+          // Synchronisation API réelle
+          createClientApi({
+            nom: nouveau.nom,
+            telephone: nouveau.telephone,
+            adresse: nouveau.adresse,
+          });
+
           toast.success(`Client "${c.nom}" enregistré avec succès`);
           setSelectedClient(c);
         }}
@@ -175,6 +190,16 @@ export const Clients: React.FC<ClientsProps> = ({
                 mode,
                 session?.nom
               );
+
+              // Synchronisation API réelle
+              recordPaymentApi({
+                clientId: activeClient.id,
+                data: {
+                  montant,
+                  modePaiement: mode,
+                  referenceExterne: selectedCreanceForPayment.id,
+                },
+              });
 
               const totalPaye = selectedCreanceForPayment.paiements.reduce((s, p) => s + p.montant, 0) + montant;
               const resteDuApres = Math.max(0, selectedCreanceForPayment.montantTotal - totalPaye);

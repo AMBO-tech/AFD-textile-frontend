@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import type { SalesTab } from '../types';
 import type { LigneVente } from '../../pos/types';
 import type { PaymentTarget } from '../../../components/sales/SalesPaymentModal';
+import { useCreateSaleMutation, useCancelSaleMutation } from '../../../hooks/queries/useSalesQuery';
 
 interface UseSalesPOSProps {
   role?: 'gerant' | 'boutiquier';
@@ -39,6 +40,9 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
 
   const isBoutiquier = session?.role === 'boutiquier';
   const boutiqueActive = isBoutiquier ? (session?.boutiqueId || defaultPhysicalBoutique) : selectedBoutiqueId;
+
+  const { mutate: createSaleApi } = useCreateSaleMutation();
+  const { mutate: cancelSaleApi } = useCancelSaleMutation();
 
   const handleTabChange = (newTab: SalesTab) => {
     setTab(newTab);
@@ -151,6 +155,32 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
         ]);
       }
 
+      // Synchronisation API réelle
+      createSaleApi({
+        boutiqueId: targetBoutique,
+        lignes: [
+          {
+            produitId: ligne.produit.produitId || ligne.produit.id,
+            quantite: ligne.qte,
+            uniteSaisie: ligne.unite,
+            prixUnitaireApplique: ligne.produit.prix,
+            remiseMontant: ligne.remise,
+          },
+        ],
+        paiementInitial:
+          modeChoisi !== 'Vente à crédit'
+            ? {
+                montant: montantLigne,
+                modePaiement:
+                  modeChoisi === 'Wave'
+                    ? 'WAVE'
+                    : modeChoisi === 'Orange Money'
+                    ? 'ORANGE_MONEY'
+                    : 'ESPECES',
+              }
+            : undefined,
+      });
+
       setSuccessData({
         montant: montantLigne,
         paiement: modeChoisi,
@@ -213,6 +243,30 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
         addCreance(clientObj.id, lignesCreance);
       }
 
+      // Synchronisation API réelle
+      createSaleApi({
+        boutiqueId: targetBoutique,
+        lignes: pendingPayment.panier.map((l) => ({
+          produitId: l.produit.produitId || l.produit.id,
+          quantite: l.qte,
+          uniteSaisie: l.unite,
+          prixUnitaireApplique: l.produit.prix,
+          remiseMontant: l.remise,
+        })),
+        paiementInitial:
+          !isCredit
+            ? {
+                montant: totalPanier,
+                modePaiement:
+                  modeChoisi === 'Wave'
+                    ? 'WAVE'
+                    : modeChoisi === 'Orange Money'
+                    ? 'ORANGE_MONEY'
+                    : 'ESPECES',
+              }
+            : undefined,
+      });
+
       setSuccessData({
         montant: totalPanier,
         paiement: modeChoisi,
@@ -232,6 +286,7 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
 
   const handleCancelSale = (venteId: string, motif: string) => {
     cancelVente(venteId, motif);
+    cancelSaleApi({ id: venteId, motif });
     toast.error(`Vente annulée avec succès. Motif: ${motif}`);
     setVenteToCancel(null);
   };

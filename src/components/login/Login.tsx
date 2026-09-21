@@ -75,10 +75,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setDejaConnecte(localStorage.getItem('afd_deja_connecte') === '1');
   }, []);
 
-  const handleLoginSubmit = (identifiant: string, motdepasse: string) => {
+  const handleLoginSubmit = async (identifiant: string, motdepasse: string) => {
+    if (!identifiant.trim() || !motdepasse.trim()) {
+      setErreur('Veuillez remplir tous les champs.');
+      return;
+    }
     setLoading(true);
     setErreur('');
-    setTimeout(() => {
+
+    try {
+      // 1. Tenter l'authentification API NestJS réelle
+      await onLogin('gerant', '', undefined, {
+        identifier: identifiant.trim(),
+        motDePasse: motdepasse.trim(),
+      });
+      localStorage.setItem('afd_deja_connecte', '1');
+      setLoading(false);
+    } catch (apiErr: unknown) {
+      // 2. Fallback mode démo si serveur inaccessible ou compte mock
       const id = identifiant.trim().toLowerCase();
       const compte = COMPTES.find(
         (c) => c.id.toLowerCase() === id && c.pwd === motdepasse.trim()
@@ -86,13 +100,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (compte) {
         localStorage.setItem('afd_deja_connecte', '1');
         onLogin(compte.role, compte.nom, compte.boutiqueId);
-      } else if (!identifiant.trim() || !motdepasse.trim()) {
-        setErreur('Veuillez remplir tous les champs.');
-      } else {
-        setErreur('Identifiant ou mot de passe incorrect.');
+        setLoading(false);
+        return;
       }
+
+      const msg = apiErr instanceof Error ? apiErr.message : 'Identifiant ou mot de passe incorrect.';
+      setErreur(msg);
       setLoading(false);
-    }, 800);
+    }
   };
 
   const handleSavePassword = (newPwd: string, confirmPwd: string) => {
@@ -101,11 +116,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setErreurMdp('Minimum 6 caractères.');
       return;
     }
+
     if (newPwd !== confirmPwd) {
       setErreurMdp('Les mots de passe ne correspondent pas.');
       return;
     }
-    setOtp(['', '', '', '']);
+
+    setOtp(['', '', '', '', '', '']);
     setTelephone('');
     setSuccessMsg('Mot de passe réinitialisé avec succès.');
     setVue('login');
