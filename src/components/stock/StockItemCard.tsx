@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, AlertTriangle, CheckCircle, Package, Store, Warehouse } from 'lucide-react';
+import { Plus, AlertTriangle, CheckCircle, Package, Store, Warehouse, ShoppingCart } from 'lucide-react';
 import type { StockEnriched } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
 
@@ -9,6 +9,7 @@ interface StockItemCardProps {
   onVenteRapide?: (produitId: string) => void;
   nomEmplacement?: string;
   typeEmplacement?: 'boutique' | 'entrepot';
+  role?: 'gerant' | 'boutiquier';
 }
 
 export const StockItemCard: React.FC<StockItemCardProps> = ({
@@ -17,6 +18,7 @@ export const StockItemCard: React.FC<StockItemCardProps> = ({
   onVenteRapide,
   nomEmplacement,
   typeEmplacement = 'boutique',
+  role = 'gerant',
 }) => {
   const isCritique = produit.quantite <= produit.seuil;
   const isRupture = produit.quantite === 0;
@@ -77,14 +79,25 @@ export const StockItemCard: React.FC<StockItemCardProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        <button
-          onClick={() => onEntreeRapide(produit)}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors"
-          title="Ajouter du stock"
-        >
-          <Plus size={14} />
-          <span className="hidden sm:inline">Entrée</span>
-        </button>
+        {role === 'gerant' ? (
+          <button
+            onClick={() => onEntreeRapide(produit)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors"
+            title="Ajuster le stock physique"
+          >
+            <Plus size={14} />
+            <span className="hidden sm:inline">Ajuster</span>
+          </button>
+        ) : produit.quantite > 0 && onVenteRapide ? (
+          <button
+            onClick={() => onVenteRapide(produit.id)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition-colors"
+            title="Vendre à la caisse"
+          >
+            <ShoppingCart size={13} />
+            <span className="hidden sm:inline">Vendre</span>
+          </button>
+        ) : null}
       </div>
     </div>
   );
