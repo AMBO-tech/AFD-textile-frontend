@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
 import { useMockStore } from '../../data/useMockStore';
+import API from '../../api/api';
 
 export const ActiverComptePage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -19,7 +20,9 @@ export const ActiverComptePage: React.FC = () => {
   // Vérifier si un utilisateur correspond à ce token d'invitation
   const invitedUser = utilisateurs.find((u) => u.invitationToken === token);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -38,16 +41,35 @@ export const ActiverComptePage: React.FC = () => {
       return;
     }
 
-    const success = activateUserPassword(token, password);
-    if (!success) {
-      setError("Ce lien d'invitation a expiré ou le compte a déjà été activé.");
-      return;
+    setIsSubmitting(true);
+    try {
+      // 1. Tenter l'activation via l'API NestJS réelle
+      await API.post('/auth/setup-password', {
+        token,
+        nouveauMotDePasse: password,
+      });
+      activateUserPassword(token, password);
+      setIsSuccess(true);
+      setTimeout(() => {
+        navigate('/login');
+      }, 2500);
+    } catch (err: any) {
+      // 2. Fallback si c'est un token mock ou en cas de coupure réseau
+      const mockSuccess = activateUserPassword(token, password);
+      if (mockSuccess) {
+        setIsSuccess(true);
+        setTimeout(() => {
+          navigate('/login');
+        }, 2500);
+      } else {
+        const errorMsg =
+          err?.response?.data?.message ||
+          "Ce lien d'invitation a expiré ou le compte a déjà été activé.";
+        setError(Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSuccess(true);
-    setTimeout(() => {
-      navigate('/login');
-    }, 2800);
   };
 
   return (
