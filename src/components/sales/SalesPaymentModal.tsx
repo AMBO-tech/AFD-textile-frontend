@@ -1,54 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, CheckCircle2, ShoppingBag, ShoppingCart, User, Banknote, Smartphone, FileText } from 'lucide-react';
 import type { LigneVente } from './types';
+import BceaoCashKeypad from '../../features/pos/components/BceaoCashKeypad';
 import { formatMontant } from '../../data/mock';
 import { useMockStore } from '../../data/useMockStore';
 import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
 
-const OPTIONS_PAIEMENT: DropdownOption[] = [
-  {
-    value: 'Espèces',
-    label: 'Espèces (Cash)',
-    sublabel: 'Règlement physique avec calcul de monnaie',
-    badge: 'CASH',
-    icon: <Banknote size={16} />,
-  },
-  {
-    value: 'Wave',
-    label: 'Wave Mobile Money',
-    sublabel: 'Paiement sans frais par QR code / numéro',
-    badge: 'WAVE',
-    icon: <Smartphone size={16} />,
-  },
-  {
-    value: 'Orange Money',
-    label: 'Orange Money (OM)',
-    sublabel: "Transfert d'argent mobile instantané",
-    badge: 'OM',
-    icon: <Smartphone size={16} />,
-  },
-  {
-    value: 'Free Money',
-    label: 'Free Money',
-    sublabel: 'Portefeuille électronique Free Sénégal',
-    badge: 'FREE',
-    icon: <Smartphone size={16} />,
-  },
-  {
-    value: 'Carte bancaire',
-    label: 'Carte Bancaire / TPE',
-    sublabel: 'Terminal bancaire Visa, Mastercard, GIM',
-    badge: 'TPE',
-    icon: <CreditCard size={16} />,
-  },
-  {
-    value: 'Vente à crédit',
-    label: 'Vente à crédit / Compte client',
-    sublabel: 'Enregistrement en créance sur la fiche du client',
-    badge: 'CRÉDIT',
-    icon: <FileText size={16} />,
-  },
-];
+import { OPTIONS_PAIEMENT } from '../../features/pos/types';
 
 export type PaymentTarget =
   | { type: 'direct'; ligne: LigneVente }
@@ -240,89 +198,13 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
 
           {/* Calcul de monnaie si Espèces avec touches rapides FCFA */}
           {modePaiement === 'Espèces' && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-emerald-900">
-                  Espèces reçues du client
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu(totalNet.toString())}
-                  className="text-[10px] text-emerald-700 hover:underline font-bold cursor-pointer"
-                >
-                  Montant exact ({formatMontant(totalNet)})
-                </button>
-              </div>
-
-              {/* Boutons tactiles rapides de coupures FCFA (BCEAO officielles) */}
-              <div className="grid grid-cols-5 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu(totalNet.toString())}
-                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  Exact
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu("1000")}
-                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  1 000 F
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu("2000")}
-                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  2 000 F
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu("5000")}
-                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  5 000 F
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMontantRecu("10000")}
-                  className="px-1.5 py-2 rounded-xl bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  10 000 F
-                </button>
-              </div>
-
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  step="500"
-                  value={montantRecu}
-                  onChange={(e) => setMontantRecu(e.target.value)}
-                  placeholder={`Ex: ${formatMontant(Math.ceil(totalNet / 1000) * 1000)}`}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-emerald-200 bg-white text-sm font-bold text-gray-900 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Rendu de monnaie dynamique */}
-              {montantRecuNum > 0 && (
-                <div className="pt-1 flex items-center justify-between text-xs">
-                  {monnaieARendre >= 0 ? (
-                    <>
-                      <span className="text-gray-600 font-medium">Monnaie à rendre :</span>
-                      <span className="font-extrabold text-emerald-700 text-sm">
-                        {formatMontant(monnaieARendre)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-rose-600 font-semibold text-[11px]">
-                      Montant insuffisant (manque {formatMontant(Math.abs(monnaieARendre))})
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+            <BceaoCashKeypad
+              montantRecu={montantRecu}
+              totalNet={totalNet}
+              monnaieRendue={monnaieARendre}
+              onSetMontantRecu={setMontantRecu}
+              formatMontant={formatMontant}
+            />
           )}
 
           {/* Total final */}
