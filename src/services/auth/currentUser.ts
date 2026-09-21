@@ -1,15 +1,22 @@
-import API from '@/api/api'
-import type { User } from '@/types/auth'
+import API from '@/api/api';
+import type { User } from '@/types/auth';
 
 export const getCurrentUser = async (token?: string): Promise<User> => {
-  const headers = token ? { Authorization: `Bearer ${token}` } : undefined
-  const response = await API.get<User>('/auth/me', { headers })
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+  const response = await API.get<{ user?: User } | User>('/auth/me', { headers });
 
   if (!response.data) {
-    throw new Error('Réponse invalide du serveur lors de la récupération du profil.')
+    throw new Error('Réponse invalide du serveur lors de la récupération du profil.');
   }
 
-  return response.data
-}
+  const user = 'user' in response.data && response.data.user ? response.data.user : (response.data as User);
+  
+  // Normalisation des champs pour compatibilité UI
+  return {
+    ...user,
+    name: user.nom || user.name || '',
+    boutiqueId: user.locationId || user.boutiqueId,
+  };
+};
 
-export default getCurrentUser
+export default getCurrentUser;

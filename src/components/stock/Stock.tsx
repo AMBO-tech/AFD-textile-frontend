@@ -8,6 +8,10 @@ import QuickCategoryModal from './QuickCategoryModal';
 import QuickProductModal from './QuickProductModal';
 import QuickStockAdjustmentModal from './QuickStockAdjustmentModal';
 import StockInWizardModal from './StockInWizardModal';
+import {
+  useAdjustStockMutation,
+  useExecuteMovementMutation,
+} from '../../hooks/queries/useStocksQuery';
 
 interface StockProps {
   role?: 'gerant' | 'boutiquier';
@@ -102,6 +106,9 @@ export const Stock: React.FC<StockProps> = ({
       .filter((group) => group.produits.length > 0 || search === '');
   }, [categories, produitsFiltres, filtreCat, search]);
 
+  const { mutate: executeMovementApi } = useExecuteMovementMutation();
+  const { mutate: adjustStockApi } = useAdjustStockMutation();
+
   return (
     <div className="space-y-4">
       {/* En-tête avec métriques */}
@@ -176,6 +183,16 @@ export const Stock: React.FC<StockProps> = ({
                 pieces,
                 seuil,
               });
+
+              // Synchronisation API réelle
+              executeMovementApi({
+                produitId,
+                locationId: emplacement,
+                quantite,
+                unite,
+                sens: 'ENTREE',
+                justification: `Arrivage / Réassort (+${quantite} ${unite})`,
+              });
               const prodNom = produits.find((p) => p.id === produitId)?.nom || 'Produit';
               const nomCible = emplacement === 'entrepot'
                 ? 'Entrepôt Central'
@@ -214,7 +231,15 @@ export const Stock: React.FC<StockProps> = ({
             onClose={() => setModalEntreeRapide(null)}
             onSubmit={(prodId, qte, motif) => {
               adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
-              const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique;
+
+              // Synchronisation API réelle
+              const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique || 'b1';
+              adjustStockApi({
+                produitId: prodId,
+                locationId: bId,
+                quantiteReelle: qte,
+                justification: motif,
+              });
               const nomCible = bId === 'entrepot' || bId === 'b-ent'
                 ? 'Entrepôt Central'
                 : (boutiques.find((b) => b.id === bId)?.nom || 'la boutique');

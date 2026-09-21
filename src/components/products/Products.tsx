@@ -8,6 +8,11 @@ import ProductCard from './ProductCard';
 import ProductDetailModal from './ProductDetailModal';
 import ProductFormModal from './ProductFormModal';
 import NewCategoryModal from './NewCategoryModal';
+import {
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useArchiveProductMutation,
+} from '../../hooks/queries/useProductsQuery';
 
 export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
   const {
@@ -39,6 +44,10 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
     setShowForm(true);
   };
 
+  const { mutate: createProductApi } = useCreateProductMutation();
+  const { mutate: updateProductApi } = useUpdateProductMutation();
+  const { mutate: archiveProductApi } = useArchiveProductMutation();
+
   const handleSaveProduct = (data: {
     nom: string;
     categorie: string;
@@ -52,6 +61,17 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
         couleur: data.couleur,
         photo: data.photo,
       });
+
+      // Synchronisation API réelle
+      updateProductApi({
+        id: editing.id,
+        data: {
+          nom: data.nom,
+          couleur: data.couleur,
+          photoUrl: data.photo,
+        },
+      });
+
       toast.success(`Modèle "${data.nom}" mis à jour`);
     } else {
       addProduit({
@@ -60,6 +80,18 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
         couleur: data.couleur,
         photo: data.photo,
       });
+
+      // Synchronisation API réelle
+      createProductApi({
+        reference: `REF-${Date.now().toString().slice(-6)}`,
+        nom: data.nom,
+        categorieId: data.categorie,
+        unitePrincipaleId: 'u1',
+        photoUrl: data.photo,
+        prixIndicatif: 5000,
+        couleur: data.couleur,
+      });
+
       toast.success(`Nouveau tissu "${data.nom}" ajouté au catalogue`);
     }
     setShowForm(false);
@@ -69,6 +101,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
     const prod = produits.find((p) => p.id === id);
     if (confirm(`Supprimer le modèle "${prod?.nom || id}" du catalogue ?`)) {
       deleteProduit(id);
+      archiveProductApi(id);
       toast.success(`Produit "${prod?.nom || id}" supprimé du catalogue`);
     }
   };
