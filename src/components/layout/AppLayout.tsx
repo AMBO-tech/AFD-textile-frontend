@@ -56,9 +56,7 @@ export const AppLayout: React.FC = () => {
   };
 
   // Préférer le nom depuis le store Zustand (API réelle) plutôt que la session mock
-  const displayNom = user?.prenom
-    ? `${user.prenom} ${user.nom ?? ''}`.trim()
-    : session.nom;
+  const displayNom = user?.nom || user?.name || session.nom;
 
   return (
     <div className="min-h-screen" style={{ background: '#F5F7FA' }}>

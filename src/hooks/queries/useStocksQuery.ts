@@ -40,7 +40,8 @@ export const useExecuteMovementMutation = () => {
       produitId: string;
       locationId: string;
       quantite: number;
-      unite: string;
+      type: 'ENTREE_STOCK' | 'SORTIE_STOCK' | 'AJUSTEMENT' | 'TRANSFERT_SORTIE' | 'TRANSFERT_ENTREE';
+      uniteUtilisee: string;
       sens: 'ENTREE' | 'SORTIE';
       justification?: string;
     }) => stocksService.executeMovement(data),
