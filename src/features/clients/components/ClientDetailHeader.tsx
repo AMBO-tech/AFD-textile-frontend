@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MapPin, Store, MessageCircle, Plus } from 'lucide-react';
+import { X, MapPin, Store, MessageCircle, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 import type { ClientDetailed } from '../../../data/useMockStore';
 
 interface ClientDetailHeaderProps {
@@ -17,6 +17,9 @@ interface ClientDetailHeaderProps {
 export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
   client,
   activeBoutiqueNom,
+  aDesDettes = false,
+  solde = 0,
+  formatMontant,
   onClose,
   onOpenNewDebt,
   onWhatsApp,
@@ -29,7 +32,9 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-white text-base shadow-sm flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
+              background: aDesDettes
+                ? 'linear-gradient(135deg, #EF4444, #F97316)'
+                : 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
             }}
           >
             {client.nom
@@ -44,6 +49,25 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
               <h2 className="font-display font-bold text-gray-900 text-lg sm:text-xl truncate">
                 {client.nom}
               </h2>
+              <span
+                className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                  aDesDettes
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                }`}
+              >
+                {aDesDettes ? (
+                  <>
+                    <AlertCircle size={12} />
+                    <span>Créance : {formatMontant ? formatMontant(solde) : `${solde} FCFA`}</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={12} />
+                    <span>Compte à jour</span>
+                  </>
+                )}
+              </span>
             </div>
 
             <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">

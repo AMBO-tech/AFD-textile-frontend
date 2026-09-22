@@ -95,22 +95,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       {/* 1. Actions Rapides tout en haut */}
       <DashboardQuickActions role={role} onNavigate={onNavigate} />
 
-      {/* 2. Cartes KPI opérationnelles (Boutiquier / Vendeur uniquement) */}
-      {!isGerant && (
-        <DashboardKpiCards
-          role={role}
-          ventesJour={stats.ventesJour}
-          ventesSemaine={stats.ventesSemaine}
-          nbVentes={stats.nbVentes}
-          stockTotal={stats.stockTotal}
-          creancesTotal={stats.creancesTotal}
-          alertesCount={alertesStock.length}
-          nbProduitsVendus={stats.nbProduitsVendus}
-          stockFaibleCount={stats.stockFaibleCount}
-          produitsEnRuptureCount={stats.produitsEnRuptureCount}
-          onNavigate={onNavigate}
-        />
-      )}
+      {/* 2. Cartes KPI (Financières pour Gérant, Quantitatives pour Boutiquier) */}
+      <DashboardKpiCards
+        role={role}
+        ventesJour={stats.ventesJour}
+        ventesSemaine={stats.ventesSemaine}
+        nbVentes={stats.nbVentes}
+        stockTotal={stats.stockTotal}
+        creancesTotal={stats.creancesTotal}
+        alertesCount={alertesStock.length}
+        nbProduitsVendus={stats.nbProduitsVendus}
+        stockFaibleCount={stats.stockFaibleCount}
+        produitsEnRuptureCount={stats.produitsEnRuptureCount}
+        onNavigate={onNavigate}
+      />
 
       {/* 3. Alertes de stock critique */}
       <DashboardStockAlerts

@@ -1,6 +1,8 @@
 import React from 'react';
-import { MapPin, ShoppingBag, Edit2, Trash2, ChevronRight } from 'lucide-react';
+import { MapPin, ShoppingBag, Edit2, Trash2, MessageCircle, ChevronRight } from 'lucide-react';
 import type { ClientDetailed } from '../../data/useMockStore';
+import { soldeClient } from './types';
+import { formatMontant } from '../../data/mock';
 
 interface ClientCardProps {
   client: ClientDetailed;
@@ -17,6 +19,21 @@ export const ClientCard: React.FC<ClientCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const solde = soldeClient(client);
+  const aDesDettes = solde > 0;
+
+  const handleWhatsApp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!client.telephone) return;
+    const cleanPhone = client.telephone.replace(/[^0-9]/g, '');
+    const message = encodeURIComponent(
+      `Bonjour ${client.nom}, AFD Textile vous informe d'un solde restant de ${formatMontant(
+        solde
+      )} sur vos achats de tissus. Merci de nous contacter pour votre règlement.`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+  };
+
   return (
     <div
       onClick={() => onSelect(client)}
@@ -26,7 +43,9 @@ export const ClientCard: React.FC<ClientCardProps> = ({
         <div
           className="w-11 h-11 rounded-2xl flex items-center justify-center font-display font-bold text-white text-sm flex-shrink-0"
           style={{
-            background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
+            background: aDesDettes
+              ? 'linear-gradient(135deg, #EF4444, #F97316)'
+              : 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
           }}
         >
           {client.nom
@@ -57,48 +76,74 @@ export const ClientCard: React.FC<ClientCardProps> = ({
       </div>
 
       <div
-        className="flex items-center justify-end gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 flex-shrink-0"
+        className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 flex-shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={() => onSelect(client)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-          title="Consulter l'historique et les achats"
-        >
-          <ShoppingBag size={14} />
-          <span>Voir achats</span>
-        </button>
+        <div className="text-left sm:text-right">
+          <div
+            className={`font-display font-bold text-sm sm:text-base ${
+              aDesDettes ? 'text-red-600' : 'text-green-600'
+            }`}
+          >
+            {aDesDettes ? formatMontant(solde) : 'À jour (0 FCFA)'}
+          </div>
+          <div className="text-[10px] text-gray-400">
+            {client.creances.length} dossier{client.creances.length > 1 ? 's' : ''}
+          </div>
+        </div>
 
-        {onEdit && (
+        <div className="flex items-center gap-1.5">
+          {aDesDettes && client.telephone && (
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="p-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+              title="Envoyer une relance WhatsApp"
+            >
+              <MessageCircle size={15} />
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => onEdit(client)}
-            className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition-colors"
-            title="Modifier le client"
+            onClick={() => onSelect(client)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+            title="Consulter l'historique et les achats"
           >
-            <Edit2 size={14} />
+            <ShoppingBag size={14} />
+            <span className="hidden sm:inline">Voir achats</span>
           </button>
-        )}
 
-        {onDelete && (
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(client)}
+              className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition-colors"
+              title="Modifier le client"
+            >
+              <Edit2 size={14} />
+            </button>
+          )}
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(client)}
+              className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+              title="Supprimer le client"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => onDelete(client)}
-            className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-            title="Supprimer le client"
+            onClick={() => onSelect(client)}
+            className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 transition-colors"
           >
-            <Trash2 size={14} />
+            <ChevronRight size={18} />
           </button>
-        )}
-
-        <button
-          type="button"
-          onClick={() => onSelect(client)}
-          className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 transition-colors"
-        >
-          <ChevronRight size={18} />
-        </button>
+        </div>
       </div>
     </div>
   );

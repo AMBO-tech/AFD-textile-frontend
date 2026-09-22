@@ -31,7 +31,69 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
   const isManager = role === 'gerant' || role === 'admin';
 
   if (isManager) {
-    return null;
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500">Ventes du jour</span>
+            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+              <TrendingUp size={16} className="text-green-600" />
+            </div>
+          </div>
+          <div className="font-display font-bold text-gray-900 text-lg sm:text-xl">
+            {formatMontant(ventesJour)}
+          </div>
+          <div className="text-xs text-green-600 font-medium mt-0.5">
+            {nbVentes} vente{nbVentes > 1 ? 's' : ''} aujourd'hui
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500">Ventes semaine</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+              <ShoppingBag size={16} className="text-blue-600" />
+            </div>
+          </div>
+          <div className="font-display font-bold text-gray-900 text-lg sm:text-xl">
+            {formatMontant(ventesSemaine)}
+          </div>
+          <div className="text-xs text-blue-600 font-medium mt-0.5">7 derniers jours</div>
+        </div>
+
+        <div
+          onClick={() => onNavigate?.('stock')}
+          className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:border-gray-200 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500">Stock total</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+              <Package size={16} className="text-amber-600" />
+            </div>
+          </div>
+          <div className="font-display font-bold text-gray-900 text-lg sm:text-xl">
+            {stockTotal} <span className="text-sm font-normal text-gray-500">unités</span>
+          </div>
+          <div className="text-xs text-gray-400 mt-0.5">Réseau boutiques</div>
+        </div>
+
+        <div
+          onClick={() => onNavigate?.('clients')}
+          className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:border-gray-200 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500">Créances clients</span>
+            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+              <CreditCard size={16} className="text-red-500" />
+            </div>
+          </div>
+          <div className="font-display font-bold text-red-600 text-lg sm:text-xl">
+            {formatMontant(creancesTotal)}
+          </div>
+          <div className="text-xs text-red-400 mt-0.5">À recouvrer</div>
+        </div>
+      </div>
+    );
   }
 
   // Rôle Boutiquier / Vendeur : Uniquement des métriques quantitatives (AUCUN montant FCFA / argent)
