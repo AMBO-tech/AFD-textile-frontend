@@ -8,60 +8,75 @@ interface DashboardQuickActionsProps {
 
 export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({ role, onNavigate }) => {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm mb-6">
-      <div className="font-display font-bold text-gray-900 text-base mb-3">
+    <div className="mb-6">
+      <div className="font-display font-bold text-gray-900 text-base mb-3.5">
         Actions Rapides
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
         <button
+          type="button"
           onClick={() => onNavigate?.('ventes')}
-          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-50/60 hover:bg-blue-50 text-blue-700 transition-colors text-center"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-blue-100 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group text-center"
         >
-          <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-sm">
-            <ShoppingCart size={18} />
+          <div className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+            <ShoppingCart size={24} />
           </div>
-          <span className="text-xs font-semibold">Nouvelle Vente</span>
+          <span className="text-sm font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
+            Nouvelle Vente
+          </span>
         </button>
 
         <button
+          type="button"
           onClick={() => onNavigate?.('stock')}
-          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-amber-50/60 hover:bg-amber-50 text-amber-800 transition-colors text-center"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-amber-100 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group text-center"
         >
-          <div className="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-sm">
-            <Package size={18} />
+          <div className="w-14 h-14 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+            <Package size={24} />
           </div>
-          <span className="text-xs font-semibold">Gérer Stock</span>
+          <span className="text-sm font-semibold text-gray-800 group-hover:text-amber-700 transition-colors">
+            Gérer Stock
+          </span>
         </button>
 
         <button
+          type="button"
           onClick={() => onNavigate?.('clients')}
-          className="flex flex-col items-center gap-2 p-3 rounded-xl bg-green-50/60 hover:bg-green-50 text-green-700 transition-colors text-center"
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-emerald-100 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group text-center"
         >
-          <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center shadow-sm">
-            <UserPlus size={18} />
+          <div className="w-14 h-14 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+            <UserPlus size={24} />
           </div>
-          <span className="text-xs font-semibold">Nouveau Client</span>
+          <span className="text-sm font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">
+            Nouveau Client
+          </span>
         </button>
 
         {role === 'gerant' ? (
           <button
+            type="button"
             onClick={() => onNavigate?.('rapports')}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-purple-50/60 hover:bg-purple-50 text-purple-700 transition-colors text-center"
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-purple-100 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group text-center"
           >
-            <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-sm">
-              <BarChart2 size={18} />
+            <div className="w-14 h-14 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+              <BarChart2 size={24} />
             </div>
-            <span className="text-xs font-semibold">Voir Rapports</span>
+            <span className="text-sm font-semibold text-gray-800 group-hover:text-purple-700 transition-colors">
+              Voir Rapports
+            </span>
           </button>
         ) : (
           <button
+            type="button"
             onClick={() => onNavigate?.('demandes')}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-purple-50/60 hover:bg-purple-50 text-purple-700 transition-colors text-center"
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-purple-100 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group text-center"
           >
-            <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-sm">
-              <ArrowLeftRight size={18} />
+            <div className="w-14 h-14 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 flex-shrink-0">
+              <ArrowLeftRight size={24} />
             </div>
-            <span className="text-xs font-semibold">Demander Stock</span>
+            <span className="text-sm font-semibold text-gray-800 group-hover:text-purple-700 transition-colors">
+              Demander Stock
+            </span>
           </button>
         )}
       </div>
