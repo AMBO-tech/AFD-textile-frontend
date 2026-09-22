@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, ShoppingBag, Package, AlertTriangle, CreditCard, AlertCircle } from 'lucide-react';
+import { TrendingUp, ShoppingBag, Package, AlertTriangle, Users, AlertCircle } from 'lucide-react';
 import { formatMontant } from '../../data/mock';
 
 interface DashboardKpiCardsProps {
@@ -8,7 +8,8 @@ interface DashboardKpiCardsProps {
   ventesSemaine: number;
   nbVentes: number;
   stockTotal: number;
-  creancesTotal: number;
+  creancesTotal?: number;
+  totalClients?: number;
   alertesCount: number;
   nbProduitsVendus?: number;
   stockFaibleCount?: number;
@@ -22,7 +23,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
   ventesSemaine,
   nbVentes,
   stockTotal,
-  creancesTotal,
+  totalClients = 0,
   nbProduitsVendus = 0,
   stockFaibleCount = 0,
   produitsEnRuptureCount = 0,
@@ -33,9 +34,10 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
   if (isManager) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {/* 1. Ventes aujourd'hui */}
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-500">Ventes du jour</span>
+            <span className="text-xs font-medium text-gray-500">Ventes aujourd'hui</span>
             <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
               <TrendingUp size={16} className="text-green-600" />
             </div>
@@ -44,10 +46,11 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
             {formatMontant(ventesJour)}
           </div>
           <div className="text-xs text-green-600 font-medium mt-0.5">
-            {nbVentes} vente{nbVentes > 1 ? 's' : ''} aujourd'hui
+            {nbVentes} vente{nbVentes > 1 ? 's' : ''} validée{nbVentes > 1 ? 's' : ''}
           </div>
         </div>
 
+        {/* 2. Ventes semaine */}
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-gray-500">Ventes semaine</span>
@@ -61,6 +64,7 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
           <div className="text-xs text-blue-600 font-medium mt-0.5">7 derniers jours</div>
         </div>
 
+        {/* 3. Stock total */}
         <div
           onClick={() => onNavigate?.('stock')}
           className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:border-gray-200 transition-colors"
@@ -77,20 +81,21 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
           <div className="text-xs text-gray-400 mt-0.5">Réseau boutiques</div>
         </div>
 
+        {/* 4. Total Clients (remplace Créances clients) */}
         <div
           onClick={() => onNavigate?.('clients')}
           className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm cursor-pointer hover:border-gray-200 transition-colors"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-500">Créances clients</span>
-            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-              <CreditCard size={16} className="text-red-500" />
+            <span className="text-xs font-medium text-gray-500">Total Clients</span>
+            <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+              <Users size={16} className="text-purple-600" />
             </div>
           </div>
-          <div className="font-display font-bold text-red-600 text-lg sm:text-xl">
-            {formatMontant(creancesTotal)}
+          <div className="font-display font-bold text-gray-900 text-lg sm:text-xl">
+            {totalClients}
           </div>
-          <div className="text-xs text-red-400 mt-0.5">À recouvrer</div>
+          <div className="text-xs text-purple-600 mt-0.5">Clients enregistrés</div>
         </div>
       </div>
     );

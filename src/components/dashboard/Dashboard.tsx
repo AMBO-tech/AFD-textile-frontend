@@ -8,7 +8,7 @@ import DashboardQuickActions from './DashboardQuickActions';
 import DashboardBoutiquesOverview from './DashboardBoutiquesOverview';
 
 interface DashboardProps {
-  role: 'gerant' | 'boutiquier';
+  role: 'gerant' | 'boutiquier' | 'vendeur' | 'admin' | string;
   onNavigate?: (s: string) => void;
   onVenteDirecte?: (produitId: string) => void;
 }
@@ -19,7 +19,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
 
   // Stocks et ventes ciblés selon le rôle
   const stocksAffiches = useMemo(() => {
-    return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
+    return role === 'gerant' || role === 'admin'
+      ? getStocksEnriched()
+      : getStocksEnriched(boutiqueId);
   }, [getStocksEnriched, role, boutiqueId, stocks, produits]);
 
   const alertesStock = useMemo(() => {
@@ -29,7 +31,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
   const ventesValidees = useMemo(() => {
     return ventes.filter((v) => {
       const isValide = v.statut === 'validée';
-      return role === 'gerant' ? isValide : isValide && v.boutique === boutiqueId;
+      return role === 'gerant' || role === 'admin' ? isValide : isValide && v.boutique === boutiqueId;
     });
   }, [ventes, role, boutiqueId]);
 
@@ -62,10 +64,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       nbProduitsVendus,
       stockFaibleCount,
       produitsEnRuptureCount,
+      totalClients: clients.length,
     };
   }, [ventesValidees, stocksAffiches, clients]);
 
-  const isGerant = role === 'gerant';
+  const isGerant = role === 'gerant' || role === 'admin';
 
   return (
     <div className="space-y-2">
@@ -77,7 +80,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">
             {isGerant
-              ? 'Aperçu consolidé des ventes, stocks et créances du réseau'
+              ? 'Aperçu consolidé des ventes, stocks et clients du réseau'
               : 'Gestion des ventes et suivi opérationnel du stock de votre boutique'}
           </p>
         </div>
@@ -92,25 +95,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
         </span>
       </div>
 
-      {/* 1. Actions Rapides tout en haut */}
-      <DashboardQuickActions role={role} onNavigate={onNavigate} />
+      {/* ORDRE POUR GÉRANT : Grille 4 KPI (argent/stock/clients) puis Actions Rapides en dessous */}
+      {isGerant && (
+        <>
+          <DashboardKpiCards
+            role={role}
+            ventesJour={stats.ventesJour}
+            ventesSemaine={stats.ventesSemaine}
+            nbVentes={stats.nbVentes}
+            stockTotal={stats.stockTotal}
+            totalClients={stats.totalClients}
+            alertesCount={alertesStock.length}
+            onNavigate={onNavigate}
+          />
+          <DashboardQuickActions role={role} onNavigate={onNavigate} />
+        </>
+      )}
 
-      {/* 2. Cartes KPI (Financières pour Gérant, Quantitatives pour Boutiquier) */}
-      <DashboardKpiCards
-        role={role}
-        ventesJour={stats.ventesJour}
-        ventesSemaine={stats.ventesSemaine}
-        nbVentes={stats.nbVentes}
-        stockTotal={stats.stockTotal}
-        creancesTotal={stats.creancesTotal}
-        alertesCount={alertesStock.length}
-        nbProduitsVendus={stats.nbProduitsVendus}
-        stockFaibleCount={stats.stockFaibleCount}
-        produitsEnRuptureCount={stats.produitsEnRuptureCount}
-        onNavigate={onNavigate}
-      />
+      {/* ORDRE POUR BOUTIQUIER : Actions Rapides tout en haut puis 4 cartes opérationnelles */}
+      {!isGerant && (
+        <>
+          <DashboardQuickActions role={role} onNavigate={onNavigate} />
+          <DashboardKpiCards
+            role={role}
+            ventesJour={stats.ventesJour}
+            ventesSemaine={stats.ventesSemaine}
+            nbVentes={stats.nbVentes}
+            stockTotal={stats.stockTotal}
+            totalClients={stats.totalClients}
+            alertesCount={alertesStock.length}
+            nbProduitsVendus={stats.nbProduitsVendus}
+            stockFaibleCount={stats.stockFaibleCount}
+            produitsEnRuptureCount={stats.produitsEnRuptureCount}
+            onNavigate={onNavigate}
+          />
+        </>
+      )}
 
-      {/* 3. Alertes de stock critique */}
+      {/* Alertes de stock critique */}
       <DashboardStockAlerts
         alerts={alertesStock}
         onNavigate={onNavigate}

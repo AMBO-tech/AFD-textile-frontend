@@ -2,11 +2,13 @@ import React from 'react';
 import { ShoppingCart, Package, UserPlus, ArrowLeftRight, BarChart2 } from 'lucide-react';
 
 interface DashboardQuickActionsProps {
-  role: 'gerant' | 'boutiquier';
+  role: 'gerant' | 'boutiquier' | 'admin' | 'vendeur' | string;
   onNavigate?: (s: string) => void;
 }
 
 export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({ role, onNavigate }) => {
+  const isGerant = role === 'gerant' || role === 'admin';
+
   return (
     <div className="mb-6">
       <div className="font-display font-bold text-gray-900 text-base mb-3.5">
@@ -52,7 +54,7 @@ export const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({ ro
           </span>
         </button>
 
-        {role === 'gerant' ? (
+        {isGerant ? (
           <button
             type="button"
             onClick={() => onNavigate?.('rapports')}
