@@ -120,6 +120,8 @@ export const Clients: React.FC<ClientsProps> = ({
               client={client}
               boutiqueNom={getBoutiqueNom(client.boutiqueId)}
               onSelect={(c) => setSelectedClient(c)}
+              onEdit={(c) => toast.info(`Modification de "${c.nom}" à venir`)}
+              onDelete={(c) => toast.info(`Suppression de "${c.nom}" (action restreinte gérant)`)}
             />
           ))
         )}

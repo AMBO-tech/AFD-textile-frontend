@@ -56,17 +56,9 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   const handleWhatsApp = () => {
     const cleanPhone = client.telephone.replace(/[^0-9]/g, '');
     const message = encodeURIComponent(
-      aDesDettes
-        ? `Bonjour ${client.nom}, AFD Textile (${activeBoutiqueNom}) vous informe d'un solde restant de ${formatMontant(
-            solde
-          )} sur vos achats de tissus. Merci de nous contacter pour votre règlement.`
-        : `Bonjour ${client.nom}, l'équipe AFD Textile (${activeBoutiqueNom}) vous remercie pour votre fidélité. Votre compte est parfaitement à jour.`
+      `Bonjour ${client.nom}, l'équipe AFD Textile (${activeBoutiqueNom}) vous remercie pour votre fidélité.`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
-  };
-
-  const handleCall = () => {
-    window.location.href = `tel:${client.telephone}`;
   };
 
   return (
@@ -76,22 +68,16 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
         <ClientDetailHeader
           client={client}
           activeBoutiqueNom={activeBoutiqueNom}
-          aDesDettes={aDesDettes}
-          solde={solde}
-          formatMontant={formatMontant}
           onClose={onClose}
           onOpenNewDebt={onOpenNewDebt}
-          onCall={handleCall}
           onWhatsApp={handleWhatsApp}
         />
 
-        {/* 2. Tableau de bord financier */}
+        {/* 2. Tableau de bord des achats */}
         <ClientDetailKpis
           totalAchats={totalAchats}
           totalPaye={totalPaye}
-          solde={solde}
           tauxRecouvrement={tauxRecouvrement}
-          aDesDettes={aDesDettes}
           formatMontant={formatMontant}
         />
 

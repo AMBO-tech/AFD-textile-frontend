@@ -1,28 +1,24 @@
 import React from 'react';
-import { X, Phone, MapPin, Store, MessageCircle, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
+import { X, MapPin, Store, MessageCircle, Plus } from 'lucide-react';
 import type { ClientDetailed } from '../../../data/useMockStore';
 
 interface ClientDetailHeaderProps {
   client: ClientDetailed;
   activeBoutiqueNom: string;
-  aDesDettes: boolean;
-  solde: number;
-  formatMontant: (n: number) => string;
+  aDesDettes?: boolean;
+  solde?: number;
+  formatMontant?: (n: number) => string;
   onClose: () => void;
   onOpenNewDebt: () => void;
-  onCall: () => void;
+  onCall?: () => void;
   onWhatsApp: () => void;
 }
 
 export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
   client,
   activeBoutiqueNom,
-  aDesDettes,
-  solde,
-  formatMontant,
   onClose,
   onOpenNewDebt,
-  onCall,
   onWhatsApp,
 }) => {
   return (
@@ -33,9 +29,7 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-white text-base shadow-sm flex-shrink-0"
             style={{
-              background: aDesDettes
-                ? 'linear-gradient(135deg, #EF4444, #F97316)'
-                : 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
+              background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
             }}
           >
             {client.nom
@@ -50,31 +44,11 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
               <h2 className="font-display font-bold text-gray-900 text-lg sm:text-xl truncate">
                 {client.nom}
               </h2>
-              <span
-                className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full ${
-                  aDesDettes
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                }`}
-              >
-                {aDesDettes ? (
-                  <>
-                    <AlertCircle size={12} />
-                    <span>Créance : {formatMontant(solde)}</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={12} />
-                    <span>Compte à jour</span>
-                  </>
-                )}
-              </span>
             </div>
 
             <div className="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
-              <span className="flex items-center gap-1">
-                <Phone size={12} className="text-gray-400" />
-                {client.telephone || 'Sans téléphone'}
+              <span className="text-gray-600 font-normal">
+                Tél : {client.telephone || 'Sans téléphone'}
               </span>
               <span className="flex items-center gap-1">
                 <MapPin size={12} className="text-gray-400" />
@@ -97,25 +71,16 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
         </button>
       </div>
 
-      {/* Actions rapides contact et nouvelle créance */}
+      {/* Actions rapides contact et nouvelle commande */}
       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100 flex-wrap">
         {client.telephone && (
-          <>
-            <button
-              onClick={onWhatsApp}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold border border-emerald-200/60 transition-colors cursor-pointer"
-            >
-              <MessageCircle size={14} className="text-emerald-600" />
-              <span>Relance WhatsApp</span>
-            </button>
-            <button
-              onClick={onCall}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-semibold border border-gray-200 transition-colors cursor-pointer"
-            >
-              <Phone size={14} className="text-gray-500" />
-              <span>Appeler</span>
-            </button>
-          </>
+          <button
+            onClick={onWhatsApp}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold border border-emerald-200/60 transition-colors cursor-pointer"
+          >
+            <MessageCircle size={14} className="text-emerald-600" />
+            <span>Message WhatsApp</span>
+          </button>
         )}
 
         <button
@@ -124,7 +89,7 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
           style={{ background: '#0F3D5E' }}
         >
           <Plus size={14} />
-          <span>Nouvelle dette / Achat à crédit</span>
+          <span>Nouvelle vente à crédit</span>
         </button>
       </div>
     </div>
