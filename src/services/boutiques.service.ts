@@ -18,8 +18,9 @@ export const boutiquesService = {
     const res = await API.patch<Location>(`/locations/${id}`, data);
     return res.data;
   },
+  /** Bascule le statut actif/inactif d'une boutique — route correcte : PATCH /locations/:id/toggle-status */
   toggleStatus: async (id: string) => {
-    const res = await API.patch<Location>(`/locations/${id}/statut`);
+    const res = await API.patch<Location>(`/locations/${id}/toggle-status`);
     return res.data;
   },
 };

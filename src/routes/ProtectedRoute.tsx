@@ -1,12 +1,12 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useMockStore } from '../data/useMockStore';
+import { useAuthUser } from '../hooks/useAuthUser';
 
 export const ProtectedRoute: React.FC = () => {
-  const { session } = useMockStore();
+  const { isAuthenticated } = useAuthUser();
   const location = useLocation();
 
-  if (!session) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

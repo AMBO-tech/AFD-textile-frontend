@@ -5,6 +5,11 @@ import BoutiquesList from './BoutiquesList';
 import BoutiqueModal from './BoutiqueModal';
 import BoutiqueStaffModal from './BoutiqueStaffModal';
 import { CheckCircle2 } from 'lucide-react';
+import {
+  useCreateLocationMutation,
+  useUpdateLocationMutation,
+  useToggleLocationStatusMutation,
+} from '../../hooks/queries/useLocationsQuery';
 
 export const Boutiques: React.FC = () => {
   const {
@@ -51,6 +56,10 @@ export const Boutiques: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const { mutate: createLocationApi } = useCreateLocationMutation();
+  const { mutate: updateLocationApi } = useUpdateLocationMutation();
+  const { mutate: toggleLocationApi } = useToggleLocationStatusMutation();
+
   const handleSave = (form: BoutiqueFormData) => {
     if (editingBoutique) {
       updateBoutique(editingBoutique.id, {
@@ -61,6 +70,16 @@ export const Boutiques: React.FC = () => {
         adresse: form.adresse,
         telephone: form.telephone,
         gerant: form.gerant,
+      });
+      // Synchronisation API réelle
+      updateLocationApi({
+        id: editingBoutique.id,
+        data: {
+          nom: form.nom,
+          type: form.type === 'ENTREPOT' ? 'ENTREPOT' : 'BOUTIQUE',
+          adresse: form.adresse,
+          telephone: form.telephone,
+        },
       });
       setFeedbackMsg(`L'emplacement ${form.nom} a été mis à jour avec succès.`);
     } else {
@@ -73,6 +92,13 @@ export const Boutiques: React.FC = () => {
         telephone: form.telephone,
         gerant: form.gerant,
       });
+      // Synchronisation API réelle
+      createLocationApi({
+        nom: form.nom,
+        type: form.type === 'ENTREPOT' ? 'ENTREPOT' : 'BOUTIQUE',
+        adresse: form.adresse || 'Dakar',
+        telephone: form.telephone || '+221',
+      });
       setFeedbackMsg(`L'emplacement ${form.nom} (${form.type}) a été créé avec succès.`);
     }
 
@@ -83,6 +109,7 @@ export const Boutiques: React.FC = () => {
 
   const handleToggleStatus = (id: string) => {
     toggleBoutiqueActif(id);
+    toggleLocationApi(id);
     const target = boutiques.find((b) => b.id === id);
     if (target) {
       const statutTxt = target.actif ? 'désactivé' : 'activé';

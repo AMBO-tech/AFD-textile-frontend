@@ -15,9 +15,10 @@ export const useLogin = () => {
   const mutation = useMutation<LoginResponse | ApiError, Error, LoginRequest>({
     mutationFn: (credentials) => LOGIN(credentials),
     onSuccess: (response) => {
-      if (response.success) {
+      if (response.success || ('accessToken' in response && Boolean(response.accessToken))) {
+        const token = 'accessToken' in response ? (response.accessToken as string) : '';
         // Enregistrer la session dans Zustand / tokenStore
-        setAuth(response.token, response.user || null)
+        setAuth(token, response.user || null)
 
         // Pré-remplir le cache TanStack Query avec l'utilisateur si retourné par l'API
         if (response.user) {

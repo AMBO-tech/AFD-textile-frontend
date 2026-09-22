@@ -4,6 +4,13 @@ import { useMockStore } from '../../data/useMockStore';
 import type { Utilisateur, UserFormData, UserRoleFilter } from './types';
 import UserCard from './UserCard';
 import UserModal from './UserModal';
+import {
+  useInviteUserMutation,
+  useResendInviteMutation,
+  useUpdateUserMutation,
+  useToggleUserStatusMutation,
+} from '../../hooks/queries/useUsersQuery';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
 
 interface UsersProps {
   boutiqueId?: string;
@@ -27,6 +34,12 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
   const [createdInviteUrl, setCreatedInviteUrl] = useState<{ nom: string; url: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const { mutateAsync: inviteUserApi } = useInviteUserMutation();
+  const { mutateAsync: resendInviteApi } = useResendInviteMutation();
+  const { mutate: updateUserApi } = useUpdateUserMutation();
+  const { mutate: toggleUserStatusApi } = useToggleUserStatusMutation();
+  const { data: locationsData } = useLocationsListQuery();
+
   // Filtrage des utilisateurs
   const usersFiltres = utilisateurs.filter((u) => {
     const matchRole = filtreRole === 'tous' || u.role === filtreRole;
@@ -43,6 +56,12 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
     const boutiqueAssociee = form.role === 'boutiquier' ? form.boutique : '';
     const boutiqueNom = boutiques.find((b) => b.id === form.boutique)?.nom;
 
+    // Résolution de l'UUID réel de la boutique pour l'API
+    const matchedLocation = locationsData?.data?.find(
+      (l) => l.id === form.boutique || l.nom.toLowerCase().includes(boutiqueNom?.toLowerCase() || '')
+    );
+    const realLocationId = matchedLocation?.id || (form.boutique.length > 10 ? form.boutique : undefined);
+
     if (editing) {
       updateUtilisateur(editing.id, {
         nom: form.nom.trim(),
@@ -55,6 +74,20 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
       setEditing(null);
       setSuccessMsg(`Utilisateur ${form.nom.trim()} modifié avec succès.`);
       setTimeout(() => setSuccessMsg(null), 3500);
+
+      // Synchro API NestJS
+      if (editing.id.length > 10) {
+        updateUserApi({
+          id: editing.id,
+          data: {
+            nom: form.nom.trim(),
+            telephone: form.telephone.trim(),
+            email: form.email.trim() || undefined,
+            role: form.role === 'gerant' ? 'OWNER' : 'BOUTIQUIER',
+            locationId: form.role === 'boutiquier' ? realLocationId : undefined,
+          },
+        });
+      }
     } else {
       const newUser = addUtilisateur({
         nom: form.nom.trim(),
@@ -66,9 +99,9 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
       });
       setShowForm(false);
 
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.afd-textile.sn';
-      const inviteUrl = `${baseUrl}/activer-compte?token=${newUser.invitationToken}`;
-      setCreatedInviteUrl({ nom: newUser.nom, url: inviteUrl });
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+      const defaultInviteUrl = `${baseUrl}/activer-compte?token=${newUser.invitationToken}`;
+      setCreatedInviteUrl({ nom: newUser.nom, url: defaultInviteUrl });
 
       setSuccessMsg(
         `Compte créé avec succès pour ${form.nom.trim()} (${
@@ -76,6 +109,23 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
         }).`
       );
       setTimeout(() => setSuccessMsg(null), 5000);
+
+      // Appel API NestJS réel (génère le token SHA-256 dans PostgreSQL et loggue le SMS/Email)
+      inviteUserApi({
+        nom: form.nom.trim(),
+        telephone: form.telephone.trim(),
+        email: form.email.trim() || undefined,
+        role: form.role === 'gerant' ? 'OWNER' : 'BOUTIQUIER',
+        locationId: form.role === 'boutiquier' ? realLocationId : undefined,
+      })
+        .then((apiRes) => {
+          if (apiRes?.activationUrl) {
+            setCreatedInviteUrl({ nom: form.nom.trim(), url: apiRes.activationUrl });
+          }
+        })
+        .catch((err) => {
+          console.warn('API invite fallback local actif:', err);
+        });
     }
   };
 
@@ -86,6 +136,22 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
       setCreatedInviteUrl({ nom: user.nom, url: res.activationUrl });
       setSuccessMsg(`Nouveau lien d'activation (valide 72h) généré pour ${user.nom}.`);
       setTimeout(() => setSuccessMsg(null), 4000);
+    }
+    if (id.length > 10) {
+      resendInviteApi(id)
+        .then((apiRes) => {
+          if (apiRes?.activationUrl) {
+            setCreatedInviteUrl({ nom: user?.nom || 'Collaborateur', url: apiRes.activationUrl });
+          }
+        })
+        .catch(() => {});
+    }
+  };
+
+  const handleToggleActif = (id: string) => {
+    toggleUtilisateurActif(id);
+    if (id.length > 10) {
+      toggleUserStatusApi(id);
     }
   };
 
@@ -118,14 +184,14 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
         </div>
         <button
           onClick={ouvrirNouveauForm}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md active:scale-95 transition-all"
-          style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
         >
-          <UserPlus size={15} /> Inviter un collaborateur
+          <UserPlus size={16} />
+          <span>Inviter un collaborateur</span>
         </button>
       </div>
 
-      {/* Message de succès & Bannière lien d'activation */}
+      {/* Bannière de lien d'invitation généré */}
       {createdInviteUrl && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-2 animate-fade-in shadow-sm">
           <div className="flex items-center justify-between">
@@ -151,7 +217,18 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
             >
               <span>{copied ? 'Copié !' : 'Copier'}</span>
             </button>
+            <a
+              href={createdInviteUrl.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5 shadow-sm"
+            >
+              <span>Ouvrir</span>
+            </a>
           </div>
+          <p className="text-[11px] text-blue-700/80">
+            ℹ️ En environnement local de test, aucun SMS ou e-mail payant n'est débité : le lien est généré ici pour vos tests ou pour envoi direct par WhatsApp.
+          </p>
         </div>
       )}
 
@@ -222,7 +299,7 @@ export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
             user={u}
             boutiques={boutiques}
             onEdit={openEdit}
-            onToggleActif={toggleUtilisateurActif}
+            onToggleActif={handleToggleActif}
             onResendInvite={handleResend}
           />
         ))}
