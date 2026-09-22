@@ -189,7 +189,8 @@ export const Stock: React.FC<StockProps> = ({
                 produitId,
                 locationId: emplacement,
                 quantite,
-                unite,
+                type: 'ENTREE_STOCK',
+                uniteUtilisee: unite,
                 sens: 'ENTREE',
                 justification: `Arrivage / Réassort (+${quantite} ${unite})`,
               });

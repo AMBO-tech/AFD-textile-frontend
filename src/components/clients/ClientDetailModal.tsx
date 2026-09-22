@@ -65,10 +65,6 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
 
-  const handleCall = () => {
-    window.location.href = `tel:${client.telephone}`;
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col overflow-hidden">
@@ -81,7 +77,6 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           formatMontant={formatMontant}
           onClose={onClose}
           onOpenNewDebt={onOpenNewDebt}
-          onCall={handleCall}
           onWhatsApp={handleWhatsApp}
         />
 

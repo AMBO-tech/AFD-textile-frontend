@@ -9,14 +9,26 @@ export interface ApiResponse<T = unknown> {
   timestamp?: string
 }
 
+/**
+ * Réponse paginée — correspond au format backend NestJS.
+ * Le backend retourne `data: T[]` (et non `items: T[]`).
+ * Les métadonnées sont soit à plat soit dans un objet `meta`.
+ */
 export interface PaginatedResponse<T> {
-  items: T[]
+  data: T[]
   total: number
   page: number
-  pageSize: number
+  limit: number
   totalPages: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
+  hasNextPage?: boolean
+  hasPreviousPage?: boolean
+  /** Certains endpoints NestJS encapsulent les méta dans un sous-objet */
+  meta?: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
 }
 
 export interface PaginationParams {

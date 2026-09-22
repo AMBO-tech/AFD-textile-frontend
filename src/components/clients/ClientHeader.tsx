@@ -34,7 +34,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         </div>
         <button
           onClick={onOpenNewClient}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white shadow-sm transition-all hover:opacity-95 self-start sm:self-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white shadow-sm transition-all hover:opacity-95 self-start sm:self-auto cursor-pointer"
           style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
         >
           <Plus size={16} />
@@ -42,8 +42,8 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         </button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* KPIs avec créances */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-gray-500">Total clients</span>
@@ -66,7 +66,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
           <span className="text-[11px] text-red-400">À recouvrer</span>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm col-span-2 sm:col-span-1">
+        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-gray-500">Clients débiteurs</span>
             <AlertCircle size={16} className="text-amber-500" />

@@ -49,14 +49,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       return s + solde;
     }, 0);
 
+    const nbProduitsVendus = ventesValidees.reduce((acc, v) => acc + (v.quantite || 1), 0);
+    const stockFaibleCount = stocksAffiches.filter((p) => p.quantite > 0 && p.quantite <= p.seuil).length;
+    const produitsEnRuptureCount = stocksAffiches.filter((p) => p.quantite <= 0).length;
+
     return {
       ventesJour,
       ventesSemaine,
       nbVentes: ventesValidees.length,
       stockTotal,
       creancesTotal,
+      nbProduitsVendus,
+      stockFaibleCount,
+      produitsEnRuptureCount,
     };
   }, [ventesValidees, stocksAffiches, clients]);
+
+  const isGerant = role === 'gerant';
 
   return (
     <div className="space-y-2">
@@ -64,26 +73,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">
-            {role === 'gerant' ? 'Tableau de bord Global' : 'Tableau de bord Caisse'}
+            {isGerant ? 'Tableau de bord Global' : 'Tableau de bord Boutique'}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">
-            {role === 'gerant'
+            {isGerant
               ? 'Aperçu consolidé des ventes, stocks et créances du réseau'
-              : 'Gestion des ventes du jour et état du stock de votre boutique'}
+              : 'Gestion des ventes et suivi opérationnel du stock de votre boutique'}
           </p>
         </div>
         <span
           className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block"
           style={{
-            background: role === 'gerant' ? '#EEF4FF' : '#F0FDF4',
-            color: role === 'gerant' ? '#1E88E5' : '#16A34A',
+            background: isGerant ? '#EEF4FF' : '#F0FDF4',
+            color: isGerant ? '#1E88E5' : '#16A34A',
           }}
         >
-          {role === 'gerant' ? 'Mode Gérant' : 'Mode Boutiquier'}
+          {isGerant ? 'Mode Gérant' : 'Mode Boutiquier'}
         </span>
       </div>
 
-      {/* Cartes KPI */}
+      {/* 1. Actions Rapides tout en haut */}
+      <DashboardQuickActions role={role} onNavigate={onNavigate} />
+
+      {/* 2. Cartes KPI (Financières pour Gérant, Quantitatives pour Boutiquier) */}
       <DashboardKpiCards
         role={role}
         ventesJour={stats.ventesJour}
@@ -92,13 +104,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
         stockTotal={stats.stockTotal}
         creancesTotal={stats.creancesTotal}
         alertesCount={alertesStock.length}
+        nbProduitsVendus={stats.nbProduitsVendus}
+        stockFaibleCount={stats.stockFaibleCount}
+        produitsEnRuptureCount={stats.produitsEnRuptureCount}
         onNavigate={onNavigate}
       />
 
-      {/* Actions rapides */}
-      <DashboardQuickActions role={role} onNavigate={onNavigate} />
-
-      {/* Alertes de stock critique */}
+      {/* 3. Alertes de stock critique */}
       <DashboardStockAlerts
         alerts={alertesStock}
         onNavigate={onNavigate}
@@ -106,13 +118,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       />
 
       {/* Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DashboardSalesChart data={VENTES_SEMAINE} />
+      <div className={`grid grid-cols-1 ${isGerant ? 'lg:grid-cols-2' : ''} gap-4`}>
+        {isGerant && <DashboardSalesChart data={VENTES_SEMAINE} />}
         <DashboardTopProducts data={TOP_PRODUITS} />
       </div>
 
       {/* Vue comparative multi-boutiques réservée au Gérant */}
-      {role === 'gerant' && (
+      {isGerant && (
         <DashboardBoutiquesOverview
           boutiques={boutiques}
           produits={stocksAffiches}

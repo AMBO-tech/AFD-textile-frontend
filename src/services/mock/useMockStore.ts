@@ -290,6 +290,8 @@ interface MockStoreState {
 
   // Clients & Créances (Ventes à crédit / Commandes en gros)
   addClient: (nouveauClient: { nom: string; telephone: string; adresse: string; boutiqueId: string }) => ClientDetailed;
+  updateClient: (id: string, updates: Partial<{ nom: string; telephone: string; adresse: string; boutiqueId: string }>) => ClientDetailed | null;
+  deleteClient: (id: string) => boolean;
   addCreance: (
     clientId: string,
     lignes: LigneProduitCreance[],
@@ -714,6 +716,37 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
 
     set({ clients: [fullClient, ...state.clients] });
     return fullClient;
+  },
+
+  updateClient: (id, updates) => {
+    const state = get();
+    let updated: ClientDetailed | null = null;
+    const nextClients = state.clients.map((c) => {
+      if (c.id === id) {
+        updated = {
+          ...c,
+          ...updates,
+          boutiqueId: updates.boutiqueId ? normalizeLocationId(updates.boutiqueId) : c.boutiqueId,
+          boutique: updates.boutiqueId ? normalizeLocationId(updates.boutiqueId) : c.boutique,
+        };
+        return updated;
+      }
+      return c;
+    });
+    if (updated) {
+      set({ clients: nextClients });
+    }
+    return updated;
+  },
+
+  deleteClient: (id) => {
+    const state = get();
+    const exists = state.clients.some((c) => c.id === id);
+    if (exists) {
+      set({ clients: state.clients.filter((c) => c.id !== id) });
+      return true;
+    }
+    return false;
   },
 
   addCreance: (clientId, lignes, date, acompte = 0, modeAcompte = 'Espèces') => {

@@ -1,0 +1,28 @@
+# Dependances et logs
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Artefacts de compilation
+dist
+build
+.cache
+
+# Git
+.git
+.gitignore
+
+# Environnements locaux (ne pas injecter de secrets dans l'image)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Documentation
+.docs
+*.md

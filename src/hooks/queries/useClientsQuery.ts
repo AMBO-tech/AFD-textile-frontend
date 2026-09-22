@@ -72,6 +72,19 @@ export const useUpdateClientMutation = () => {
 };
 
 /**
+ * Mutation pour archiver / supprimer un client
+ */
+export const useArchiveClientMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clientsService.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.lists() });
+    },
+  });
+};
+
+/**
  * Mutation pour encaisser un règlement de créance
  */
 export const useRecordPaymentMutation = () => {

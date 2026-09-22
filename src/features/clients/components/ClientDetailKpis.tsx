@@ -4,18 +4,18 @@ import { CreditCard, Receipt, AlertCircle, TrendingUp } from 'lucide-react';
 interface ClientDetailKpisProps {
   totalAchats: number;
   totalPaye: number;
-  solde: number;
+  solde?: number;
   tauxRecouvrement: number;
-  aDesDettes: boolean;
+  aDesDettes?: boolean;
   formatMontant: (n: number) => string;
 }
 
 export const ClientDetailKpis: React.FC<ClientDetailKpisProps> = ({
   totalAchats,
   totalPaye,
-  solde,
+  solde = 0,
   tauxRecouvrement,
-  aDesDettes,
+  aDesDettes = false,
   formatMontant,
 }) => {
   return (

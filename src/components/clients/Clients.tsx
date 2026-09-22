@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useMockStore, type ClientDetailed, type Creance } from '../../data/useMockStore';
 import ClientHeader from './ClientHeader';
 import ClientFilters from './ClientFilters';
 import ClientCard from './ClientCard';
 import ClientDetailModal from './ClientDetailModal';
 import NewClientModal from './NewClientModal';
+import EditClientModal from './EditClientModal';
 import NewDebtModal from './NewDebtModal';
 import RecordPaymentModal from './RecordPaymentModal';
 import PaymentReceiptModal, { type PaymentReceiptData } from './PaymentReceiptModal';
@@ -13,6 +15,8 @@ import { formatMontant } from '../../data/mock';
 import { toast } from 'sonner';
 import {
   useCreateClientMutation,
+  useUpdateClientMutation,
+  useArchiveClientMutation,
   useRecordPaymentMutation,
 } from '../../hooks/queries/useClientsQuery';
 
@@ -30,6 +34,8 @@ export const Clients: React.FC<ClientsProps> = ({
     produits,
     boutiques,
     addClient,
+    updateClient,
+    deleteClient,
     addCreance,
     recordPaiement,
     session,
@@ -44,12 +50,16 @@ export const Clients: React.FC<ClientsProps> = ({
 
   // Modals state
   const [selectedClient, setSelectedClient] = useState<ClientDetailed | null>(null);
+  const [clientToEdit, setClientToEdit] = useState<ClientDetailed | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<ClientDetailed | null>(null);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [showNewDebtModal, setShowNewDebtModal] = useState(false);
   const [selectedCreanceForPayment, setSelectedCreanceForPayment] = useState<Creance | null>(null);
   const [receiptData, setReceiptData] = useState<PaymentReceiptData | null>(null);
 
   const { mutate: createClientApi } = useCreateClientMutation();
+  const { mutate: updateClientApi } = useUpdateClientMutation();
+  const { mutate: archiveClientApi } = useArchiveClientMutation();
   const { mutate: recordPaymentApi } = useRecordPaymentMutation();
 
   // Synchronisation du client sélectionné après mutation
@@ -127,6 +137,14 @@ export const Clients: React.FC<ClientsProps> = ({
               client={client}
               boutiqueNom={getBoutiqueNom(client.boutiqueId)}
               onSelect={(c) => setSelectedClient(c)}
+              onEdit={(c) => setClientToEdit(c)}
+              onDelete={(c) => {
+                if (role !== 'gerant') {
+                  toast.error('Action restreinte au Gérant');
+                  return;
+                }
+                setClientToDelete(c);
+              }}
             />
           ))
         )}
@@ -161,6 +179,75 @@ export const Clients: React.FC<ClientsProps> = ({
           setSelectedClient(c);
         }}
       />
+
+      <EditClientModal
+        isOpen={Boolean(clientToEdit)}
+        onClose={() => setClientToEdit(null)}
+        client={clientToEdit}
+        boutiques={boutiques}
+        role={role}
+        onSubmit={(id, updates) => {
+          updateClient(id, updates);
+
+          // Synchronisation API réelle
+          updateClientApi({
+            id,
+            data: {
+              nom: updates.nom,
+              telephone: updates.telephone,
+              adresse: updates.adresse,
+            },
+          });
+
+          toast.success(`Client "${updates.nom}" mis à jour avec succès`);
+          if (selectedClient?.id === id) {
+            setSelectedClient((prev) => (prev ? { ...prev, ...updates } : null));
+          }
+        }}
+      />
+
+      {clientToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl border border-gray-100 space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="font-display font-bold text-gray-900 text-base">
+                Confirmer la suppression
+              </h3>
+              <p className="text-xs text-gray-500">
+                Êtes-vous sûr de vouloir archiver / supprimer le client <strong>{clientToDelete.nom}</strong> ? Les factures et créances passées resteront historisées.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setClientToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteClient(clientToDelete.id);
+                  archiveClientApi(clientToDelete.id);
+                  toast.success(`Client "${clientToDelete.nom}" supprimé avec succès`);
+                  if (selectedClient?.id === clientToDelete.id) {
+                    setSelectedClient(null);
+                  }
+                  setClientToDelete(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-colors shadow-xs cursor-pointer"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeClient && (
         <NewDebtModal

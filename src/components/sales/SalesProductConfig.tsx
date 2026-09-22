@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { X, ShoppingCart, Tag, AlertTriangle, CheckCircle2, Ruler } from 'lucide-react';
+import { X, ShoppingCart, Tag, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import type { StockEnriched } from '../../data/useMockStore';
 import { formatMontant } from '../../data/mock';
-import { UNITES } from './types';
-import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface SalesProductConfigProps {
   produit: StockEnriched | null;
@@ -27,7 +25,7 @@ const SalesProductConfigModal: React.FC<InnerModalProps> = ({
 }) => {
   const isRupture = produit.quantite <= 0;
   const [qte, setQte] = useState(isRupture ? 0 : Math.min(1, produit.quantite));
-  const [unite, setUnite] = useState(produit.unite || 'mètre');
+  const unite = produit.unite || 'mètre';
   const [remiseMontant, setRemiseMontant] = useState(0);
 
   const sousTotal = produit.prix * qte;
@@ -135,19 +133,13 @@ const SalesProductConfigModal: React.FC<InnerModalProps> = ({
             </div>
 
             <div className="flex-1">
-              <CustomDropdownSelect
-                label="Unité"
-                value={unite}
-                disabled={isRupture}
-                onChange={setUnite}
-                icon={<Ruler size={14} />}
-                menuTitle="Unité de vente"
-                options={UNITES.map((u) => ({
-                  value: u,
-                  label: u,
-                  icon: <Ruler size={13} className="text-blue-500" />,
-                }))}
-              />
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Unité (catalogue)
+              </label>
+              <div className="h-11 px-3.5 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-between text-xs font-bold text-gray-700">
+                <span className="capitalize">{unite}</span>
+                <span className="text-[10px] text-gray-400 font-normal">Fixe</span>
+              </div>
             </div>
           </div>
 

@@ -15,7 +15,19 @@ export const stocksService = {
     const res = await API.post<StockLevel>('/stocks/ajustement', data);
     return res.data;
   },
-  executeMovement: async (data: { produitId: string; locationId: string; quantite: number; unite: string; sens: 'ENTREE' | 'SORTIE'; justification?: string }) => {
+  /**
+   * Déclenche un mouvement de stock manuel.
+   * Corrections : `unite` → `uniteUtilisee`, ajout du champ `type` requis par le backend.
+   */
+  executeMovement: async (data: {
+    produitId: string;
+    locationId: string;
+    quantite: number;
+    type: 'ENTREE_STOCK' | 'SORTIE_STOCK' | 'AJUSTEMENT' | 'TRANSFERT_SORTIE' | 'TRANSFERT_ENTREE';
+    uniteUtilisee: string;
+    sens: 'ENTREE' | 'SORTIE';
+    justification?: string;
+  }) => {
     const res = await API.post<MouvementStock>('/stocks/mouvements', data);
     return res.data;
   },

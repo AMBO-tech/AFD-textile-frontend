@@ -3,20 +3,26 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navigation } from '../navigation';
 import type { Screen } from '../navigation/types';
 import { useMockStore } from '../../data/useMockStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useNotificationsQuery } from '../../hooks/queries/useNotificationsQuery';
 import { Toaster } from '../ui/sonner';
 
 export const AppLayout: React.FC = () => {
-  const { session, setSession, notifications, demandes, boutiques } = useMockStore();
+  const { session, setSession, demandes, boutiques } = useMockStore();
+  const { user } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Compteur de notifications non lues via API réelle (polling 60s)
+  const { data: notifData } = useNotificationsQuery({ limit: 1 });
+  const unreadNotifs = notifData?.nonLuesTotal ?? 0;
 
   if (!session) return null;
 
   const boutiqueCourante =
     boutiques.find((b) => b.id === (session.boutiqueId || boutiques[0]?.id)) || boutiques[0];
 
-  const unreadNotifs = notifications.filter((n) => !n.lu).length;
   const pendingDemandes = demandes.filter((d) => d.statut === 'en_attente').length;
 
   // Déduire l'écran actif à partir de l'URL
@@ -49,6 +55,9 @@ export const AppLayout: React.FC = () => {
     navigate('/login');
   };
 
+  // Préférer le nom depuis le store Zustand (API réelle) plutôt que la session mock
+  const displayNom = user?.nom || user?.name || session.nom;
+
   return (
     <div className="min-h-screen" style={{ background: '#F5F7FA' }}>
       <Toaster richColors position="top-right" />
@@ -56,7 +65,7 @@ export const AppLayout: React.FC = () => {
         role={session.role}
         current={currentScreen}
         onNavigate={handleNavigate}
-        nom={session.nom}
+        nom={displayNom}
         onLogout={handleLogout}
         notifications={unreadNotifs}
         demandes={pendingDemandes}
