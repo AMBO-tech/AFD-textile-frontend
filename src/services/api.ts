@@ -116,16 +116,21 @@ API.interceptors.response.use(
 
 export function getErrorMessage(error: unknown, defaultMessage = 'Une erreur inattendue est survenue.'): string {
   if (axios.isAxiosError(error)) {
-    const serverError = error.response?.data as (Partial<ApiError> & { message?: string | string[] }) | undefined;
+    const serverError = error.response?.data as (Partial<ApiError> & { message?: string | string[]; error?: string }) | undefined;
     if (serverError?.message) {
       return Array.isArray(serverError.message)
         ? serverError.message.join(', ')
         : serverError.message;
     }
-    if (error.response?.status === 404) return 'Ressource introuvable.';
-    if (error.response?.status === 403) return 'Accès non autorisé.';
-    if (error.response?.status === 500) return 'Erreur interne du serveur.';
-    if (!error.response) return 'Impossible de joindre le serveur. Vérifiez votre connexion.';
+    if (error.response?.status === 400) return 'Requête invalide. Veuillez vérifier les informations saisies.';
+    if (error.response?.status === 401) return 'Identifiant ou mot de passe incorrect. Vérifiez vos accès.';
+    if (error.response?.status === 403) return 'Accès non autorisé : vous n\'avez pas les permissions requises.';
+    if (error.response?.status === 404) return 'Ressource introuvable ou service indisponible.';
+    if (error.response?.status === 409) return 'Un conflit est survenu (cette entrée existe peut-être déjà).';
+    if (error.response?.status === 422) return 'Les données transmises sont non valides ou incomplètes.';
+    if (error.response?.status === 429) return 'Trop de tentatives effectuées. Veuillez patienter un instant avant de réessayer.';
+    if (error.response?.status === 500) return 'Erreur interne du serveur. Veuillez réessayer dans quelques instants.';
+    if (!error.response) return 'Impossible de joindre le serveur. Vérifiez votre connexion internet.';
   }
 
   if (error instanceof Error) {

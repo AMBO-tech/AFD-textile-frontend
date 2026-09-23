@@ -32,6 +32,27 @@ const COMPTES = [
     boutiqueId: undefined,
   },
   {
+    id: 'abdallahdiouf.dev@gmail.com',
+    pwd: 'Passer@123',
+    role: 'gerant' as const,
+    nom: 'Abdallah Diouf',
+    boutiqueId: undefined,
+  },
+  {
+    id: '+221770000001',
+    pwd: 'Passer@123',
+    role: 'gerant' as const,
+    nom: 'Abdallah Diouf',
+    boutiqueId: undefined,
+  },
+  {
+    id: '+221771110001',
+    pwd: 'Passer@123',
+    role: 'boutiquier' as const,
+    nom: 'Modou Fall',
+    boutiqueId: '00000000-0000-0000-0000-000000000002',
+  },
+  {
     id: '+221 77 010 20 30',
     pwd: 'afd2026',
     role: 'gerant' as const,
