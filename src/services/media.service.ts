@@ -19,7 +19,7 @@ export const mediaService = {
 
     const res = await API.post<UploadMediaResponse>('/media/upload-tissu', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
     });
 

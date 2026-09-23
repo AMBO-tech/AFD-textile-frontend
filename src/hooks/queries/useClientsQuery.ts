@@ -95,7 +95,7 @@ export const useRecordPaymentMutation = () => {
       data,
     }: {
       clientId: string;
-      data: { montant: number; modePaiement: string; referenceExterne?: string };
+      data: { montant: number; modePaiement: string; referenceExterne?: string; venteId?: string };
     }) => clientsService.recordPayment(clientId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.lists() });
