@@ -27,6 +27,14 @@ export const productsService = {
     const res = await API.patch<Produit>(`/produits/${id}/archiver`);
     return res.data;
   },
+  getCategories: async () => {
+    const res = await API.get<any[]>('/produits/categories');
+    return res.data;
+  },
+  getUnites: async () => {
+    const res = await API.get<any[]>('/produits/unites');
+    return res.data;
+  },
 };
 
 export default productsService;

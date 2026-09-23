@@ -12,7 +12,10 @@ import {
   useCreateProductMutation,
   useUpdateProductMutation,
   useArchiveProductMutation,
+  useCategoriesQuery,
+  useUnitesQuery,
 } from '../../hooks/queries/useProductsQuery';
+import { getErrorMessage } from '../../services/api';
 
 export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
   const {
@@ -30,6 +33,12 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
   const [editing, setEditing] = useState<Produit | null>(null);
   const [detail, setDetail] = useState<Produit | null>(null);
 
+  const { data: apiCategories } = useCategoriesQuery();
+  const { data: apiUnites } = useUnitesQuery();
+  const { mutate: createProductApi } = useCreateProductMutation();
+  const { mutate: updateProductApi } = useUpdateProductMutation();
+  const { mutate: archiveProductApi } = useArchiveProductMutation();
+
   const produitsCategorie = catChoisie
     ? produits.filter((p) => p.categorie === catChoisie)
     : [];
@@ -43,10 +52,6 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
     setEditing(p);
     setShowForm(true);
   };
-
-  const { mutate: createProductApi } = useCreateProductMutation();
-  const { mutate: updateProductApi } = useUpdateProductMutation();
-  const { mutate: archiveProductApi } = useArchiveProductMutation();
 
   const handleSaveProduct = (data: {
     nom: string;
@@ -63,14 +68,21 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
       });
 
       // Synchronisation API réelle
-      updateProductApi({
-        id: editing.id,
-        data: {
-          nom: data.nom,
-          couleur: data.couleur,
-          photoUrl: data.photo,
+      updateProductApi(
+        {
+          id: editing.id,
+          data: {
+            nom: data.nom,
+            couleur: data.couleur,
+            photoUrl: data.photo?.startsWith('http') ? data.photo : undefined,
+          },
         },
-      });
+        {
+          onError: (err) => {
+            toast.error(getErrorMessage(err, 'Erreur lors de la modification du tissu'));
+          },
+        }
+      );
 
       toast.success(`Modèle "${data.nom}" mis à jour`);
     } else {
@@ -81,16 +93,47 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
         photo: data.photo,
       });
 
-      // Synchronisation API réelle
-      createProductApi({
-        reference: `REF-${Date.now().toString().slice(-6)}`,
-        nom: data.nom,
-        categorieId: data.categorie,
-        unitePrincipaleId: 'u1',
-        photoUrl: data.photo,
-        prixIndicatif: 5000,
-        couleur: data.couleur,
-      });
+      // Trouver la vraie catégorie en base (ou fallback sur la 1ère active)
+      const matchedCat =
+        apiCategories?.find(
+          (c: any) =>
+            c.id === data.categorie ||
+            c.code?.toLowerCase() === data.categorie?.toLowerCase() ||
+            c.nom?.toLowerCase() === data.categorie?.toLowerCase()
+        ) || apiCategories?.[0];
+
+      // Trouver la vraie unité en base (ou fallback sur METRE)
+      const matchedUnite =
+        apiUnites?.find((u: any) => u.code === 'METRE') || apiUnites?.[0];
+
+      const validPhoto =
+        data.photo && data.photo.startsWith('http')
+          ? data.photo
+          : 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80';
+
+      if (matchedCat && matchedUnite) {
+        createProductApi(
+          {
+            reference: `REF-${Date.now().toString().slice(-6)}`,
+            nom: data.nom,
+            categorieId: matchedCat.id,
+            unitePrincipaleId: matchedUnite.id,
+            uniteStockage: (matchedUnite.code === 'KG'
+              ? 'KG'
+              : matchedUnite.code === 'ROULEAU'
+              ? 'ROULEAU'
+              : 'METRE') as any,
+            photoUrl: validPhoto,
+            prixIndicatif: 5000,
+            couleur: data.couleur || 'Non spécifiée',
+          },
+          {
+            onError: (err) => {
+              toast.error(getErrorMessage(err, "Erreur lors de l'enregistrement en base"));
+            },
+          }
+        );
+      }
 
       toast.success(`Nouveau tissu "${data.nom}" ajouté au catalogue`);
     }
