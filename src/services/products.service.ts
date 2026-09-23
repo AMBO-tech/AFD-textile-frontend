@@ -24,7 +24,7 @@ export const productsService = {
     return res.data;
   },
   archive: async (id: string) => {
-    const res = await API.patch<Produit>(`/produits/${id}/archiver`);
+    const res = await API.delete<Produit>(`/produits/${id}`);
     return res.data;
   },
   getCategories: async () => {

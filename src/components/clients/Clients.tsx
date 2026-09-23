@@ -285,6 +285,7 @@ export const Clients: React.FC<ClientsProps> = ({
                   montant,
                   modePaiement: mode,
                   referenceExterne: selectedCreanceForPayment.id,
+                  venteId: selectedCreanceForPayment.id,
                 },
               });
 

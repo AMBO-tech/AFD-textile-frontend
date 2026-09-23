@@ -43,17 +43,40 @@ export const clientsService = {
   },
 
   /**
-   * Enregistrement d'un règlement de créance — route correcte : POST /reglements
-   * Le champ venteId est requis par le backend pour lier le paiement à la bonne facture.
+   * Enregistrement d'un règlement de créance — route : POST /reglements
+   * Formate la payload selon CreatePaymentDto (clientId, montantTotal, modePaiement, ventilations)
    */
   recordPayment: async (
-    venteId: string,
-    data: { montant: number; modePaiement: string; referenceExterne?: string },
+    clientId: string,
+    data: {
+      montant: number;
+      modePaiement: string;
+      referenceExterne?: string;
+      venteId?: string;
+    },
   ) => {
-    const res = await API.post<{ id: string; referenceRecu: string }>('/reglements', {
-      venteId,
-      ...data,
-    });
+    const normalizedMode = (data.modePaiement || 'ESPECES').toUpperCase();
+
+    const payload: Record<string, any> = {
+      clientId,
+      montantTotal: data.montant,
+      modePaiement: normalizedMode,
+      referenceExterne: data.referenceExterne,
+    };
+
+    if (data.venteId) {
+      payload.modeVentilation = 'MANUELLE';
+      payload.ventilationsManuelles = [
+        {
+          venteId: data.venteId,
+          montant: data.montant,
+        },
+      ];
+    } else {
+      payload.modeVentilation = 'FIFO_AUTO';
+    }
+
+    const res = await API.post<{ id: string; referenceRecu: string }>('/reglements', payload);
     return res.data;
   },
 };
