@@ -14,6 +14,7 @@ interface ProductFormModalProps {
     categorie: string;
     couleur: string;
     photo: string;
+    photoFile?: File | null;
   }) => void;
 }
 
@@ -31,6 +32,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     couleur: '',
     photo: '',
   });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (editingProduct) {
@@ -40,6 +42,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         couleur: editingProduct.couleur || '',
         photo: editingProduct.photo || '',
       });
+      setPhotoFile(null);
     } else {
       setForm({
         nom: '',
@@ -47,6 +50,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         couleur: '',
         photo: '',
       });
+      setPhotoFile(null);
     }
   }, [editingProduct, defaultCategory, isOpen]);
 
@@ -55,6 +59,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPhotoFile(file);
     const url = URL.createObjectURL(file);
     setForm((f) => ({ ...f, photo: url }));
   };
@@ -62,7 +67,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nom.trim() || !form.categorie) return;
-    onSave(form);
+    onSave({ ...form, photoFile });
   };
 
   return (
