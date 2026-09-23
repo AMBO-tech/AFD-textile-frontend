@@ -1,12 +1,12 @@
 import React from 'react';
 import { Warehouse, ChevronRight } from 'lucide-react';
 
-
+const formatMontant = (n: number) => new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(n);
 
 interface DashboardBoutiquesOverviewProps {
-  boutiques: Boutique[];
-  produits: Produit[];
-  ventes: Vente[];
+  boutiques: any[];
+  produits: any[];
+  ventes: any[];
   onNavigate?: (s: string) => void;
 }
 
@@ -36,11 +36,11 @@ export const DashboardBoutiquesOverview: React.FC<DashboardBoutiquesOverviewProp
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {boutiques.map((b) => {
           const ventesBoutique = ventes
-            .filter((v) => v.boutique === b.id && v.statut === 'validée')
-            .reduce((s, v) => s + v.montant, 0);
+            .filter((v) => v.locationId === b.id && (v.statut === 'VALIDE' || v.statut === 'validée'))
+            .reduce((s, v) => s + (v.montant || v.montantTotal || 0), 0);
 
           const stockBoutique = produits
-            .filter((p) => p.boutique === b.id)
+            .filter((p) => p.locationId === b.id)
             .reduce((s, p) => s + p.quantite, 0);
 
           return (
@@ -64,10 +64,6 @@ export const DashboardBoutiquesOverview: React.FC<DashboardBoutiquesOverviewProp
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">Stock :</span>
                   <span className="font-bold text-blue-600">{stockBoutique} unités</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">Gérant :</span>
-                  <span className="text-gray-600 truncate max-w-[120px]">{b.gerant}</span>
                 </div>
               </div>
             </div>

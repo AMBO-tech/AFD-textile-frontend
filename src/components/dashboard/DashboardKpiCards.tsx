@@ -1,6 +1,8 @@
 import React from 'react';
 import { TrendingUp, ShoppingBag, Package, AlertTriangle, CreditCard, Clock } from 'lucide-react';
 
+const formatMontant = (n: number) => new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(n);
+
 
 interface DashboardKpiCardsProps {
   role: 'gerant' | 'boutiquier';

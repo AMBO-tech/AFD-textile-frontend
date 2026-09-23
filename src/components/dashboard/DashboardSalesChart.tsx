@@ -9,6 +9,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
+const formatMontant = (n: number) => new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(n);
+
 
 interface DashboardSalesChartProps {
   data: { jour: string; montant: number }[];
