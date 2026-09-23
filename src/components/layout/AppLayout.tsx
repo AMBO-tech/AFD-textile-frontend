@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Navigation } from '../navigation';
 import type { Screen } from '../navigation/types';
 import { useMockStore } from '../../data/useMockStore';
@@ -18,10 +18,20 @@ export const AppLayout: React.FC = () => {
   const { data: notifData } = useNotificationsQuery({ limit: 1 });
   const unreadNotifs = notifData?.nonLuesTotal ?? 0;
 
-  if (!session) return null;
+  // Déterminer la session active avec fallback immédiat sur le user authentifié
+  const effectiveSession = session || (user ? {
+    role: (user.role === 'OWNER' ? 'gerant' : 'boutiquier') as 'gerant' | 'boutiquier',
+    nom: user.nom || user.name || 'Utilisateur AFD',
+    boutiqueId: user.locationId || undefined,
+  } : null);
+
+  // Éviter l'écran blanc : si aucune session ni user actif, rediriger vers login
+  if (!effectiveSession) {
+    return <Navigate to="/login" replace />;
+  }
 
   const boutiqueCourante =
-    boutiques.find((b) => b.id === (session.boutiqueId || boutiques[0]?.id)) || boutiques[0];
+    boutiques.find((b) => b.id === (effectiveSession.boutiqueId || boutiques[0]?.id)) || boutiques[0];
 
   const pendingDemandes = demandes.filter((d) => d.statut === 'en_attente').length;
 
@@ -56,13 +66,13 @@ export const AppLayout: React.FC = () => {
   };
 
   // Préférer le nom depuis le store Zustand (API réelle) plutôt que la session mock
-  const displayNom = user?.nom || user?.name || session.nom;
+  const displayNom = user?.nom || user?.name || effectiveSession.nom;
 
   return (
     <div className="min-h-screen" style={{ background: '#F5F7FA' }}>
       <Toaster richColors position="top-right" />
       <Navigation
-        role={session.role}
+        role={effectiveSession.role}
         current={currentScreen}
         onNavigate={handleNavigate}
         nom={displayNom}

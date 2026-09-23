@@ -360,8 +360,31 @@ const INITIAL_CLIENTS: ClientDetailed[] = CLIENTS.map((c) => ({
   }] : [],
 }));
 
+const SESSION_STORAGE_KEY = '__afd_user_session__';
+
+function getInitialSession(): SessionUser | null {
+  try {
+    const saved = sessionStorage.getItem(SESSION_STORAGE_KEY) || localStorage.getItem(SESSION_STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+
+    // Fallback automatique sur l'utilisateur du store d'auth réel (__rsk_user__)
+    const rawUser = sessionStorage.getItem('__rsk_user__') || localStorage.getItem('__rsk_user__');
+    if (rawUser) {
+      const u = JSON.parse(rawUser);
+      return {
+        role: u.role === 'OWNER' ? 'gerant' : 'boutiquier',
+        nom: u.nom || u.name || 'Utilisateur AFD',
+        boutiqueId: u.locationId || undefined,
+      };
+    }
+  } catch {
+    // Ignore storage parse error
+  }
+  return null;
+}
+
 export const useMockStore = create<MockStoreState>((set, get) => ({
-  session: null,
+  session: getInitialSession(),
   produits: [...CATALOGUE_PRODUITS],
   stocks: [...INITIAL_STOCKS],
   categories: [...CATEGORIES_DATA],
@@ -374,7 +397,20 @@ export const useMockStore = create<MockStoreState>((set, get) => ({
   notifications: [...NOTIFICATIONS],
   historique: [...HISTORIQUE],
 
-  setSession: (session) => set({ session }),
+  setSession: (session) => {
+    try {
+      if (session) {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      } else {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    set({ session });
+  },
 
   getStocksEnriched: (boutiqueId?: string) => {
     const { produits, stocks } = get();
