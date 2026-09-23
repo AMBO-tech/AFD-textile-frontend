@@ -6,6 +6,10 @@ import DashboardTopProducts from './DashboardTopProducts';
 import DashboardStockAlerts from './DashboardStockAlerts';
 import DashboardQuickActions from './DashboardQuickActions';
 import DashboardBoutiquesOverview from './DashboardBoutiquesOverview';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
+import { useSalesListQuery } from '../../hooks/queries/useSalesQuery';
+import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
+import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
 
 interface DashboardProps {
   role: 'gerant' | 'boutiquier';
@@ -14,40 +18,48 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteDirecte }) => {
-  const produits: any = [];
-const ventes: any = [];
-const clients: any = [];
-const boutiques: any = [];
-const user = useAuthStore((s: any) => s.user); const session = user;
-  const boutiqueId = session?.boutiqueId || 'b1';
+  const user = useAuthStore((s: any) => s.user);
+  const locationId = user?.locationId || 'b1';
+  
+  const { data: locRes } = useLocationsListQuery();
+  const boutiques = locRes?.data || [];
+  
+  const { data: salesRes } = useSalesListQuery({ limit: 500 });
+  const ventes = salesRes?.data || [];
+  
+  const { data: clientRes } = useClientsListQuery();
+  const clients = clientRes?.data || [];
+  
+  const { data: stockRes } = useStockLevelsQuery();
+  const produits = stockRes?.data || [];
 
   // Produits et ventes ciblés selon le rôle
   const produitsAffiches = useMemo(() => {
-    return role === 'gerant' ? produits : produits.filter((p: any) => p.boutique === boutiqueId);
-  }, [produits, role, boutiqueId]);
+    return role === 'gerant' ? produits : produits.filter((p: any) => p.locationId === locationId);
+  }, [produits, role, locationId]);
 
   const alertesStock = useMemo(() => {
-    return produitsAffiches.filter((p: any) => p.quantite <= p.seuil);
+    return produitsAffiches.filter((p: any) => p.quantite <= p.seuilAlerte);
   }, [produitsAffiches]);
 
   const ventesValidees = useMemo(() => {
     return ventes.filter((v: any) => {
-      const isValide = v.statut === 'validée';
-      return role === 'gerant' ? isValide : isValide && v.boutique === boutiqueId;
+      const isValide = v.statut === 'VALIDE' || v.statut === 'validée';
+      return role === 'gerant' ? isValide : isValide && v.locationId === locationId;
     });
-  }, [ventes, role, boutiqueId]);
+  }, [ventes, role, locationId]);
 
   const stats = useMemo(() => {
-    const todayStr = '2026-09-13';
+    const todayStr = new Date().toISOString().split('T')[0];
     const ventesJour = ventesValidees
-      .filter((v: any) => v.date === todayStr || v.date === new Date().toISOString().split('T')[0])
-      .reduce((s: any, v: any) => s + v.montant, 0);
+      .filter((v: any) => v.date?.startsWith(todayStr) || v.createdAt?.startsWith(todayStr))
+      .reduce((s: any, v: any) => s + (v.montant || v.montantTotal || 0), 0);
 
-    const ventesSemaine = VENTES_SEMAINE.reduce((s: any, v: any) => s + v.montant, 0);
+    const ventesSemaine = ventesValidees.reduce((s: any, v: any) => s + (v.montant || v.montantTotal || 0), 0);
     const stockTotal = produitsAffiches.reduce((s: any, p: any) => s + p.quantite, 0);
     const creancesTotal = clients.reduce((s: any, c: any) => {
-      const solde = c.creances.reduce((sc: any, cr: any) => {
-        const paye = cr.paiements.reduce((sp: any, p: any) => sp + p.montant, 0);
+      const solde = (c.creances || []).reduce((sc: any, cr: any) => {
+        const paye = (cr.paiements || []).reduce((sp: any, p: any) => sp + p.montant, 0);
         return sc + Math.max(0, cr.montantTotal - paye);
       }, 0);
       return s + solde;
@@ -64,7 +76,6 @@ const user = useAuthStore((s: any) => s.user); const session = user;
 
   return (
     <div className="space-y-2">
-      {/* En-tête de bienvenue contextuelle */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">
@@ -87,7 +98,6 @@ const user = useAuthStore((s: any) => s.user); const session = user;
         </span>
       </div>
 
-      {/* Cartes KPI */}
       <DashboardKpiCards
         role={role}
         ventesJour={stats.ventesJour}
@@ -99,17 +109,14 @@ const user = useAuthStore((s: any) => s.user); const session = user;
         onNavigate={onNavigate}
       />
 
-      {/* Actions rapides */}
       <DashboardQuickActions role={role} onNavigate={onNavigate} />
 
-      {/* Alertes de stock critique */}
       <DashboardStockAlerts
         alerts={alertesStock}
         onNavigate={onNavigate}
         onVenteDirecte={onVenteDirecte}
       />
 
-      {/* Vue comparative multi-boutiques réservée au Gérant */}
       {role === 'gerant' && (
         <DashboardBoutiquesOverview
           boutiques={boutiques}
@@ -119,10 +126,9 @@ const user = useAuthStore((s: any) => s.user); const session = user;
         />
       )}
 
-      {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DashboardSalesChart data={VENTES_SEMAINE} />
-        <DashboardTopProducts data={TOP_PRODUITS} />
+        <DashboardSalesChart data={[]} />
+        <DashboardTopProducts data={[]} />
       </div>
     </div>
   );
