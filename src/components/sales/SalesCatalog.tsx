@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { Search, ChevronLeft, Package } from 'lucide-react';
 

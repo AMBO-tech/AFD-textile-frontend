@@ -1,4 +1,5 @@
-﻿import React, { useMemo } from 'react';
+import { formatMontant } from '@/utils/format';
+import React, { useMemo } from 'react';
 import type { ClientDetailed, Creance } from '@/types/clients';
 import { soldeClient } from './types';
 import ClientDetailHeader from '../../features/clients/components/ClientDetailHeader';
@@ -58,8 +59,8 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
       aDesDettes
         ? `Bonjour ${client.nom}, AFD Textile (${activeBoutiqueNom}) vous informe d'un solde restant de ${formatMontant(
             solde
-          )} sur vos achats de tissus. Merci de nous contacter pour votre rÃ¨glement.`
-        : `Bonjour ${client.nom}, l'Ã©quipe AFD Textile (${activeBoutiqueNom}) vous remercie pour votre fidÃ©litÃ©. Votre compte est parfaitement Ã  jour.`
+          )} sur vos achats de tissus. Merci de nous contacter pour votre règlement.`
+        : `Bonjour ${client.nom}, l'équipe AFD Textile (${activeBoutiqueNom}) vous remercie pour votre fidélité. Votre compte est parfaitement à jour.`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
@@ -67,7 +68,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col overflow-hidden">
-        {/* 1. EntÃªte Ã©lÃ©gante */}
+        {/* 1. Entête élégante */}
         <ClientDetailHeader
           client={client}
           activeBoutiqueNom={activeBoutiqueNom}
@@ -89,7 +90,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           formatMontant={formatMontant}
         />
 
-        {/* 3. Corps scrollable : Dossiers de crÃ©ances */}
+        {/* 3. Corps scrollable : Dossiers de créances */}
         <ClientCreancesList
           client={client}
           formatMontant={formatMontant}
@@ -100,7 +101,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
         {/* 4. Pied de modale */}
         <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
           <div className="text-xs text-gray-500">
-            Client affiliÃ© : <strong className="text-gray-700">{activeBoutiqueNom}</strong>
+            Client affilié : <strong className="text-gray-700">{activeBoutiqueNom}</strong>
           </div>
           <button
             type="button"

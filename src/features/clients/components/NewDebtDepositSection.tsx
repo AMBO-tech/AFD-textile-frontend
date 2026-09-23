@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { DollarSign, Banknote, Smartphone, CreditCard } from 'lucide-react';
 import CustomDropdownSelect from '../../../components/ui/CustomDropdownSelect';

@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React, { useState } from 'react';
 import { X, Plus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, DollarSign } from 'lucide-react';
 

@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { MapPin, ShoppingBag, Edit2, Trash2, MessageCircle, ChevronRight } from 'lucide-react';
 import type { ClientDetailed } from '@/types/clients';

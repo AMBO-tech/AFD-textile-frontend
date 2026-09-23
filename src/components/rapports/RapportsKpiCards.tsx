@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { TrendingUp, CreditCard } from 'lucide-react';
 

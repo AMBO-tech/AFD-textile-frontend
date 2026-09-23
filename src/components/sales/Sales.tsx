@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import { useAuthStore } from '../../stores/useAuthStore';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ShoppingCart, RotateCcw } from 'lucide-react';

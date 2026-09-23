@@ -1,4 +1,5 @@
-﻿import React, { useState, useMemo } from 'react';
+import { formatMontant } from '@/utils/format';
+import React, { useState, useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ClientDetailed, Creance } from '@/types/clients';
 import ClientHeader from './ClientHeader';
@@ -16,23 +17,36 @@ import {
   useCreateClientMutation,
   useUpdateClientMutation,
   useRecordPaymentMutation,
+  useClientsListQuery,
 } from '../../hooks/queries/useClientsQuery';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
+import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 interface ClientsProps {
-  role?: 'gerant' | 'boutiquier';
+  role?: string;
   boutiqueId?: string;
 }
 
 export const Clients: React.FC<ClientsProps> = ({
-  role = 'gerant',
+  role: rawRole = 'gerant',
   boutiqueId = 'b1',
 }) => {
-  const clients: any[] = [];
-  const produits: any[] = [];
-  const boutiques: any[] = [];
-  const session = { boutiqueId: 'b1', nom: 'User' } as any;
-  const getStocksEnriched = (...args: any[]) => [] as any[];
-  const addClient = (c: any) => { return c; };
+  const role = (rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant') ? 'gerant' : 'boutiquier';
+  
+  const session = useAuthStore((s: any) => s.user);
+
+  const { data: clientsRes } = useClientsListQuery({ boutiqueId: role === 'boutiquier' ? boutiqueId : undefined } as any);
+  const clients = (clientsRes?.data || []).map((c: any) => ({ ...c, creances: c.creances || [] }));
+  
+  const { data: locRes } = useLocationsListQuery();
+  const boutiques = locRes?.data || [];
+  
+  const { data: stockRes } = useStockLevelsQuery();
+  const produits = stockRes?.data || [];
+  
+  const getStocksEnriched = (...args: any[]) => produits;
+  const addClient = (c: any) => { return { ...c, id: Date.now().toString(), creances: [] }; };
   const updateClient = (i: any, c: any) => {};
   const deleteClient = (i: any) => {};
   const addCreance = (...args: any[]) => {};

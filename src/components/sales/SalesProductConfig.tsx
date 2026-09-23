@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React, { useState } from 'react';
 import { X, Plus, ShoppingCart, Tag } from 'lucide-react';
 

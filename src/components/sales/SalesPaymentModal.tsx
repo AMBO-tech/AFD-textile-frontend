@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Banknote, Smartphone, CheckCircle2, ShoppingBag, ShoppingCart, User, ArrowRight } from 'lucide-react';
 import type { LigneVente } from './types';

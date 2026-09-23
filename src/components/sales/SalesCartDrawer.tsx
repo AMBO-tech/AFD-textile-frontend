@@ -1,3 +1,4 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { X, Trash2, ShoppingCart, CreditCard } from 'lucide-react';
 import type { LigneVente } from './types';
