@@ -16,6 +16,7 @@ import {
   useUnitesQuery,
 } from '../../hooks/queries/useProductsQuery';
 import { getErrorMessage } from '../../services/api';
+import { mediaService } from '../../services/media.service';
 
 export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
   const {
@@ -53,18 +54,38 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
     setShowForm(true);
   };
 
-  const handleSaveProduct = (data: {
+  const handleSaveProduct = async (data: {
     nom: string;
     categorie: string;
     couleur: string;
     photo: string;
+    photoFile?: File | null;
   }) => {
+    let finalPhotoUrl = data.photo && data.photo.startsWith('http') ? data.photo : '';
+
+    // Téléversement vers Cloudflare R2 via l'API NestJS si un fichier local a été sélectionné
+    if (data.photoFile) {
+      try {
+        const uploaded = await mediaService.uploadTissuPhoto(data.photoFile);
+        if (uploaded?.url) {
+          finalPhotoUrl = uploaded.url;
+        }
+      } catch (uploadErr) {
+        toast.error(getErrorMessage(uploadErr, "Échec du téléversement sur Cloudflare R2"));
+      }
+    }
+
+    if (!finalPhotoUrl) {
+      finalPhotoUrl =
+        'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80';
+    }
+
     if (editing) {
       updateProduit(editing.id, {
         nom: data.nom,
         categorie: data.categorie,
         couleur: data.couleur,
-        photo: data.photo,
+        photo: finalPhotoUrl,
       });
 
       // Synchronisation API réelle
@@ -74,7 +95,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
           data: {
             nom: data.nom,
             couleur: data.couleur,
-            photoUrl: data.photo?.startsWith('http') ? data.photo : undefined,
+            photoUrl: finalPhotoUrl,
           },
         },
         {
@@ -90,7 +111,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
         nom: data.nom,
         categorie: data.categorie,
         couleur: data.couleur,
-        photo: data.photo,
+        photo: finalPhotoUrl,
       });
 
       // Trouver la vraie catégorie en base (ou fallback sur la 1ère active)
@@ -106,11 +127,6 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
       const matchedUnite =
         apiUnites?.find((u: any) => u.code === 'METRE') || apiUnites?.[0];
 
-      const validPhoto =
-        data.photo && data.photo.startsWith('http')
-          ? data.photo
-          : 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80';
-
       if (matchedCat && matchedUnite) {
         createProductApi(
           {
@@ -123,7 +139,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
               : matchedUnite.code === 'ROULEAU'
               ? 'ROULEAU'
               : 'METRE') as any,
-            photoUrl: validPhoto,
+            photoUrl: finalPhotoUrl,
             prixIndicatif: 5000,
             couleur: data.couleur || 'Non spécifiée',
           },
