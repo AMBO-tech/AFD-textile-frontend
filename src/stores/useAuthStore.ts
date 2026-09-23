@@ -6,7 +6,7 @@ const USER_STORAGE_KEY = '__rsk_user__';
 
 function getStoredUser(): User | null {
   try {
-    const raw = sessionStorage.getItem(USER_STORAGE_KEY);
+    const raw = sessionStorage.getItem(USER_STORAGE_KEY) || localStorage.getItem(USER_STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -17,8 +17,10 @@ function setStoredUser(user: User | null): void {
   try {
     if (user) {
       sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
     } else {
       sessionStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
     }
   } catch {
     // Ignore storage errors
