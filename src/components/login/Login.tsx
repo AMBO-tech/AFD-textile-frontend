@@ -50,21 +50,27 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleLoginSubmit = (identifiant: string, motdepasse: string) => {
     setLoading(true);
     setErreur('');
-    setTimeout(() => {
-      const id = identifiant.trim().toLowerCase();
-      const compte = COMPTES.find(
-        (c) => c.id.toLowerCase() === id && c.pwd === motdepasse.trim()
-      );
-      if (compte) {
-        localStorage.setItem('afd_deja_connecte', '1');
-        onLogin(compte.role, compte.nom);
-      } else if (!identifiant.trim() || !motdepasse.trim()) {
-        setErreur('Veuillez remplir tous les champs.');
-      } else {
-        setErreur('Identifiant ou mot de passe incorrect.');
-      }
+    
+    if (!identifiant.trim() || !motdepasse.trim()) {
+      setErreur('Veuillez remplir tous les champs.');
       setLoading(false);
-    }, 800);
+      return;
+    }
+    
+    // On dǸlgue la requǦte d'authentification vers la couche supǸrieure (LoginPage)
+    // qui grera l'appel rǸel API NestJS.
+    Promise.resolve(
+      onLogin(
+        'gerant', // RǦle temporaire, ǸcrasǸ par l'API rǸelle
+        '', // Nom temporaire, ǸcrasǸ par l'API rǸelle
+        undefined,
+        { identifier: identifiant.trim(), motDePasse: motdepasse.trim() }
+      )
+    ).catch((err: any) => {
+      setErreur(err.message || 'Identifiant ou mot de passe incorrect.');
+    }).finally(() => {
+      setLoading(false);
+    });
   };
 
   const handleSavePassword = (newPwd: string, confirmPwd: string) => {
