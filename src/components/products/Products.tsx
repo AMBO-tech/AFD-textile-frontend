@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, ChevronLeft, Package } from 'lucide-react';
+import { Plus, ChevronLeft, Package, Trash2 } from 'lucide-react';
 import { useMockStore, type Produit } from '../../data/useMockStore';
 import { toast } from 'sonner';
 import type { ProductsProps } from './types';
@@ -33,6 +33,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Produit | null>(null);
   const [detail, setDetail] = useState<Produit | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Produit | null>(null);
 
   const { data: apiCategories } = useCategoriesQuery();
   const { data: apiUnites } = useUnitesQuery();
@@ -156,13 +157,17 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
     setShowForm(false);
   };
 
-  const handleDeleteProduct = (id: string) => {
-    const prod = produits.find((p) => p.id === id);
-    if (confirm(`Supprimer le modèle "${prod?.nom || id}" du catalogue ?`)) {
-      deleteProduit(id);
-      archiveProductApi(id);
-      toast.success(`Produit "${prod?.nom || id}" supprimé du catalogue`);
-    }
+  const handleConfirmDelete = () => {
+    if (!productToDelete) return;
+    const { id, nom } = productToDelete;
+    deleteProduit(id);
+    archiveProductApi(id, {
+      onError: (err) => {
+        toast.error(getErrorMessage(err, "Erreur lors de l'archivage du tissu"));
+      },
+    });
+    toast.success(`Produit "${nom}" supprimé du catalogue`);
+    setProductToDelete(null);
   };
 
   // Niveau 2 : page produits d'une catégorie
@@ -204,7 +209,7 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
               role={role}
               onClick={() => setDetail(p)}
               onEdit={() => openEdit(p)}
-              onDelete={() => handleDeleteProduct(p.id)}
+              onDelete={() => setProductToDelete(p)}
             />
           ))}
 
@@ -231,6 +236,42 @@ export const Products: React.FC<ProductsProps> = ({ role = 'gerant' }) => {
           defaultCategory={catChoisie}
           onSave={handleSaveProduct}
         />
+
+        {/* Modal de Confirmation de Suppression */}
+        {productToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl border border-gray-100 space-y-4">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                  <Trash2 size={24} />
+                </div>
+                <h3 className="font-display font-bold text-gray-900 text-base">
+                  Confirmer la suppression
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Êtes-vous sûr de vouloir supprimer le tissu <strong>{productToDelete.nom}</strong> du catalogue ?
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setProductToDelete(null)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-colors shadow-xs cursor-pointer"
+                >
+                  Confirmer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
