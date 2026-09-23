@@ -71,3 +71,25 @@ export const useArchiveProductMutation = () => {
     },
   });
 };
+
+/**
+ * Récupère les familles / catégories textiles de l'API
+ */
+export const useCategoriesQuery = () => {
+  return useQuery({
+    queryKey: ['categories'],
+    queryFn: () => productsService.getCategories(),
+    staleTime: 1000 * 60 * 10,
+  });
+};
+
+/**
+ * Récupère les unités de mesure standard de l'API
+ */
+export const useUnitesQuery = () => {
+  return useQuery({
+    queryKey: ['unites'],
+    queryFn: () => productsService.getUnites(),
+    staleTime: 1000 * 60 * 10,
+  });
+};
