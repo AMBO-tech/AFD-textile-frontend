@@ -2,13 +2,17 @@ import { useAuthStore } from '../stores/useAuthStore';
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navigation } from '../components/navigation';
+import { useLocationsListQuery } from '../hooks/queries/useLocationsQuery';
 
 export const AppLayout: React.FC = () => {
   const user = useAuthStore((s: any) => s.user); const session = user;
 const setSession: any = [];
 const notifications: any = [];
 const demandes: any = [];
-const boutiques: any = [];
+
+  const { data: locationsResponse } = useLocationsListQuery();
+  const boutiques = locationsResponse?.data || [];
+
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,7 +20,7 @@ const boutiques: any = [];
   if (!session) return null;
 
   const boutiqueCourante =
-    boutiques.find((b: any) => b.id === (session.boutiqueId || 'b1')) || boutiques[0];
+    boutiques.find((b: any) => b.id === (session.boutiqueId || session.locationId)) || boutiques[0] || { id: 'temp', nom: 'Chargement...', lieu: '' };
 
   const unreadNotifs = notifications.filter((n: any) => !n.lu).length;
   const pendingDemandes = demandes.filter((d: any) => d.statut === 'en_attente').length;
@@ -55,7 +59,7 @@ const boutiques: any = [];
         demandes={pendingDemandes}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        boutique={boutiqueCourante}
+        boutique={{ ...boutiqueCourante, lieu: boutiqueCourante.lieu || '' }}
       />
 
       <div className="lg:pl-64">
