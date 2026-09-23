@@ -12,7 +12,7 @@ export interface NavTabItem {
 }
 
 export interface NavigationProps {
-  role: 'gerant' | 'boutiquier';
+  role: string;
   current: Screen;
   onNavigate: (s: Screen) => void;
   nom: string;

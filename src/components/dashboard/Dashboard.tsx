@@ -12,19 +12,20 @@ import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
 import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
 
 interface DashboardProps {
-  role: 'gerant' | 'boutiquier';
+  role: string;
   onNavigate?: (s: string) => void;
   onVenteDirecte?: (produitId: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteDirecte }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ role: rawRole, onNavigate, onVenteDirecte }) => {
+  const role = (rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant') ? 'gerant' : 'boutiquier';
   const user = useAuthStore((s: any) => s.user);
   const locationId = user?.locationId || 'b1';
   
   const { data: locRes } = useLocationsListQuery();
   const boutiques = locRes?.data || [];
   
-  const { data: salesRes } = useSalesListQuery({ limit: 500 });
+  const { data: salesRes } = useSalesListQuery({ limit: 100 });
   const ventes = salesRes?.data || [];
   
   const { data: clientRes } = useClientsListQuery();

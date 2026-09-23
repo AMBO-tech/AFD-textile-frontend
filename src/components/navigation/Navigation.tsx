@@ -37,7 +37,7 @@ const TABS_GERANT: readonly NavTabItem[] = [
 ];
 
 export const Navigation: React.FC<NavigationProps> = ({
-  role,
+  role: rawRole,
   current,
   onNavigate,
   nom,
@@ -48,6 +48,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   setSidebarOpen,
   boutique,
 }) => {
+  const role = (rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant') ? 'gerant' : 'boutiquier';
+  
   const sidebarPrincipalItems =
     role === 'gerant'
       ? [...TABS_BASE, ...TABS_SIDEBAR_EXTRA]
