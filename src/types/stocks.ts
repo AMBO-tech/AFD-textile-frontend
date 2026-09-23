@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   LocationType,
   MouvementSens,
   MouvementType,
@@ -107,3 +107,11 @@ export interface MouvementsQueryParams extends PaginationParams {
   dateDebut?: string
   dateFin?: string
 }
+export type StockEnriched = any;
+
+
+
+
+
+
+

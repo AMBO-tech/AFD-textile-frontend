@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Share2, Download, CheckCircle2 } from 'lucide-react';
-import { formatMontant } from '../../data/mock';
+
 
 /**
  * @interface PaymentReceiptData

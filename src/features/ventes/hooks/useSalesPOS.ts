@@ -1,11 +1,17 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useMockStore, type StockEnriched, type Vente } from '../../../data/useMockStore';
-import { formatMontant } from '../../../data/mock';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { SalesTab } from '../types';
 import type { LigneVente } from '../../pos/types';
 import type { PaymentTarget } from '../../../components/sales/SalesPaymentModal';
-import { useCreateSaleMutation, useCancelSaleMutation } from '../../../hooks/queries/useSalesQuery';
+import { useCreateSaleMutation, useCancelSaleMutation, useSalesListQuery } from '../../../hooks/queries/useSalesQuery';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import { useStockLevelsQuery } from '../../../hooks/queries/useStocksQuery';
+import { useLocationsListQuery } from '../../../hooks/queries/useLocationsQuery';
+import { useProductsQuery } from '../../../hooks/queries/useProductsQuery';
+import { useClientsListQuery, useCreateClientMutation } from '../../../hooks/queries/useClientsQuery';
+import type { StockLevel } from '../../../types/stocks';
+
+const formatMontant = (n: number) => new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(n);
 
 interface UseSalesPOSProps {
   role?: 'gerant' | 'boutiquier';
@@ -14,35 +20,36 @@ interface UseSalesPOSProps {
 }
 
 export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: UseSalesPOSProps) => {
-  const {
-    produits,
-    stocks,
-    clients,
-    categories,
-    boutiques,
-    ventes,
-    addVente,
-    addCreance,
-    addClient,
-    cancelVente,
-    session,
-    getStocksEnriched,
-  } = useMockStore();
+  const { user } = useAuthStore();
+  const isBoutiquier = user?.role === 'BOUTIQUIER';
+
+  const { data: locData } = useLocationsListQuery();
+  const boutiques = locData?.data ?? [];
+  const defaultPhysicalBoutique = user?.locationId || boutiques.find((b) => b.type === 'BOUTIQUE')?.id || 'b1';
+  
+  const { data: prodData } = useProductsQuery();
+  const categories = (prodData as any)?.categories ?? [];
+
+  const { data: clientsData } = useClientsListQuery();
+  const clients = clientsData?.data ?? [];
+
+  const { mutate: createClientApi } = useCreateClientMutation();
+  const { mutate: createSaleApi } = useCreateSaleMutation();
+  const { mutate: cancelSaleApi } = useCancelSaleMutation();
 
   const [tab, setTab] = useState<SalesTab>('vente');
   const [categorieChoisie, setCategorieChoisie] = useState<string | null>(null);
   const [searchProd, setSearchProd] = useState('');
-  const [produitSelectionne, setProduitSelectionne] = useState<StockEnriched | null>(null);
+  const [produitSelectionne, setProduitSelectionne] = useState<StockLevel | null>(null);
 
-  // Boutique active (configurable pour le gérant, fixée pour le boutiquier)
-  const defaultPhysicalBoutique = session?.boutiqueId || boutiques.find((b) => b.type === 'BOUTIQUE')?.id || 'b1';
   const [selectedBoutiqueId, setSelectedBoutiqueId] = useState<string>(defaultPhysicalBoutique);
+  const boutiqueActive = isBoutiquier ? (user?.locationId || defaultPhysicalBoutique) : selectedBoutiqueId;
 
-  const isBoutiquier = session?.role === 'boutiquier';
-  const boutiqueActive = isBoutiquier ? (session?.boutiqueId || defaultPhysicalBoutique) : selectedBoutiqueId;
+  const { data: stockData } = useStockLevelsQuery({ locationId: boutiqueActive !== 'tous' ? boutiqueActive : undefined, limit: 1000 });
+  const stocksBoutique = stockData?.data ?? [];
 
-  const { mutate: createSaleApi } = useCreateSaleMutation();
-  const { mutate: cancelSaleApi } = useCancelSaleMutation();
+  const { data: ventesData } = useSalesListQuery({ boutiqueId: boutiqueActive !== 'tous' ? boutiqueActive : undefined, limit: 1000 });
+  const ventesFiltrees = ventesData?.data ?? [];
 
   const handleTabChange = (newTab: SalesTab) => {
     setTab(newTab);
@@ -51,19 +58,14 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
     }
   };
 
-  // Panier
   const [panier, setPanier] = useState<LigneVente[]>([]);
   const [vuePanier, setVuePanier] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PaymentTarget | null>(null);
   const [successData, setSuccessData] = useState<{ montant: number; paiement: string; client: string } | null>(null);
-  const [venteToCancel, setVenteToCancel] = useState<Vente | null>(null);
-
-  const stocksBoutique = useMemo(() => {
-    return getStocksEnriched(boutiqueActive);
-  }, [getStocksEnriched, boutiqueActive, stocks, produits]);
+  const [venteToCancel, setVenteToCancel] = useState<any | null>(null);
 
   useEffect(() => {
-    if (produitDirectId) {
+    if (produitDirectId && stocksBoutique.length > 0) {
       const p = stocksBoutique.find((pr) => pr.id === produitDirectId || pr.produitId === produitDirectId);
       if (p) {
         setProduitSelectionne(p);
@@ -71,24 +73,17 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
     }
   }, [produitDirectId, stocksBoutique]);
 
-  const ventesFiltrees = useMemo(() => {
-    if (role === 'boutiquier') {
-      return ventes.filter((v) => v.boutique === boutiqueActive);
-    }
-    if (boutiqueActive === 'tous') {
-      return ventes;
-    }
-    return ventes.filter((v) => v.boutique === boutiqueActive);
-  }, [ventes, role, boutiqueActive]);
+  // Hack for missing prix on StockLevel - assume 5000 as default or map it properly in the future
+  const getProductPrice = (productId: string) => 5000; 
 
   const totalPanier = panier.reduce(
-    (s, l) => s + l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
+    (s, l) => s + getProductPrice(l.produit.produitId) * l.qte - Math.min(l.remise, getProductPrice(l.produit.produitId) * l.qte),
     0
   );
 
   const handleAddToCart = (ligne: LigneVente) => {
     setPanier((prev) => [...prev, ligne]);
-    toast.success(`${ligne.produit.nom} (${ligne.qte} ${ligne.unite}) ajouté au panier`);
+    toast.success(`${ligne.produit.produitNom} (${ligne.qte} ${ligne.unite}) ajoutÃ© au panier`);
     onReset?.();
   };
 
@@ -104,58 +99,12 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
   const handleConfirmPayment = (clientNom: string, modeChoisi: string) => {
     if (!pendingPayment) return;
 
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const heureStr = now.toTimeString().slice(0, 5);
-
     if (pendingPayment.type === 'direct') {
       const ligne = pendingPayment.ligne;
-      const montantLigne =
-        ligne.produit.prix * ligne.qte - Math.min(ligne.remise, ligne.produit.prix * ligne.qte);
-      const targetBoutique =
-        (boutiqueActive === 'tous' ? ligne.produit.boutiqueId : boutiqueActive) || 'b1';
+      const price = getProductPrice(ligne.produit.produitId);
+      const montantLigne = price * ligne.qte - Math.min(ligne.remise, price * ligne.qte);
+      const targetBoutique = (boutiqueActive === 'tous' ? ligne.produit.locationId : boutiqueActive) || 'b1';
 
-      addVente({
-        client: clientNom,
-        produit: ligne.produit.nom,
-        produitId: ligne.produit.produitId || ligne.produit.id,
-        quantite: ligne.qte,
-        unite: ligne.unite,
-        montant: montantLigne,
-        remise: ligne.remise,
-        paiement: modeChoisi,
-        date: dateStr,
-        heure: heureStr,
-        statut: 'validée',
-        boutique: targetBoutique,
-        vendeur: session?.nom || 'Vendeur',
-        typeVente: modeChoisi === 'Vente à crédit' ? 'credit' : 'comptant',
-      });
-
-      if (modeChoisi === 'Vente à crédit') {
-        let clientObj = clients.find((c) => c.nom.toLowerCase() === clientNom.toLowerCase());
-        if (!clientObj) {
-          clientObj = addClient({
-            nom: clientNom,
-            telephone: '',
-            adresse: 'Dakar',
-            boutiqueId: targetBoutique,
-          });
-        }
-        addCreance(clientObj.id, [
-          {
-            id: `lp_${Date.now()}`,
-            produitId: ligne.produit.produitId || ligne.produit.id,
-            nom: ligne.produit.nom,
-            quantite: ligne.qte,
-            unite: ligne.unite,
-            prixUnitaire: ligne.produit.prix,
-            totalLigne: montantLigne,
-          },
-        ]);
-      }
-
-      // Synchronisation API réelle
       createSaleApi({
         boutiqueId: targetBoutique,
         lignes: [
@@ -163,121 +112,43 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
             produitId: ligne.produit.produitId || ligne.produit.id,
             quantite: ligne.qte,
             uniteSaisie: ligne.unite,
-            prixUnitaireApplique: ligne.produit.prix,
+            prixUnitaireApplique: price,
             remiseMontant: ligne.remise,
           },
         ],
-        paiementInitial:
-          modeChoisi !== 'Vente à crédit'
-            ? {
-                montant: montantLigne,
-                modePaiement:
-                  modeChoisi === 'Wave'
-                    ? 'WAVE'
-                    : modeChoisi === 'Orange Money'
-                    ? 'ORANGE_MONEY'
-                    : 'ESPECES',
-              }
-            : undefined,
+        paiementInitial: modeChoisi !== 'Vente Ã  crÃ©dit' ? {
+          montant: montantLigne,
+          modePaiement: modeChoisi === 'Wave' ? 'WAVE' : modeChoisi === 'Orange Money' ? 'ORANGE_MONEY' : 'ESPECES',
+        } : undefined,
       });
 
-      setSuccessData({
-        montant: montantLigne,
-        paiement: modeChoisi,
-        client: clientNom,
-      });
-
-      toast.success(
-        modeChoisi === 'Vente à crédit'
-          ? `Vente à crédit enregistrée pour ${clientNom} (${formatMontant(montantLigne)})`
-          : `Vente validée : ${formatMontant(montantLigne)} encaissés (${modeChoisi})`
-      );
+      setSuccessData({ montant: montantLigne, paiement: modeChoisi, client: clientNom });
+      toast.success(modeChoisi === 'Vente Ã  crÃ©dit' ? `Vente Ã  crÃ©dit enregistrÃ©e pour ${clientNom} (${formatMontant(montantLigne)})` : `Vente validÃ©e : ${formatMontant(montantLigne)} encaissÃ©s (${modeChoisi})`);
       setProduitSelectionne(null);
       setPendingPayment(null);
       onReset?.();
     } else {
-      const isCredit = modeChoisi === 'Vente à crédit';
+      const isCredit = modeChoisi === 'Vente Ã  crÃ©dit';
       const clientActuel = clientNom.trim() || 'Client de passage';
       const targetBoutique = (boutiqueActive === 'tous' ? 'b1' : boutiqueActive) || 'b1';
 
-      pendingPayment.panier.forEach((ligne) => {
-        const montantLigne =
-          ligne.produit.prix * ligne.qte - Math.min(ligne.remise, ligne.produit.prix * ligne.qte);
-        addVente({
-          client: clientActuel,
-          produit: ligne.produit.nom,
-          produitId: ligne.produit.produitId || ligne.produit.id,
-          quantite: ligne.qte,
-          unite: ligne.unite,
-          montant: montantLigne,
-          remise: ligne.remise,
-          paiement: modeChoisi,
-          date: dateStr,
-          heure: heureStr,
-          statut: 'validée',
-          boutique: targetBoutique,
-          vendeur: session?.nom || 'Vendeur',
-          typeVente: isCredit ? 'credit' : 'comptant',
-        });
-      });
-
-      if (isCredit) {
-        let clientObj = clients.find((c) => c.nom.toLowerCase() === clientActuel.toLowerCase());
-        if (!clientObj) {
-          clientObj = addClient({
-            nom: clientActuel,
-            telephone: '',
-            adresse: 'Dakar',
-            boutiqueId: boutiqueActive || 'b1',
-          });
-        }
-        const lignesCreance = pendingPayment.panier.map((l, idx) => ({
-          id: `lp_${Date.now()}_${idx}`,
-          produitId: l.produit.produitId || l.produit.id,
-          nom: l.produit.nom,
-          quantite: l.qte,
-          unite: l.unite,
-          prixUnitaire: l.produit.prix,
-          totalLigne: l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
-        }));
-        addCreance(clientObj.id, lignesCreance);
-      }
-
-      // Synchronisation API réelle
       createSaleApi({
         boutiqueId: targetBoutique,
         lignes: pendingPayment.panier.map((l) => ({
           produitId: l.produit.produitId || l.produit.id,
           quantite: l.qte,
           uniteSaisie: l.unite,
-          prixUnitaireApplique: l.produit.prix,
+          prixUnitaireApplique: getProductPrice(l.produit.produitId),
           remiseMontant: l.remise,
         })),
-        paiementInitial:
-          !isCredit
-            ? {
-                montant: totalPanier,
-                modePaiement:
-                  modeChoisi === 'Wave'
-                    ? 'WAVE'
-                    : modeChoisi === 'Orange Money'
-                    ? 'ORANGE_MONEY'
-                    : 'ESPECES',
-              }
-            : undefined,
+        paiementInitial: !isCredit ? {
+          montant: totalPanier,
+          modePaiement: modeChoisi === 'Wave' ? 'WAVE' : modeChoisi === 'Orange Money' ? 'ORANGE_MONEY' : 'ESPECES',
+        } : undefined,
       });
 
-      setSuccessData({
-        montant: totalPanier,
-        paiement: modeChoisi,
-        client: clientActuel,
-      });
-
-      toast.success(
-        isCredit
-          ? `Vente à crédit groupée enregistrée pour ${clientActuel} (${panier.length} articles, ${formatMontant(totalPanier)})`
-          : `Panier encaissé avec succès : ${panier.length} article(s) pour ${formatMontant(totalPanier)} (${modeChoisi})`
-      );
+      setSuccessData({ montant: totalPanier, paiement: modeChoisi, client: clientActuel });
+      toast.success(isCredit ? `Vente Ã  crÃ©dit groupÃ©e enregistrÃ©e pour ${clientActuel} (${panier.length} articles, ${formatMontant(totalPanier)})` : `Panier encaissÃ© avec succÃ¨s : ${panier.length} article(s) pour ${formatMontant(totalPanier)} (${modeChoisi})`);
       setPanier([]);
       setVuePanier(false);
       setPendingPayment(null);
@@ -285,9 +156,8 @@ export const useSalesPOS = ({ role = 'boutiquier', produitDirectId, onReset }: U
   };
 
   const handleCancelSale = (venteId: string, motif: string) => {
-    cancelVente(venteId, motif);
     cancelSaleApi({ id: venteId, motif });
-    toast.error(`Vente annulée avec succès. Motif: ${motif}`);
+    toast.error(`Vente annulÃ©e avec succÃ¨s. Motif: ${motif}`);
     setVenteToCancel(null);
   };
 

@@ -1,7 +1,7 @@
-import type { ProductStatus, UniteStockage } from './enums'
+﻿import type { ProductStatus, UniteStockage } from './enums'
 import type { PaginationParams } from './api'
 
-export interface Categorie {
+export interface Categorie { photo?: string;
   id: string
   code: string
   nom: string
@@ -17,7 +17,7 @@ export interface Unite {
   nom: string
 }
 
-export interface Produit {
+export interface Produit { photo?: string; lieu?: string; prix?: number; unite?: string;
   id: string
   reference: string
   nom: string

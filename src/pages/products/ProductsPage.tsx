@@ -1,16 +1,14 @@
+import { useAuthStore } from '@/stores/useAuthStore';
 import React from 'react';
 import { Products } from '../../components/products';
-import { useMockStore } from '../../data/useMockStore';
-
-import { useAuthStore } from '../../stores/useAuthStore';
 
 export const ProductsPage: React.FC = () => {
-  const { session } = useMockStore();
-  const { user } = useAuthStore();
+  const user = useAuthStore((s: any) => s.user);
+  const session = user;
 
-  const role = session?.role || (user?.role === 'OWNER' ? 'gerant' : 'boutiquier');
+  if (!session) return null;
 
-  return <Products role={role} />;
+  return <Products role={session.role} />;
 };
 
 export default ProductsPage;

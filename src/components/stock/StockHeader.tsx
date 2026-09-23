@@ -1,9 +1,9 @@
 import React from 'react';
 import { Package, AlertTriangle, Layers, Plus } from 'lucide-react';
-import type { StockEnriched } from '../../data/useMockStore';
+
 
 interface StockHeaderProps {
-  produits: StockEnriched[];
+  produits: Produit[];
   role: 'gerant' | 'boutiquier';
   onOpenMiseEnStock: () => void;
 }
@@ -28,19 +28,17 @@ export const StockHeader: React.FC<StockHeaderProps> = ({
           <p className="text-xs sm:text-sm text-gray-500">
             {role === 'gerant'
               ? 'Supervision globale des stocks, alertes et approvisionnements'
-              : 'Consultation des stocks disponibles dans votre boutique'}
+              : 'Inventaire et entrées de stock de votre boutique'}
           </p>
         </div>
-        {role === 'gerant' && (
-          <button
-            onClick={onOpenMiseEnStock}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white shadow-sm transition-all hover:opacity-95 self-start sm:self-auto"
-            style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
-          >
-            <Plus size={16} />
-            Mise en stock
-          </button>
-        )}
+        <button
+          onClick={onOpenMiseEnStock}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white shadow-sm transition-all hover:opacity-95 self-start sm:self-auto"
+          style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+        >
+          <Plus size={16} />
+          Mise en stock
+        </button>
       </div>
 
       {/* Cartes métriques */}

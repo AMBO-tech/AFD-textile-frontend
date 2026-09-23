@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeftRight, CheckCircle2, Clock } from 'lucide-react';
-import type { HistoriqueItem } from '../../data/useMockStore';
+
 
 interface EntrepotTransferHistoryProps {
   historique: HistoriqueItem[];

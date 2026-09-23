@@ -1,6 +1,7 @@
+import { formatMontant } from '../../../utils/format';
 import React from 'react';
 import { X, MapPin, Store, MessageCircle, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
-import type { ClientDetailed } from '../../../data/useMockStore';
+import type { ClientDetailed } from '../../../types/clients';
 
 interface ClientDetailHeaderProps {
   client: ClientDetailed;
@@ -39,7 +40,7 @@ export const ClientDetailHeader: React.FC<ClientDetailHeaderProps> = ({
           >
             {client.nom
               .split(' ')
-              .map((n) => n[0])
+              .map((n: string) => n[0])
               .join('')
               .slice(0, 2)}
           </div>

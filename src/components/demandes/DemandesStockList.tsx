@@ -1,17 +1,15 @@
 import React from 'react';
 import { Package, Send } from 'lucide-react';
-import type { StockEnriched } from '../../data/useMockStore';
+
 
 interface DemandesStockListProps {
-  stocks: StockEnriched[];
-  onOpenDemande: (produit: StockEnriched) => void;
-  role?: 'gerant' | 'boutiquier';
+  stocks: Produit[];
+  onOpenDemande: (produit: Produit) => void;
 }
 
 export const DemandesStockList: React.FC<DemandesStockListProps> = ({
   stocks,
   onOpenDemande,
-  role = 'boutiquier',
 }) => {
   if (stocks.length === 0) {
     return (
@@ -69,17 +67,15 @@ export const DemandesStockList: React.FC<DemandesStockListProps> = ({
               </div>
             </div>
 
-            {/* Bouton Demander (Uniquement pour le boutiquier) */}
-            {role === 'boutiquier' && (
-              <button
-                onClick={() => onOpenDemande(p)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white shadow-sm active:scale-95 transition-all flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
-              >
-                <Send size={12} />
-                <span>Demander</span>
-              </button>
-            )}
+            {/* Bouton Demander */}
+            <button
+              onClick={() => onOpenDemande(p)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white shadow-sm active:scale-95 transition-all flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+            >
+              <Send size={12} />
+              <span>Demander</span>
+            </button>
           </div>
         );
       })}

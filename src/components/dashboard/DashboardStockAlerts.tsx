@@ -1,9 +1,9 @@
 import React from 'react';
 import { AlertTriangle, ChevronRight, ShoppingCart } from 'lucide-react';
-import type { StockEnriched } from '../../data/useMockStore';
+
 
 interface DashboardStockAlertsProps {
-  alerts: StockEnriched[];
+  alerts: Produit[];
   onNavigate?: (s: string) => void;
   onVenteDirecte?: (produitId: string) => void;
 }

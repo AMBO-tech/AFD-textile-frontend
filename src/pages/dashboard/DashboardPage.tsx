@@ -1,16 +1,14 @@
+import { useAuthStore } from '@/stores/useAuthStore';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dashboard } from '../../components/dashboard';
-import { useMockStore } from '../../data/useMockStore';
-
-import { useAuthStore } from '../../stores/useAuthStore';
 
 export const DashboardPage: React.FC = () => {
-  const { session } = useMockStore();
-  const { user } = useAuthStore();
+  const user = useAuthStore((s: any) => s.user);
+  const session = user;
   const navigate = useNavigate();
 
-  const role = session?.role || (user?.role === 'OWNER' ? 'gerant' : 'boutiquier');
+  if (!session) return null;
 
   const handleNavigate = (screen: string) => {
     switch (screen) {
@@ -42,8 +40,8 @@ export const DashboardPage: React.FC = () => {
       case 'historique':
         navigate('/historique');
         break;
-      case 'boutiques':
-        navigate('/boutiques');
+      case 'sauvegardes':
+        navigate('/sauvegardes');
         break;
       case 'parametres':
         navigate('/parametres');
@@ -59,7 +57,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <Dashboard
-      role={role}
+      role={session.role}
       onNavigate={handleNavigate}
       onVenteDirecte={handleVenteDirecte}
     />

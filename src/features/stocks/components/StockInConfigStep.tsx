@@ -1,9 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { Warehouse, Store, Ruler } from 'lucide-react';
 import CustomDropdownSelect, { type DropdownOption } from '../../../components/ui/CustomDropdownSelect';
-import type { Produit, Boutique } from '../../../data/useMockStore';
+import type { Produit } from '../../../types/products';
+import type { Boutique } from '../../../types/locations';
 
-const UNITES_STOCK = ['mètre', 'yard', 'kilo', 'rouleau'] as const;
+const UNITES_STOCK = ['mÃ¨tre', 'yard', 'kilo', 'rouleau'] as const;
 
 export interface StockInFormData {
   emplacement: string;
@@ -40,7 +41,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-3.5">
-      {/* Carte résumé produit choisi */}
+      {/* Carte rÃ©sumÃ© produit choisi */}
       <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 border border-blue-100">
         <div className="w-12 h-12 rounded-lg overflow-hidden bg-white flex-shrink-0">
           <img src={produitChoisi.photo} alt={produitChoisi.nom} className="w-full h-full object-cover" />
@@ -48,7 +49,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
         <div>
           <div className="font-bold text-gray-900 text-sm">{produitChoisi.nom}</div>
           <div className="text-xs text-blue-700 font-medium">
-            {produitChoisi.categorie} • {produitChoisi.couleur}
+            {(produitChoisi.categorie as any)?.nom || produitChoisi.categorie} â€¢ {produitChoisi.couleur}
           </div>
         </div>
       </div>
@@ -57,7 +58,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
       {role === 'gerant' ? (
         <div>
           <CustomDropdownSelect
-            label="Emplacement récepteur"
+            label="Emplacement rÃ©cepteur"
             menuTitle="Point de stockage de destination"
             value={form.emplacement}
             onChange={(val) => setForm((f) => ({ ...f, emplacement: val }))}
@@ -65,7 +66,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
             icon={<Warehouse size={16} />}
           />
           <p className="text-[11px] text-gray-400 mt-1 pl-0.5">
-            Indiquez précisément quel point de vente ou entrepôt réceptionne ce stock physique.
+            Indiquez prÃ©cisÃ©ment quel point de vente ou entrepÃ´t rÃ©ceptionne ce stock physique.
           </p>
         </div>
       ) : (
@@ -78,13 +79,13 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
               </div>
               <div className="min-w-0">
                 <span className="text-[10px] uppercase font-bold text-blue-600 block leading-tight">
-                  Point de vente récepteur (Votre boutique)
+                  Point de vente rÃ©cepteur (Votre boutique)
                 </span>
                 <span className="font-bold text-sm text-gray-900 truncate block">
                   {b?.nom || 'Boutique Locale'}
                 </span>
                 <span className="text-[11px] text-gray-500 block">
-                  {b?.lieu || 'Affectation'} • Ce métrage sera immédiatement vendable en caisse
+                  {b?.lieu || 'Affectation'} â€¢ Ce mÃ©trage sera immÃ©diatement vendable en caisse
                 </span>
               </div>
             </div>
@@ -95,7 +96,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Quantité reçue *
+            QuantitÃ© reÃ§ue *
           </label>
           <input
             type="number"
@@ -108,17 +109,17 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
         </div>
         <div>
           <CustomDropdownSelect
-            label="Unité de mesure"
+            label="UnitÃ© de mesure"
             value={form.unite}
             onChange={(val) =>
               setForm({ ...form, unite: val as typeof UNITES_STOCK[number] })
             }
             icon={<Ruler size={15} />}
-            menuTitle="Unité de stock"
+            menuTitle="UnitÃ© de stock"
             options={UNITES_STOCK.map((u) => ({
               value: u,
               label: u,
-              badge: 'Unité',
+              badge: 'UnitÃ©',
               icon: <Ruler size={14} className="text-blue-500" />,
             }))}
           />
@@ -160,7 +161,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
             type="number"
             value={form.prixMinimal}
             onChange={(e) => setForm({ ...form, prixMinimal: e.target.value })}
-            placeholder="Prix min négociable"
+            placeholder="Prix min nÃ©gociable"
             className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-700 focus:outline-none focus:border-blue-500"
           />
         </div>
@@ -169,7 +170,7 @@ export const StockInConfigStep: React.FC<StockInConfigStepProps> = ({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Nombre de pièces / rouleaux
+            Nombre de piÃ¨ces / rouleaux
           </label>
           <input
             type="number"

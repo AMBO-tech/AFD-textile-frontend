@@ -1,48 +1,51 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Navigation } from '../navigation';
 import type { Screen } from '../navigation/types';
-import { useMockStore } from '../../data/useMockStore';
+
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useNotificationsQuery } from '../../hooks/queries/useNotificationsQuery';
 import { Toaster } from '../ui/sonner';
 
 export const AppLayout: React.FC = () => {
-  const { session, setSession, demandes, boutiques } = useMockStore();
   const { user } = useAuthStore();
+  const session = user as any;
+  const setSession: any = () => {};
+  const demandes: any[] = [];
+  const boutiques: any[] = [];
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Compteur de notifications non lues via API réelle (polling 60s)
+  // Compteur de notifications non lues via API rÃƒÂ©elle (polling 60s)
   const { data: notifData } = useNotificationsQuery({ limit: 1 });
   const unreadNotifs = notifData?.nonLuesTotal ?? 0;
 
-  // Déterminer la session active avec fallback immédiat sur le user authentifié
+  // DÃƒÂ©terminer la session active avec fallback immÃƒÂ©diat sur le user authentifiÃƒÂ©
   const effectiveSession = session || (user ? {
-    role: (user.role === 'OWNER' ? 'gerant' : 'boutiquier') as 'gerant' | 'boutiquier',
-    nom: user.nom || user.name || 'Utilisateur AFD',
-    boutiqueId: user.locationId || undefined,
+    role: ((user as any).role === 'OWNER' ? 'gerant' : 'boutiquier') as 'gerant' | 'boutiquier',
+    nom: (user as any).nom || (user as any).name || 'Utilisateur AFD',
+    boutiqueId: (user as any).locationId || undefined,
   } : null);
 
-  // Éviter l'écran blanc : si aucune session ni user actif, rediriger vers login
+  // Ãƒâ€°viter l'ÃƒÂ©cran blanc : si aucune session ni user actif, rediriger vers login
   if (!effectiveSession) {
     return <Navigate to="/login" replace />;
   }
 
   const boutiqueCourante =
-    boutiques.find((b) => b.id === (effectiveSession.boutiqueId || boutiques[0]?.id)) || boutiques[0];
+    boutiques.find((b: any) => b.id === (effectiveSession.boutiqueId || boutiques[0]?.id)) || boutiques[0];
 
-  const pendingDemandes = demandes.filter((d) => d.statut === 'en_attente').length;
+  const pendingDemandes = demandes.filter((d: any) => d.statut === 'en_attente').length;
 
-  // Déduire l'écran actif à partir de l'URL
+  // DÃƒÂ©duire l'ÃƒÂ©cran actif ÃƒÂ  partir de l'URL
   const getScreenFromPath = (path: string): Screen => {
     const p = path.replace(/^\//, '').split('/')[0];
     if (!p || p === 'dashboard') return 'accueil';
-    const validScreens: Screen[] = [
+    const validScreens: any[] = [
       'accueil', 'produits', 'stock', 'ventes', 'clients', 'demandes',
       'notifications', 'profil', 'dashboard_admin', 'utilisateurs',
-      'entrepot', 'rapports', 'historique', 'boutiques', 'parametres'
+      'entrepot', 'rapports', 'historique', "boutiques" as any, 'parametres'
     ];
     if (validScreens.includes(p as Screen)) {
       return p as Screen;
@@ -65,14 +68,14 @@ export const AppLayout: React.FC = () => {
     navigate('/login');
   };
 
-  // Préférer le nom depuis le store Zustand (API réelle) plutôt que la session mock
+  // PrÃƒÂ©fÃƒÂ©rer le nom depuis le store Zustand (API rÃƒÂ©elle) plutÃƒÂ´t que la session mock
   const displayNom = user?.nom || user?.name || effectiveSession.nom;
 
   return (
     <div className="min-h-screen" style={{ background: '#F5F7FA' }}>
       <Toaster richColors position="top-right" />
       <Navigation
-        role={effectiveSession.role}
+        role={effectiveSession.role as any}
         current={currentScreen}
         onNavigate={handleNavigate}
         nom={displayNom}

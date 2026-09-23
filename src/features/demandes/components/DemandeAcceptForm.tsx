@@ -1,6 +1,7 @@
 import React from 'react';
 import { Truck, AlertTriangle, CheckCircle2, Warehouse, Store } from 'lucide-react';
-import type { Demande, Boutique } from '../../../data/useMockStore';
+import type { Demande } from '../../../types/demandes';
+import type { Boutique } from '../../../types/locations';
 import CustomDropdownSelect, { type DropdownOption } from '../../../components/ui/CustomDropdownSelect';
 
 interface DemandeAcceptFormProps {

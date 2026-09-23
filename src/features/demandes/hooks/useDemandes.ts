@@ -1,8 +1,11 @@
 import { useState, useMemo } from 'react';
-import { useMockStore, type Demande, type StockEnriched } from '../../../data/useMockStore';
+import { useAuthStore } from '../../../stores/useAuthStore';
+import { useLocationsListQuery } from '../../../hooks/queries/useLocationsQuery';
+import { useStockLevelsQuery } from '../../../hooks/queries/useStocksQuery';
 import { toast } from 'sonner';
+import type { StockLevel } from '../../../types/stocks';
 
-type Statut = Demande['statut'];
+type Statut = 'en_attente' | 'en_transfert' | 'livree' | 'refusee';
 
 interface UseDemandesProps {
   role: 'gerant' | 'boutiquier';
@@ -10,16 +13,18 @@ interface UseDemandesProps {
 }
 
 export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
-  const {
-    demandes,
-    boutiques,
-    session,
-    createDemande,
-    updateDemandeStatut,
-    getStocksEnriched,
-    stocks,
-    produits,
-  } = useMockStore();
+  const { user } = useAuthStore();
+  const { data: locData } = useLocationsListQuery();
+  const boutiques = locData?.data ?? [];
+
+  // Temporary fallback array for demandes (until the API is ready)
+  const demandes: any[] = []; 
+
+  const { data: stockDataGlobal } = useStockLevelsQuery({ limit: 1000 });
+  const allStocks = stockDataGlobal?.data ?? [];
+
+  const { data: stockDataBoutique } = useStockLevelsQuery({ locationId: boutiqueId, limit: 1000 });
+  const boutiqueStocks = stockDataBoutique?.data ?? [];
 
   const [activeTab, setActiveTab] = useState<'stocks' | 'demandes' | 'reseau'>(
     role === 'gerant' ? 'demandes' : 'stocks'
@@ -30,8 +35,8 @@ export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
   const [filterStatut, setFilterStatut] = useState<Statut | ''>('');
 
   const [showNew, setShowNew] = useState(false);
-  const [selectedProduit, setSelectedProduit] = useState<StockEnriched | null>(null);
-  const [validation, setValidation] = useState<{ demande: Demande; action: 'acceptee' | 'refusee' } | null>(null);
+  const [selectedProduit, setSelectedProduit] = useState<StockLevel | null>(null);
+  const [validation, setValidation] = useState<{ demande: any; action: 'acceptee' | 'refusee' } | null>(null);
 
   const maBoutique = boutiques.find((b) => b.id === boutiqueId) || boutiques[0];
 
@@ -41,24 +46,23 @@ export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
   };
 
   const produitsEmplacement = useMemo(() => {
-    return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
-  }, [getStocksEnriched, role, boutiqueId, stocks, produits]);
+    return role === 'gerant' ? allStocks : boutiqueStocks;
+  }, [role, allStocks, boutiqueStocks]);
 
   const stocksTries = useMemo(() => {
     return produitsEmplacement
-      .filter((p: StockEnriched) => {
+      .filter((p: StockLevel) => {
         const matchSearch =
-          p.nom.toLowerCase().includes(search.toLowerCase()) ||
-          p.categorie.toLowerCase().includes(search.toLowerCase()) ||
-          (p.couleur && p.couleur.toLowerCase().includes(search.toLowerCase()));
-        const matchCat = filtreCat === 'toutes' || p.categorie === filtreCat;
+          p.produitNom.toLowerCase().includes(search.toLowerCase()) ||
+          p.produitReference.toLowerCase().includes(search.toLowerCase());
+        const matchCat = true; // Categories not available directly on StockLevel yet
         return matchSearch && matchCat;
       })
-      .sort((a: StockEnriched, b: StockEnriched) => a.quantite - b.quantite);
+      .sort((a: StockLevel, b: StockLevel) => a.quantite - b.quantite);
   }, [produitsEmplacement, search, filtreCat]);
 
   const stocksCritiques = useMemo(() => {
-    return produitsEmplacement.filter((p: StockEnriched) => p.quantite <= p.seuil);
+    return produitsEmplacement.filter((p: StockLevel) => p.estEnAlerte);
   }, [produitsEmplacement]);
 
   const demandesEnAttente = demandes.filter((d) => d.statut === 'en_attente');
@@ -72,7 +76,7 @@ export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
     return matchStatut && matchSearch && matchBoutique;
   });
 
-  const handleOpenDemande = (p?: StockEnriched) => {
+  const handleOpenDemande = (p?: StockLevel) => {
     setSelectedProduit(p || null);
     setShowNew(true);
   };
@@ -90,33 +94,7 @@ export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
     quantite?: number;
     motifRefus?: string;
   }) => {
-    if (action === 'refusee') {
-      updateDemandeStatut(demandeId, 'refusee', undefined, undefined, session?.nom || 'Gérant');
-      toast.error(`Demande #${demandeId} refusée : ${motifRefus || 'Non accordée'}.`);
-    } else {
-      if (!sourceBoutiqueId) {
-        toast.error("Veuillez sélectionner un emplacement source d'expédition.");
-        return;
-      }
-      const targetDemande = demandes.find((d) => d.id === demandeId);
-      const isEntrepot = sourceBoutiqueId === 'entrepot' || sourceBoutiqueId === 'b-ent';
-      const nomSource = isEntrepot
-        ? 'Entrepôt Central'
-        : (boutiques.find((b) => b.id === sourceBoutiqueId)?.nom || sourceBoutiqueId);
-      const nomDest = getBoutiqueName(targetDemande?.boutique_demande || '');
-
-      updateDemandeStatut(
-        demandeId,
-        'en_transfert',
-        quantite,
-        sourceBoutiqueId,
-        session?.nom || 'Gérant'
-      );
-
-      toast.success(
-        `Transfert validé ! Expédition de ${quantite} ${targetDemande?.unite || 'm'} depuis ${nomSource} vers ${nomDest}.`
-      );
-    }
+    toast.error("Fonctionnalité en cours de migration (API Réelle)");
     setValidation(null);
   };
 
@@ -124,26 +102,15 @@ export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
     produit: string;
     quantite: number;
     unite: string;
-    priorite: Demande['priorite'];
+    priorite: 'haute' | 'moyenne' | 'basse';
   }) => {
-    createDemande({
-      produit: data.produit,
-      quantite: data.quantite,
-      unite: data.unite,
-      boutique_demande: role === 'boutiquier' ? boutiqueId : (session?.boutiqueId || 'b1'),
-      boutique_source: 'reseau',
-      priorite: data.priorite,
-      demandeur: session?.nom || (role === 'gerant' ? 'Gérant' : 'Boutiquier'),
-    });
-
+    toast.error("Fonctionnalité en cours de migration (API Réelle)");
     setShowNew(false);
     setSelectedProduit(null);
-    toast.success(`Demande de ${data.quantite} ${data.unite} de ${data.produit} diffusée à tout le réseau.`);
   };
 
-  const handleConfirmReception = (demande: Demande) => {
-    updateDemandeStatut(demande.id, 'livree', demande.quantite, demande.boutique_source, session?.nom);
-    toast.success(`Réassort réceptionné ! ${demande.quantite} ${demande.unite || 'm'} de ${demande.produit} ajoutés au stock.`);
+  const handleConfirmReception = (demande: any) => {
+    toast.error("Fonctionnalité en cours de migration (API Réelle)");
   };
 
   return {
@@ -173,7 +140,7 @@ export const useDemandes = ({ role, boutiqueId = 'b1' }: UseDemandesProps) => {
     handleConfirmValidation,
     handleSendDemande,
     handleConfirmReception,
-    allStocks: getStocksEnriched(),
+    allStocks,
   };
 };
 

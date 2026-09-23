@@ -1,4 +1,4 @@
-import type { ProductStatus, StatutPaiement, VenteStatus, MoyenPaiement } from './enums'
+﻿import type { ProductStatus, StatutPaiement, VenteStatus, MoyenPaiement } from './enums'
 import type { PaginationParams } from './api'
 
 export interface Client {
@@ -67,4 +67,27 @@ export interface ClientDebtsStatementDto {
   nombreFacturesImpayees: number
   facturesImpayees: ClientInvoiceDebtDto[]
   historiqueEncaissements: ClientPaymentHistoryDto[]
+}
+
+export interface LigneProduitCreance {
+  nom: string;
+  quantite: number;
+  unite: string;
+  prixUnitaire: number;
+}
+export interface PaiementCreance {
+  id: string;
+  montant: number;
+  mode: string;
+  date: string;
+}
+export interface Creance {
+  id: string;
+  date: string;
+  montantTotal: number;
+  paiements: PaiementCreance[];
+  lignes: LigneProduitCreance[];
+}
+export interface ClientDetailed extends Client { boutiqueId?: string; boutique?: string;
+  creances: Creance[];
 }

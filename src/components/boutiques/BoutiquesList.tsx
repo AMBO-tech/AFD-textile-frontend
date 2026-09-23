@@ -12,7 +12,6 @@ interface BoutiquesListProps {
   onOpenCreateModal: () => void;
   onEditBoutique: (b: BoutiqueWithStaff) => void;
   onToggleStatus: (id: string) => void;
-  onViewStaff?: (b: BoutiqueWithStaff) => void;
 }
 
 export const BoutiquesList: React.FC<BoutiquesListProps> = ({
@@ -24,7 +23,6 @@ export const BoutiquesList: React.FC<BoutiquesListProps> = ({
   onOpenCreateModal,
   onEditBoutique,
   onToggleStatus,
-  onViewStaff,
 }) => {
   const nbBoutiques = boutiques.filter((b) => b.type === 'BOUTIQUE').length;
   const nbEntrepots = boutiques.filter((b) => b.type === 'ENTREPOT').length;
@@ -147,14 +145,13 @@ export const BoutiquesList: React.FC<BoutiquesListProps> = ({
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {boutiquesFiltrees.map((b) => (
             <BoutiqueCard
               key={b.id}
               boutique={b}
               onEdit={onEditBoutique}
               onToggleStatus={onToggleStatus}
-              onViewStaff={onViewStaff}
             />
           ))}
         </div>

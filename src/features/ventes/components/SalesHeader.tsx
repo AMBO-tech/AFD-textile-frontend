@@ -1,7 +1,8 @@
+import { formatMontant } from '../../../utils/format';
 import React from 'react';
 import { ShoppingCart, ShoppingBag, Clock, Store } from 'lucide-react';
 import { BoutiqueSelector } from '../../../components/sales/BoutiqueSelector';
-import type { Boutique } from '../../../data/useMockStore';
+import type { Boutique } from '../../../types/locations';
 
 interface SalesHeaderProps {
   role: string;
@@ -73,7 +74,7 @@ export const SalesHeader: React.FC<SalesHeaderProps> = ({
           <BoutiqueSelector
             boutiques={boutiques.filter((b) => b.type === 'BOUTIQUE')}
             selectedId={boutiqueActive}
-            allowAll={role === 'gerant' && tab === 'historique'}
+            
             onSelect={onSelectBoutique}
           />
         ) : (

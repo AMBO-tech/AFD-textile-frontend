@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
-import { X, Plus, ShoppingBag, CheckCircle2, Package, AlertTriangle } from 'lucide-react';
-import type { ClientDetailed, StockEnriched, LigneProduitCreance } from '../../data/useMockStore';
-import { formatMontant } from '../../data/mock';
-import CustomDropdownSelect from '../ui/CustomDropdownSelect';
-import NewDebtArticlesList from '../../features/clients/components/NewDebtArticlesList';
-import NewDebtDepositSection from '../../features/clients/components/NewDebtDepositSection';
-import NewDebtProductSelector from '../../features/clients/components/NewDebtProductSelector';
+import { X, Plus, Trash2, ShoppingBag, AlertTriangle, CheckCircle2, DollarSign } from 'lucide-react';
+
+
 
 interface NewDebtModalProps {
   isOpen: boolean;
   onClose: () => void;
   client: ClientDetailed;
-  produits: StockEnriched[];
+  produits: Produit[];
   onSubmit: (lignes: LigneProduitCreance[], acompte: number, modeAcompte: string) => void;
 }
 
@@ -52,10 +48,10 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
     setLignes((prev) => [
       ...prev,
       {
-        produitId: selectedProd.produitId || selectedProd.id,
+        produitId: selectedProd.id,
         nom: selectedProd.nom,
         quantite: qteNum,
-        unite: selectedProd.unite || 'mètre',
+        unite: selectedProd.unite,
         prixUnitaire: prixNum,
       },
     ]);
@@ -101,7 +97,7 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
           >
             <X size={18} />
           </button>
@@ -119,68 +115,213 @@ export const NewDebtModal: React.FC<NewDebtModalProps> = ({
           </div>
 
           {/* Formulaire ajout ligne d'article */}
-          <NewDebtProductSelector
-            produits={produits}
-            selectedProdId={selectedProdId}
-            onSelectProdId={(val) => {
-              setSelectedProdId(val);
-              const p = produits.find((pr) => pr.id === val);
-              if (p) setPrixUnitaire(p.prix.toString());
-              setErrorStock(null);
-            }}
-            selectedProd={selectedProd}
-            quantite={quantite}
-            onChangeQuantite={(val) => {
-              setQuantite(val);
-              setErrorStock(null);
-            }}
-            prixUnitaire={prixUnitaire}
-            onChangePrixUnitaire={setPrixUnitaire}
-            errorStock={errorStock}
-            onAjouterLigne={handleAjouterLigne}
-            formatMontant={formatMontant}
-          />
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-3">
+            <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              1. Sélectionner les tissus livrés
+            </div>
 
-          {/* 2. Liste des articles */}
-          <NewDebtArticlesList
-            lignes={lignes}
-            onSupprimerLigne={handleSupprimerLigne}
-            formatMontant={formatMontant}
-          />
+            <div className="space-y-1">
+              <label className="block text-[11px] font-medium text-gray-600">
+                Tissu / Article en stock
+              </label>
+              <select
+                value={selectedProdId}
+                onChange={(e) => {
+                  setSelectedProdId(e.target.value);
+                  const p = produits.find((pr) => pr.id === e.target.value);
+                  if (p) setPrixUnitaire(p.prix.toString());
+                  setErrorStock(null);
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                {produits.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom} — {p.categorie} ({p.couleur}) · Dispo: {p.quantite} {p.unite}
+                  </option>
+                ))}
+              </select>
+              {selectedProd && (
+                <div className="text-[11px] text-gray-500 flex justify-between px-1">
+                  <span>
+                    Stock actuel :{' '}
+                    <strong className={selectedProd.quantite < 10 ? 'text-amber-600' : 'text-green-600'}>
+                      {selectedProd.quantite} {selectedProd.unite}
+                    </strong>
+                  </span>
+                  <span>Prix catalogue : {formatMontant(selectedProd.prix)}</span>
+                </div>
+              )}
+            </div>
 
-          {/* 3. Acompte & Modalités */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-medium text-gray-600">
+                  Quantité ({selectedProd?.unite || 'mètres'}) *
+                </label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="any"
+                  value={quantite}
+                  onChange={(e) => {
+                    setQuantite(e.target.value);
+                    setErrorStock(null);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-gray-600">
+                  Prix unitaire gros (FCFA) *
+                </label>
+                <input
+                  type="number"
+                  value={prixUnitaire}
+                  onChange={(e) => setPrixUnitaire(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+            </div>
+
+            {errorStock && (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                <AlertTriangle size={14} className="flex-shrink-0" />
+                <span>{errorStock}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleAjouterLigne}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 active:scale-[0.99] transition-all shadow-xs"
+            >
+              <Plus size={14} />
+              Ajouter cet article à la commande
+            </button>
+          </div>
+
+          {/* Tableau des lignes ajoutées */}
+          <div className="space-y-2">
+            <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+              2. Articles commandés ({lignes.length})
+            </div>
+            {lignes.length === 0 ? (
+              <div className="text-center py-6 text-xs text-gray-400 border border-dashed border-gray-200 rounded-2xl">
+                Aucun article ajouté pour le moment.
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {lignes.map((l, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-gray-100 shadow-xs"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-gray-800">{l.nom}</div>
+                      <div className="text-[11px] text-gray-400">
+                        {l.quantite} {l.unite} × {formatMontant(l.prixUnitaire)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-gray-900 text-xs">
+                        {formatMontant(l.quantite * l.prixUnitaire)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSupprimerLigne(i)}
+                        className="text-gray-400 hover:text-red-600 p-1"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3. Acompte et ventilation financière */}
           {lignes.length > 0 && (
-            <NewDebtDepositSection
-              total={total}
-              acompte={acompte}
-              onChangeAcompte={setAcompte}
-              modeAcompte={modeAcompte}
-              onChangeModeAcompte={setModeAcompte}
-              acompteNum={acompteNum}
-              soldeRestant={soldeRestant}
-              formatMontant={formatMontant}
-            />
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+              <div className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                3. Acompte initial versé (Optionnel)
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] text-gray-500">Montant acompte (FCFA)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={total}
+                    value={acompte}
+                    onChange={(e) => setAcompte(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] text-gray-500">Mode de règlement</label>
+                  <select
+                    value={modeAcompte}
+                    onChange={(e) => setModeAcompte(e.target.value)}
+                    disabled={acompteNum === 0}
+                    className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  >
+                    <option value="Espèces">Espèces</option>
+                    <option value="Wave">Wave</option>
+                    <option value="Orange Money">Orange Money</option>
+                    <option value="Chèque">Chèque</option>
+                    <option value="Virement">Virement</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 grid grid-cols-3 gap-2 text-center text-xs">
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Total commande</span>
+                  <span className="font-bold text-gray-900">{formatMontant(total)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Acompte payé</span>
+                  <span className="font-bold text-green-600">{formatMontant(acompteNum)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-[10px] block">Créance restante</span>
+                  <span className="font-bold text-red-600">{formatMontant(soldeRestant)}</span>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2 flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            disabled={lignes.length === 0}
-            onClick={handleSubmit}
-            className="px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:opacity-95 transition-all disabled:opacity-50 cursor-pointer"
-            style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
-          >
-            Valider et enregistrer ({formatMontant(total)})
-          </button>
+        {/* Footer avec total et validation */}
+        <div className="pt-3 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
+          <div>
+            <div className="text-[11px] text-gray-500">Solde créance à inscrire :</div>
+            <div className="font-display font-bold text-red-600 text-base">
+              {formatMontant(soldeRestant)}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              disabled={lignes.length === 0}
+              onClick={handleSubmit}
+              className="px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:opacity-95 disabled:opacity-50 transition-all flex items-center gap-1.5"
+              style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+            >
+              <CheckCircle2 size={14} />
+              Valider la commande & créance
+            </button>
+          </div>
         </div>
       </div>
     </div>

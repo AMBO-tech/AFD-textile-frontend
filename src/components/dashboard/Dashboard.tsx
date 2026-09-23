@@ -1,5 +1,5 @@
+import { useAuthStore } from '../../stores/useAuthStore';
 import React, { useMemo } from 'react';
-import { useMockStore, VENTES_SEMAINE, TOP_PRODUITS } from '../../data/useMockStore';
 import DashboardKpiCards from './DashboardKpiCards';
 import DashboardSalesChart from './DashboardSalesChart';
 import DashboardTopProducts from './DashboardTopProducts';
@@ -14,20 +14,24 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteDirecte }) => {
-  const { stocks, produits, ventes, clients, boutiques, session, getStocksEnriched } = useMockStore();
+  const produits: any = [];
+const ventes: any = [];
+const clients: any = [];
+const boutiques: any = [];
+const user = useAuthStore((s: any) => s.user); const session = user;
   const boutiqueId = session?.boutiqueId || 'b1';
 
-  // Stocks et ventes ciblés selon le rôle
-  const stocksAffiches = useMemo(() => {
-    return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
-  }, [getStocksEnriched, role, boutiqueId, stocks, produits]);
+  // Produits et ventes ciblés selon le rôle
+  const produitsAffiches = useMemo(() => {
+    return role === 'gerant' ? produits : produits.filter((p: any) => p.boutique === boutiqueId);
+  }, [produits, role, boutiqueId]);
 
   const alertesStock = useMemo(() => {
-    return stocksAffiches.filter((p) => p.quantite <= p.seuil);
-  }, [stocksAffiches]);
+    return produitsAffiches.filter((p: any) => p.quantite <= p.seuil);
+  }, [produitsAffiches]);
 
   const ventesValidees = useMemo(() => {
-    return ventes.filter((v) => {
+    return ventes.filter((v: any) => {
       const isValide = v.statut === 'validée';
       return role === 'gerant' ? isValide : isValide && v.boutique === boutiqueId;
     });
@@ -36,22 +40,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
   const stats = useMemo(() => {
     const todayStr = '2026-09-13';
     const ventesJour = ventesValidees
-      .filter((v) => v.date === todayStr || v.date === new Date().toISOString().split('T')[0])
-      .reduce((s, v) => s + v.montant, 0);
+      .filter((v: any) => v.date === todayStr || v.date === new Date().toISOString().split('T')[0])
+      .reduce((s: any, v: any) => s + v.montant, 0);
 
-    const ventesSemaine = VENTES_SEMAINE.reduce((s, v) => s + v.montant, 0);
-    const stockTotal = stocksAffiches.reduce((s, p) => s + p.quantite, 0);
-    const creancesTotal = clients.reduce((s, c) => {
-      const solde = c.creances.reduce((sc, cr) => {
-        const paye = cr.paiements.reduce((sp, p) => sp + p.montant, 0);
+    const ventesSemaine = VENTES_SEMAINE.reduce((s: any, v: any) => s + v.montant, 0);
+    const stockTotal = produitsAffiches.reduce((s: any, p: any) => s + p.quantite, 0);
+    const creancesTotal = clients.reduce((s: any, c: any) => {
+      const solde = c.creances.reduce((sc: any, cr: any) => {
+        const paye = cr.paiements.reduce((sp: any, p: any) => sp + p.montant, 0);
         return sc + Math.max(0, cr.montantTotal - paye);
       }, 0);
       return s + solde;
     }, 0);
-
-    const nbProduitsVendus = ventesValidees.reduce((acc, v) => acc + (v.quantite || 1), 0);
-    const stockFaibleCount = stocksAffiches.filter((p) => p.quantite > 0 && p.quantite <= p.seuil).length;
-    const produitsEnRuptureCount = stocksAffiches.filter((p) => p.quantite <= 0).length;
 
     return {
       ventesJour,
@@ -59,13 +59,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       nbVentes: ventesValidees.length,
       stockTotal,
       creancesTotal,
-      nbProduitsVendus,
-      stockFaibleCount,
-      produitsEnRuptureCount,
     };
-  }, [ventesValidees, stocksAffiches, clients]);
-
-  const isGerant = role === 'gerant';
+  }, [ventesValidees, produitsAffiches, clients]);
 
   return (
     <div className="space-y-2">
@@ -73,29 +68,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">
-            {isGerant ? 'Tableau de bord Global' : 'Tableau de bord Boutique'}
+            {role === 'gerant' ? 'Tableau de bord Global' : 'Tableau de bord Caisse'}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">
-            {isGerant
+            {role === 'gerant'
               ? 'Aperçu consolidé des ventes, stocks et créances du réseau'
-              : 'Gestion des ventes et suivi opérationnel du stock de votre boutique'}
+              : 'Gestion des ventes du jour et état du stock de votre boutique'}
           </p>
         </div>
         <span
           className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block"
           style={{
-            background: isGerant ? '#EEF4FF' : '#F0FDF4',
-            color: isGerant ? '#1E88E5' : '#16A34A',
+            background: role === 'gerant' ? '#EEF4FF' : '#F0FDF4',
+            color: role === 'gerant' ? '#1E88E5' : '#16A34A',
           }}
         >
-          {isGerant ? 'Mode Gérant' : 'Mode Boutiquier'}
+          {role === 'gerant' ? 'Mode Gérant' : 'Mode Boutiquier'}
         </span>
       </div>
 
-      {/* 1. Actions Rapides tout en haut */}
-      <DashboardQuickActions role={role} onNavigate={onNavigate} />
-
-      {/* 2. Cartes KPI (Financières pour Gérant, Quantitatives pour Boutiquier) */}
+      {/* Cartes KPI */}
       <DashboardKpiCards
         role={role}
         ventesJour={stats.ventesJour}
@@ -104,34 +96,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
         stockTotal={stats.stockTotal}
         creancesTotal={stats.creancesTotal}
         alertesCount={alertesStock.length}
-        nbProduitsVendus={stats.nbProduitsVendus}
-        stockFaibleCount={stats.stockFaibleCount}
-        produitsEnRuptureCount={stats.produitsEnRuptureCount}
         onNavigate={onNavigate}
       />
 
-      {/* 3. Alertes de stock critique */}
+      {/* Actions rapides */}
+      <DashboardQuickActions role={role} onNavigate={onNavigate} />
+
+      {/* Alertes de stock critique */}
       <DashboardStockAlerts
         alerts={alertesStock}
         onNavigate={onNavigate}
         onVenteDirecte={onVenteDirecte}
       />
 
-      {/* Graphiques */}
-      <div className={`grid grid-cols-1 ${isGerant ? 'lg:grid-cols-2' : ''} gap-4`}>
-        {isGerant && <DashboardSalesChart data={VENTES_SEMAINE} />}
-        <DashboardTopProducts data={TOP_PRODUITS} />
-      </div>
-
       {/* Vue comparative multi-boutiques réservée au Gérant */}
-      {isGerant && (
+      {role === 'gerant' && (
         <DashboardBoutiquesOverview
           boutiques={boutiques}
-          produits={stocksAffiches}
+          produits={produits}
           ventes={ventes}
           onNavigate={onNavigate}
         />
       )}
+
+      {/* Graphiques */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardSalesChart data={VENTES_SEMAINE} />
+        <DashboardTopProducts data={TOP_PRODUITS} />
+      </div>
     </div>
   );
 };

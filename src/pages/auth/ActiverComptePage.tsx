@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
-import { useMockStore } from '../../data/useMockStore';
-import API from '../../api/api';
+import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const ActiverComptePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
-  const { utilisateurs, activateUserPassword } = useMockStore();
+  const utilisateurs: any = [];
+const activateUserPassword: any = [];
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,11 +17,9 @@ export const ActiverComptePage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Vérifier si un utilisateur correspond à ce token d'invitation
-  const invitedUser = utilisateurs.find((u) => u.invitationToken === token);
+  const invitedUser = utilisateurs.find((u: any) => u.invitationToken === token);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -41,35 +38,16 @@ export const ActiverComptePage: React.FC = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      // 1. Tenter l'activation via l'API NestJS réelle
-      await API.post('/auth/setup-password', {
-        token,
-        nouveauMotDePasse: password,
-      });
-      activateUserPassword(token, password);
-      setIsSuccess(true);
-      setTimeout(() => {
-        navigate('/login');
-      }, 2500);
-    } catch (err: any) {
-      // 2. Fallback si c'est un token mock ou en cas de coupure réseau
-      const mockSuccess = activateUserPassword(token, password);
-      if (mockSuccess) {
-        setIsSuccess(true);
-        setTimeout(() => {
-          navigate('/login');
-        }, 2500);
-      } else {
-        const errorMsg =
-          err?.response?.data?.message ||
-          "Ce lien d'invitation a expiré ou le compte a déjà été activé.";
-        setError(Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg);
-      }
-    } finally {
-      setIsSubmitting(false);
+    const success = activateUserPassword(token, password);
+    if (!success) {
+      setError("Ce lien d'invitation a expiré ou le compte a déjà été activé.");
+      return;
     }
+
+    setIsSuccess(true);
+    setTimeout(() => {
+      navigate('/login');
+    }, 2800);
   };
 
   return (
@@ -157,7 +135,7 @@ export const ActiverComptePage: React.FC = () => {
                     required
                     autoFocus
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e: any) => setPassword(e.target.value)}
                     placeholder="Au moins 8 caractères"
                     className="w-full pl-10 pr-10 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
@@ -181,7 +159,7 @@ export const ActiverComptePage: React.FC = () => {
                     type={showConfirm ? 'text' : 'password'}
                     required
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e: any) => setConfirmPassword(e.target.value)}
                     placeholder="Répétez le mot de passe"
                     className="w-full pl-10 pr-10 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />

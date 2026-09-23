@@ -1,17 +1,13 @@
-import React, { useState } from 'react';
-import {
-  Edit2, UserX, UserCheck, Shield, User, Phone, Mail, Building2,
-  Copy, Check, Send, Clock
-} from 'lucide-react';
+import React from 'react';
+import { Edit2, UserX, UserCheck, Shield, User, Phone, Mail, Building2 } from 'lucide-react';
 import type { Utilisateur } from './types';
-import type { Boutique } from '../../data/useMockStore';
+
 
 interface UserCardProps {
   user: Utilisateur;
   boutiques: Boutique[];
   onEdit: (user: Utilisateur) => void;
   onToggleActif: (id: string) => void;
-  onResendInvite?: (id: string) => void;
 }
 
 export const UserCard: React.FC<UserCardProps> = ({
@@ -19,20 +15,9 @@ export const UserCard: React.FC<UserCardProps> = ({
   boutiques,
   onEdit,
   onToggleActif,
-  onResendInvite,
 }) => {
-  const [copied, setCopied] = useState(false);
-  const boutiqueObj = boutiques.find((b) => b.id === user.boutique);
+  const boutiqueObj = boutiques.find((b: any) => b.id === user.boutique);
   const isGerant = user.role === 'gerant';
-
-  const handleCopyLink = () => {
-    if (!user.invitationToken) return;
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.afd-textile.sn';
-    const link = `${baseUrl}/activer-compte?token=${user.invitationToken}`;
-    navigator.clipboard.writeText(link);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
 
   return (
     <div
@@ -52,7 +37,7 @@ export const UserCard: React.FC<UserCardProps> = ({
         >
           {user.nom
             .split(' ')
-            .map((n) => n[0])
+            .map((n: any) => n[0])
             .join('')
             .slice(0, 2)}
         </div>
@@ -71,11 +56,6 @@ export const UserCard: React.FC<UserCardProps> = ({
               {isGerant ? <Shield size={11} /> : <User size={11} />}
               {isGerant ? 'Gérant (Admin)' : 'Boutiquier'}
             </span>
-            {user.invitationToken && (
-              <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Clock size={10} /> En attente d'activation
-              </span>
-            )}
             {!user.actif && (
               <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">
                 Désactivé
@@ -110,35 +90,12 @@ export const UserCard: React.FC<UserCardProps> = ({
                 : 'Boutique non assignée'}
             </span>
             <span>·</span>
-            <span className="text-gray-400">{user.derniereConnexion}</span>
+            <span className="text-gray-400">Dernière activité : {user.derniereConnexion}</span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {user.invitationToken && (
-            <>
-              <button
-                onClick={handleCopyLink}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors"
-                title="Copier le lien d'invitation pour le collaborateur"
-              >
-                {copied ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
-                <span className="hidden sm:inline">{copied ? 'Copié !' : 'Copier lien'}</span>
-              </button>
-
-              {onResendInvite && (
-                <button
-                  onClick={() => onResendInvite(user.id)}
-                  className="p-1.5 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-gray-100"
-                  title="Régénérer et renvoyer un lien valide 72h"
-                >
-                  <Send size={14} />
-                </button>
-              )}
-            </>
-          )}
-
+        <div className="flex gap-1.5 flex-shrink-0">
           <button
             onClick={() => onEdit(user)}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-gray-100"
@@ -164,4 +121,3 @@ export const UserCard: React.FC<UserCardProps> = ({
 };
 
 export default UserCard;
-

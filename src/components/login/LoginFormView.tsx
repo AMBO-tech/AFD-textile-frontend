@@ -13,16 +13,16 @@ interface LoginFormViewProps {
 
 const COMPTES_DEMO: DemoCompte[] = [
   {
-    id: 'abdallahdiouf.dev@gmail.com',
-    pwd: 'Passer@123',
+    id: 'amadou.diallo@afd-textile.sn',
+    pwd: 'afd2026',
     role: 'gerant',
-    nom: 'Abdallah Diouf (Gérant)',
+    nom: 'Amadou Diallo',
   },
   {
-    id: '+221771110001',
-    pwd: 'Passer@123',
+    id: 'ibrahima.sarr@afd-textile.sn',
+    pwd: 'afd2026',
     role: 'boutiquier',
-    nom: 'Modou Fall (Boutique Sandaga)',
+    nom: 'Ibrahima Sarr',
   },
 ];
 
@@ -63,12 +63,9 @@ export const LoginFormView: React.FC<LoginFormViewProps> = ({
         </div>
       )}
       {erreur && (
-        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 shadow-sm animate-fade-in">
-          <AlertCircle size={18} className="text-red-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-red-800 text-sm font-semibold">Identifiants incorrects</p>
-            <p className="text-red-600 text-xs mt-0.5 leading-relaxed">{erreur}</p>
-          </div>
+        <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5">
+          <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+          <span className="text-red-600 text-sm">{erreur}</span>
         </div>
       )}
 

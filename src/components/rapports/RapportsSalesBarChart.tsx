@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { VENTES_SEMAINE, formatMontant } from '../../data/mock';
+
 import type { Periode } from './types';
 
 interface RapportsSalesBarChartProps {
@@ -26,7 +26,7 @@ export const RapportsSalesBarChart: React.FC<RapportsSalesBarChartProps> = ({ pe
   const chartData =
     periode === 'annee'
       ? DATA_MOIS
-      : VENTES_SEMAINE.map((v) => ({ ...v, mois: v.jour, ca: v.montant }));
+      : VENTES_SEMAINE.map((v: any) => ({ ...v, mois: v.jour, ca: v.montant }));
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
@@ -56,10 +56,10 @@ export const RapportsSalesBarChart: React.FC<RapportsSalesBarChartProps> = ({ pe
             tick={{ fontSize: 10, fill: '#9ca3af' }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v) => v / 1000 + 'k'}
+            tickFormatter={(v: any) => v / 1000 + 'k'}
           />
           <Tooltip
-            formatter={(v) => [formatMontant(Number(v)), 'CA']}
+            formatter={(v: any) => [formatMontant(Number(v)), 'CA']}
             contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 12 }}
           />
           <Bar

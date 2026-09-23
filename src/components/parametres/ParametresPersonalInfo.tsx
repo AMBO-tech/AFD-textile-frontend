@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Save } from 'lucide-react';
-import type { Boutique } from '../../data/useMockStore';
+
 
 interface ParametresPersonalInfoProps {
   nom: string;

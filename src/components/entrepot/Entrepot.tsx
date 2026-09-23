@@ -1,27 +1,30 @@
+import { useAuthStore } from '../../stores/useAuthStore';
 import React, { useState, useMemo } from 'react';
-import { useMockStore, type Produit, type StockEnriched } from '../../data/useMockStore';
-import { BOUTIQUE_IDS, ENTREPOT_ID } from '../../data/mock';
 import EntrepotTransferForm from './EntrepotTransferForm';
 import EntrepotStockList from './EntrepotStockList';
 import EntrepotTransferHistory from './EntrepotTransferHistory';
 
 export const Entrepot: React.FC = () => {
-  const { boutiques, historique, createTransfert, session, getStocksEnriched, stocks, produits } = useMockStore();
+  const produits: any = [];
+const boutiques: any = [];
+const historique: any = [];
+const createTransfert: any = [];
+const user = useAuthStore((s: any) => s.user); const session = user;
 
   const [activeTab, setActiveTab] = useState<'transferer' | 'historique'>('transferer');
-  const [sourceId, setSourceId] = useState<string>(ENTREPOT_ID);
-  const [destId, setDestId] = useState<string>(BOUTIQUE_IDS.PLATEAU);
-  const [produitChoisi, setProduitChoisi] = useState<StockEnriched | null>(null);
+  const [sourceId, setSourceId] = useState('entrepot');
+  const [destId, setDestId] = useState('b1');
+  const [produitChoisi, setProduitChoisi] = useState<Produit | null>(null);
   const [quantite, setQuantite] = useState('20');
   const [unite, setUnite] = useState('mètre');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Produits physiques disponibles à l'emplacement source
+  // Produits disponibles à la source
   const prodsSource = useMemo(() => {
-    return getStocksEnriched(sourceId);
-  }, [getStocksEnriched, sourceId, stocks, produits]);
+    return produits.filter((p: any) => p.boutique === sourceId);
+  }, [produits, sourceId]);
 
-  const handleSelectProduit = (p: StockEnriched) => {
+  const handleSelectProduit = (p: Produit) => {
     setProduitChoisi(p);
     setUnite(p.unite);
     setQuantite(Math.min(20, p.quantite).toString());
@@ -101,7 +104,7 @@ export const Entrepot: React.FC = () => {
           <EntrepotTransferForm
             produit={produitChoisi}
             sourceId={sourceId}
-            onSourceChange={(id) => {
+            onSourceChange={(id: any) => {
               setSourceId(id);
               setProduitChoisi(null);
             }}

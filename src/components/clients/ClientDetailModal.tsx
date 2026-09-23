@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
-import { useMockStore, type ClientDetailed, type Creance } from '../../data/useMockStore';
+﻿import React, { useMemo } from 'react';
+import type { ClientDetailed, Creance } from '@/types/clients';
 import { soldeClient } from './types';
-import { formatMontant } from '../../data/mock';
 import ClientDetailHeader from '../../features/clients/components/ClientDetailHeader';
 import ClientDetailKpis from '../../features/clients/components/ClientDetailKpis';
 import ClientCreancesList from '../../features/clients/components/ClientCreancesList';
@@ -21,24 +20,24 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   onOpenNewDebt,
   onOpenPayment,
 }) => {
-  const { boutiques } = useMockStore();
+  const boutiques: any[] = [];
 
   const activeBoutiqueNom = useMemo(() => {
     if (boutiqueNom) return boutiqueNom;
     if (!client) return 'Boutique AFD';
-    const found = boutiques.find((b) => b.id === client.boutiqueId);
+    const found = boutiques.find((b: any) => b.id === client.boutiqueId);
     return found ? found.nom : client.boutique || 'Boutique AFD';
   }, [boutiqueNom, client, boutiques]);
 
   const totalAchats = useMemo(() => {
     if (!client) return 0;
-    return client.creances.reduce((acc, cr) => acc + cr.montantTotal, 0);
+    return client.creances.reduce((acc: any, cr: any) => acc + cr.montantTotal, 0);
   }, [client]);
 
   const totalPaye = useMemo(() => {
     if (!client) return 0;
     return client.creances.reduce(
-      (acc, cr) => acc + cr.paiements.reduce((pSum, p) => pSum + p.montant, 0),
+      (acc: any, cr: any) => acc + cr.paiements.reduce((pSum: any, p: any) => pSum + p.montant, 0),
       0
     );
   }, [client]);
@@ -54,13 +53,13 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   if (!client) return null;
 
   const handleWhatsApp = () => {
-    const cleanPhone = client.telephone.replace(/[^0-9]/g, '');
+    const cleanPhone = (client.telephone || '').replace(/[^0-9]/g, '');
     const message = encodeURIComponent(
       aDesDettes
         ? `Bonjour ${client.nom}, AFD Textile (${activeBoutiqueNom}) vous informe d'un solde restant de ${formatMontant(
             solde
-          )} sur vos achats de tissus. Merci de nous contacter pour votre règlement.`
-        : `Bonjour ${client.nom}, l'équipe AFD Textile (${activeBoutiqueNom}) vous remercie pour votre fidélité. Votre compte est parfaitement à jour.`
+          )} sur vos achats de tissus. Merci de nous contacter pour votre rÃ¨glement.`
+        : `Bonjour ${client.nom}, l'Ã©quipe AFD Textile (${activeBoutiqueNom}) vous remercie pour votre fidÃ©litÃ©. Votre compte est parfaitement Ã  jour.`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
@@ -68,7 +67,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col overflow-hidden">
-        {/* 1. Entête élégante */}
+        {/* 1. EntÃªte Ã©lÃ©gante */}
         <ClientDetailHeader
           client={client}
           activeBoutiqueNom={activeBoutiqueNom}
@@ -90,7 +89,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           formatMontant={formatMontant}
         />
 
-        {/* 3. Corps scrollable : Dossiers de créances */}
+        {/* 3. Corps scrollable : Dossiers de crÃ©ances */}
         <ClientCreancesList
           client={client}
           formatMontant={formatMontant}
@@ -101,7 +100,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
         {/* 4. Pied de modale */}
         <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
           <div className="text-xs text-gray-500">
-            Client affilié : <strong className="text-gray-700">{activeBoutiqueNom}</strong>
+            Client affiliÃ© : <strong className="text-gray-700">{activeBoutiqueNom}</strong>
           </div>
           <button
             type="button"

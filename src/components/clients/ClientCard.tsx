@@ -1,23 +1,20 @@
 import React from 'react';
 import { MapPin, ShoppingBag, Edit2, Trash2, MessageCircle, ChevronRight } from 'lucide-react';
-import type { ClientDetailed } from '../../data/useMockStore';
+import type { ClientDetailed } from '@/types/clients';
 import { soldeClient } from './types';
-import { formatMontant } from '../../data/mock';
 
 interface ClientCardProps {
   client: ClientDetailed;
   boutiqueNom: string;
   onSelect: (client: ClientDetailed) => void;
-  onEdit?: (client: ClientDetailed) => void;
-  onDelete?: (client: ClientDetailed) => void;
+
+
 }
 
 export const ClientCard: React.FC<ClientCardProps> = ({
   client,
   boutiqueNom,
   onSelect,
-  onEdit,
-  onDelete,
 }) => {
   const solde = soldeClient(client);
   const aDesDettes = solde > 0;
@@ -27,9 +24,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
     if (!client.telephone) return;
     const cleanPhone = client.telephone.replace(/[^0-9]/g, '');
     const message = encodeURIComponent(
-      `Bonjour ${client.nom}, AFD Textile vous informe d'un solde restant de ${formatMontant(
-        solde
-      )} sur vos achats de tissus. Merci de nous contacter pour votre règlement.`
+      `Bonjour ${client.nom}, AFD Textile vous informe d'un solde restant de ${solde} sur vos achats de tissus. Merci de nous contacter pour votre rÃ¨glement.`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
@@ -65,11 +60,11 @@ export const ClientCard: React.FC<ClientCardProps> = ({
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
             <span className="text-gray-600 font-normal">
-              Tél : {client.telephone || 'Non renseigné'}
+              TÃ©l : {client.telephone || 'Non renseignÃ©'}
             </span>
             <span className="flex items-center gap-1">
               <MapPin size={12} className="text-gray-400" />
-              {client.adresse || 'Adresse non renseignée'}
+              {client.adresse || 'Adresse non renseignÃ©e'}
             </span>
           </div>
         </div>
@@ -85,7 +80,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
               aDesDettes ? 'text-red-600' : 'text-green-600'
             }`}
           >
-            {aDesDettes ? formatMontant(solde) : 'À jour (0 FCFA)'}
+            {aDesDettes ? formatMontant(solde) : 'Ã€ jour (0 FCFA)'}
           </div>
           <div className="text-[10px] text-gray-400">
             {client.creances.length} dossier{client.creances.length > 1 ? 's' : ''}
@@ -113,28 +108,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
             <ShoppingBag size={14} />
             <span className="hidden sm:inline">Voir achats</span>
           </button>
-
-          {onEdit && (
-            <button
-              type="button"
-              onClick={() => onEdit(client)}
-              className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition-colors"
-              title="Modifier le client"
-            >
-              <Edit2 size={14} />
-            </button>
-          )}
-
-          {onDelete && (
-            <button
-              type="button"
-              onClick={() => onDelete(client)}
-              className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-              title="Supprimer le client"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
 
           <button
             type="button"

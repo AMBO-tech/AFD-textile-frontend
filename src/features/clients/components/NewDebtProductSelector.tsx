@@ -1,7 +1,8 @@
+import { formatMontant } from '../../../utils/format';
 import React from 'react';
 import { Plus, Package, AlertTriangle } from 'lucide-react';
 import CustomDropdownSelect from '../../../components/ui/CustomDropdownSelect';
-import type { StockEnriched } from '../../../data/useMockStore';
+import type { StockEnriched } from '../../../types/stocks';
 
 interface NewDebtProductSelectorProps {
   produits: StockEnriched[];

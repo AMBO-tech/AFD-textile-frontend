@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { formatMontant } from '../../data/mock';
+
 
 interface DashboardSalesChartProps {
   data: { jour: string; montant: number }[];
@@ -46,7 +46,7 @@ export const DashboardSalesChart: React.FC<DashboardSalesChartProps> = ({ data }
               tickFormatter={(v) => `${v / 1000}k`}
             />
             <Tooltip
-              formatter={(v: unknown) => [
+              formatter={(v: any) => [
                 formatMontant(typeof v === 'number' ? v : Number(v) || 0),
                 'Ventes',
               ]}
