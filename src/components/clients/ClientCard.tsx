@@ -1,20 +1,18 @@
 import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { MapPin, ShoppingBag, Edit2, Trash2, MessageCircle, ChevronRight } from 'lucide-react';
-import type { ClientDetailed } from '@/types/clients';
+import type { Client } from '@/types/clients';
 import { soldeClient } from './types';
 
 interface ClientCardProps {
-  client: ClientDetailed;
-  boutiqueNom: string;
-  onSelect: (client: ClientDetailed) => void;
+  client: Client;
+  onSelect: (client: Client) => void;
 
 
 }
 
 export const ClientCard: React.FC<ClientCardProps> = ({
   client,
-  boutiqueNom,
   onSelect,
 }) => {
   const solde = soldeClient(client);
@@ -54,9 +52,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-gray-900 text-sm truncate">{client.nom}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
-              {boutiqueNom}
-            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
@@ -84,7 +79,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
             {aDesDettes ? formatMontant(solde) : 'À jour (0 FCFA)'}
           </div>
           <div className="text-[10px] text-gray-400">
-            {client.creances.length} dossier{client.creances.length > 1 ? 's' : ''}
+            {client.nombreFacturesImpayees ?? 0} facture{(client.nombreFacturesImpayees ?? 0) > 1 ? 's' : ''} impayée{(client.nombreFacturesImpayees ?? 0) > 1 ? 's' : ''}
           </div>
         </div>
 

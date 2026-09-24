@@ -1,5 +1,6 @@
 import { API } from './api';
-import type { Client, CreateClientDto, UpdateClientDto, ClientQueryParams, ClientInvoiceDebtDto } from '@/types/clients';
+import type { Client, CreateClientDto, UpdateClientDto, ClientQueryParams, ClientDebtsStatementDto } from '@/types/clients';
+import type { MoyenPaiement } from '@/types/enums';
 import type { PaginatedResponse } from '@/types/api';
 
 /**
@@ -22,7 +23,7 @@ export const clientsService = {
   },
 
   getDebts: async (id: string) => {
-    const res = await API.get<ClientInvoiceDebtDto[]>(`/clients/${id}/creances`);
+    const res = await API.get<ClientDebtsStatementDto>(`/clients/${id}/creances`);
     return res.data;
   },
 
@@ -43,17 +44,21 @@ export const clientsService = {
   },
 
   /**
-   * Enregistrement d'un règlement de créance — route correcte : POST /reglements
-   * Le champ venteId est requis par le backend pour lier le paiement à la bonne facture.
+   * Règlement d'un client — POST /reglements. Le serveur répartit le montant sur les factures
+   * impayées les plus anciennes (FIFO). boutiqueId est requis pour un gérant (caisse encaissante).
    */
-  recordPayment: async (
-    venteId: string,
-    data: { montant: number; modePaiement: string; referenceExterne?: string },
-  ) => {
-    const res = await API.post<{ id: string; referenceRecu: string }>('/reglements', {
-      venteId,
-      ...data,
-    });
+  recordPayment: async (data: {
+    clientId: string;
+    montantTotal: number;
+    modePaiement: MoyenPaiement;
+    boutiqueId?: string;
+    referenceExterne?: string;
+    idempotencyKey?: string;
+  }) => {
+    const res = await API.post<{ id: string; referenceRecu: string; montantTotal: number }>(
+      '/reglements',
+      data,
+    );
     return res.data;
   },
 };

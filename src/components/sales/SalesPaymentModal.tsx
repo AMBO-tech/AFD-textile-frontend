@@ -1,8 +1,8 @@
 import { formatMontant } from '@/utils/format';
 import React, { useState, useEffect, useDeferredValue } from 'react';
-import { X, CreditCard, Banknote, CheckCircle2, ShoppingBag, ShoppingCart, User, AlertCircle, FileText } from 'lucide-react';
+import { X, CreditCard, Banknote, CheckCircle2, ShoppingBag, ShoppingCart, User, AlertCircle } from 'lucide-react';
 import type { LigneVente, ModePaiementPos, PaymentChoice } from './types';
-import { MODES_PAIEMENT, MODE_CREDIT } from './types';
+import { MODES_PAIEMENT } from './types';
 import { LIBELLES_UNITE, montantsLigne, prixParUnite, totalPanier } from '../../features/pos/pricing';
 import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
 
@@ -32,8 +32,6 @@ const getModeIcon = (mode: ModePaiementPos) => {
       return <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] font-black text-white flex items-center justify-center">OM</span>;
     case 'Free Money':
       return <span className="w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center">F</span>;
-    case MODE_CREDIT:
-      return <FileText size={16} className="text-violet-600" />;
     default:
       return <CreditCard size={16} className="text-blue-600" />;
   }
@@ -75,16 +73,14 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
 
   const lignes = target.type === 'direct' ? [target.ligne] : target.panier;
   const totalNet = totalPanier(lignes);
-  const isCredit = modePaiement === MODE_CREDIT;
 
   const montantRecuNum = parseFloat(montantRecu) || 0;
   const monnaieARendre = modePaiement === 'Espèces' && montantRecuNum > 0 ? montantRecuNum - totalNet : 0;
   const isMontantInsuffisant = modePaiement === 'Espèces' && montantRecuNum > 0 && montantRecuNum < totalNet;
-  const clientManquant = isCredit && !client;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isMontantInsuffisant || clientManquant || isSubmitting) return;
+    if (isMontantInsuffisant || isSubmitting) return;
     setErreur('');
     setIsSubmitting(true);
     try {
@@ -145,7 +141,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
               <User size={13} className="text-gray-400" />
-              Client {isCredit ? '*' : '(facultatif)'}
+              Client (facultatif)
             </label>
             {client ? (
               <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-blue-200 bg-blue-50/60 text-xs font-semibold text-blue-900">
@@ -181,9 +177,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
                   ))}
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1">
-                  {isCredit
-                    ? 'Une vente à crédit doit être rattachée à un client (créez-le dans « Clients » s’il n’existe pas).'
-                    : 'Sans sélection : client de passage.'}
+                  Sans sélection : client de passage. Les ventes à crédit se font depuis la fiche client.
                 </p>
               </>
             )}
@@ -258,7 +252,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
           <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100/80 flex items-center justify-between">
             <div>
               <span className="text-[11px] text-gray-500 block">
-                {isCredit ? 'Montant porté au compte du client' : 'Total net à encaisser'}
+                Total net à encaisser
               </span>
               <span className="text-[10px] text-gray-400">{modePaiement}</span>
             </div>
@@ -284,13 +278,13 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isMontantInsuffisant || clientManquant || isSubmitting}
+              disabled={isMontantInsuffisant || isSubmitting}
               className="flex-[2] flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-bold text-white shadow-sm hover:opacity-95 transition-all disabled:opacity-50 cursor-pointer"
               style={{ background: '#0F3D5E' }}
             >
               <CheckCircle2 size={16} />
               <span>
-                {isSubmitting ? 'Enregistrement…' : isCredit ? 'Enregistrer à crédit' : "Valider l'encaissement"}
+                {isSubmitting ? 'Enregistrement…' : "Valider l'encaissement"}
               </span>
             </button>
           </div>

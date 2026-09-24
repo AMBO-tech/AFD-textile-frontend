@@ -1,6 +1,6 @@
 import { formatMontant } from '@/utils/format';
 import React from 'react';
-import { CheckCircle, Printer } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 
 interface SalesSuccessModalProps {
@@ -58,14 +58,6 @@ export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
         </div>
 
         <div className="space-y-2 pt-2">
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50"
-          >
-            <Printer size={15} />
-            Imprimer le reçu de caisse
-          </button>
           <button
             type="button"
             onClick={onClose}

@@ -1,124 +1,144 @@
 import { formatMontant } from '@/utils/format';
 import React, { useState } from 'react';
-import { X, CreditCard } from 'lucide-react';
-
-
-import { MODES_PAIEMENT } from './types';
+import { X, CreditCard, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Client } from '@/types/clients';
+import type { Boutique } from '@/types/locations';
+import type { MoyenPaiement } from '@/types/enums';
+import { MODES_PAIEMENT, soldeClient } from './types';
+import { useRecordPaymentMutation } from '../../hooks/queries/useClientsQuery';
+import { getErrorMessage } from '../../services/api';
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  client: ClientDetailed;
-  creance: Creance | null;
-  onSubmit: (montant: number, mode: string) => void;
+  client: Client;
+  boutiques: Boutique[];
+  /** Caisse imposée (boutiquier) ; sinon le gérant choisit la boutique qui encaisse. */
+  boutiqueImposee?: string | null;
 }
 
+/**
+ * Règlement d'un client : POST /reglements. Le serveur répartit le montant sur les factures
+ * impayées les plus anciennes (FIFO) et émet un reçu REC-AAAA-MM-XXXX.
+ */
 export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   isOpen,
   onClose,
   client,
-  creance,
-  onSubmit,
+  boutiques,
+  boutiqueImposee,
 }) => {
-  if (!isOpen || !creance) return null;
+  const solde = soldeClient(client);
+  const [montant, setMontant] = useState(String(solde));
+  const [mode, setMode] = useState<MoyenPaiement>(MODES_PAIEMENT[0].api);
+  const [boutiqueId, setBoutiqueId] = useState(boutiqueImposee ?? boutiques[0]?.id ?? '');
+  const [erreur, setErreur] = useState('');
+  const { mutateAsync: recordPayment, isPending } = useRecordPaymentMutation();
 
-  const totalPaye = creance.paiements.reduce((s: any, p: any) => s + p.montant, 0);
-  const resteDu = Math.max(0, creance.montantTotal - totalPaye);
+  if (!isOpen) return null;
 
-  const [montant, setMontant] = useState(resteDu.toString());
-  const [mode, setMode] = useState<string>('Espèces');
+  const montantNum = parseFloat(montant) || 0;
+  const invalide = montantNum <= 0 || montantNum > solde || !boutiqueId;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const m = parseFloat(montant);
-    if (isNaN(m) || m <= 0) return;
-
-    onSubmit(m, mode);
-    onClose();
+    if (invalide || isPending) return;
+    setErreur('');
+    try {
+      const recu = await recordPayment({
+        clientId: client.id,
+        montantTotal: montantNum,
+        modePaiement: mode,
+        ...(boutiqueImposee ? {} : { boutiqueId }),
+        idempotencyKey: crypto.randomUUID(),
+      });
+      toast.success(`Règlement ${recu.referenceRecu} de ${formatMontant(montantNum)} enregistré pour ${client.nom}.`);
+      onClose();
+    } catch (error) {
+      setErreur(getErrorMessage(error, "Le règlement n'a pas pu être enregistré."));
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-md p-5 shadow-2xl border border-gray-100">
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
               <CreditCard size={18} />
             </div>
-            <div className="font-display font-bold text-gray-900 text-base">
-              Règlement de Créance
+            <div>
+              <div className="font-display font-bold text-gray-900 text-base">Règlement de créance</div>
+              <div className="text-xs text-gray-500">
+                {client.nom} • reste dû {formatMontant(solde)}
+              </div>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1" aria-label="Fermer">
             <X size={18} />
           </button>
         </div>
 
-        {/* Détails créance */}
-        <div className="p-3 rounded-xl bg-gray-50 mb-4 space-y-1 text-xs">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Client :</span>
-            <span className="font-semibold text-gray-900">{client.nom}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Total dossier :</span>
-            <span className="font-semibold text-gray-900">{formatMontant(creance.montantTotal)}</span>
-          </div>
-          <div className="flex justify-between pt-1 border-t border-gray-200">
-            <span className="font-bold text-red-600">Reste à payer :</span>
-            <span className="font-bold text-red-600">{formatMontant(resteDu)}</span>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-3.5">
+          {!boutiqueImposee && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Boutique qui encaisse</label>
+              <select
+                value={boutiqueId}
+                onChange={(e) => setBoutiqueId(e.target.value)}
+                className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs"
+              >
+                {boutiques.map((b) => (
+                  <option key={b.id} value={b.id}>{b.nom}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Montant versé (FCFA) *
-            </label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Montant versé (FCFA)</label>
             <input
               type="number"
-              min="100"
-              max={resteDu}
-              required
+              min="1"
+              step="any"
+              max={solde}
               value={montant}
               onChange={(e) => setMontant(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-semibold"
             />
+            <p className="text-[11px] text-gray-400 mt-1">
+              Réparti automatiquement sur les factures les plus anciennes.
+            </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Mode de règlement *
-            </label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Mode de paiement</label>
             <select
               value={mode}
-              onChange={(e) => setMode(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
+              onChange={(e) => setMode(e.target.value as MoyenPaiement)}
+              className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs"
             >
               {MODES_PAIEMENT.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
+                <option key={m.api} value={m.api}>{m.label}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95"
-              style={{ background: '#16A34A' }}
-            >
-              Encaisser le règlement
-            </button>
-          </div>
+          {erreur && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" /> <span>{erreur}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={invalide || isPending}
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-50"
+            style={{ background: '#16a34a' }}
+          >
+            {isPending ? 'Enregistrement…' : `Encaisser ${formatMontant(montantNum)}`}
+          </button>
         </form>
       </div>
     </div>

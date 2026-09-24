@@ -1,53 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit2, Phone, MapPin, Store } from 'lucide-react';
-
-import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
+import { X, Edit2, Phone, MapPin, AlertCircle } from 'lucide-react';
+import type { Client, UpdateClientDto } from '@/types/clients';
 
 interface EditClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  client: ClientDetailed | null;
-  boutiques: Boutique[];
-  role: 'gerant' | 'boutiquier';
-  onSubmit: (id: string, updates: { nom: string; telephone: string; adresse: string; boutiqueId: string }) => void;
+  client: Client | null;
+  /** Rejette avec un message lisible si l'API refuse : la fenêtre reste ouverte. */
+  onSubmit: (id: string, updates: UpdateClientDto) => Promise<void>;
 }
 
 export const EditClientModal: React.FC<EditClientModalProps> = ({
   isOpen,
   onClose,
   client,
-  boutiques,
-  role,
   onSubmit,
 }) => {
   const [nom, setNom] = useState('');
   const [telephone, setTelephone] = useState('');
   const [adresse, setAdresse] = useState('');
-  const [boutiqueId, setBoutiqueId] = useState('');
+  const [erreur, setErreur] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (client) {
       setNom(client.nom || '');
       setTelephone(client.telephone || '');
       setAdresse(client.adresse || '');
-      setBoutiqueId(client.boutiqueId || 'b1');
+      setErreur('');
     }
   }, [client]);
 
   if (!isOpen || !client) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom.trim()) return;
-
-    onSubmit(client.id, {
-      nom: nom.trim(),
-      telephone: telephone.trim(),
-      adresse: adresse.trim() || 'Dakar',
-      boutiqueId,
-    });
-
-    onClose();
+    if (!nom.trim() || isSubmitting) return;
+    setErreur('');
+    setIsSubmitting(true);
+    try {
+      await onSubmit(client.id, {
+        nom: nom.trim(),
+        ...(telephone.trim() ? { telephone: telephone.trim() } : {}),
+        ...(adresse.trim() ? { adresse: adresse.trim() } : {}),
+      });
+      onClose();
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : "Les modifications n'ont pas pu être enregistrées.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -120,21 +122,9 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({
             </div>
           </div>
 
-          {role === 'gerant' && (
-            <div>
-              <CustomDropdownSelect
-                label="Boutique d'affectation"
-                value={boutiqueId}
-                onChange={setBoutiqueId}
-                icon={<Store size={15} />}
-                menuTitle="Boutique d'affectation"
-                options={boutiques.map((b) => ({
-                  value: b.id,
-                  label: b.nom,
-                  sublabel: b.lieu,
-                  icon: <Store size={14} />,
-                }))}
-              />
+          {erreur && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" /> <span>{erreur}</span>
             </div>
           )}
 
@@ -148,10 +138,11 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95 cursor-pointer"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95 cursor-pointer disabled:opacity-60"
               style={{ background: '#0F3D5E' }}
             >
-              Enregistrer les modifications
+              {isSubmitting ? 'Enregistrement…' : 'Enregistrer les modifications'}
             </button>
           </div>
         </form>

@@ -2,11 +2,12 @@ import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { Users, CreditCard, AlertCircle, Plus } from 'lucide-react';
 
+import type { Client } from '@/types/clients';
 import { soldeClient } from './types';
 
 
 interface ClientHeaderProps {
-  clients: ClientDetailed[];
+  clients: Client[];
   role: 'gerant' | 'boutiquier';
   onOpenNewClient: () => void;
 }

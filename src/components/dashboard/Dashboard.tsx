@@ -8,8 +8,11 @@ import DashboardQuickActions from './DashboardQuickActions';
 import DashboardBoutiquesOverview from './DashboardBoutiquesOverview';
 import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
 import { useSalesListQuery } from '../../hooks/queries/useSalesQuery';
-import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
+import { useCreancesTotalQuery, useDashboardKpisQuery } from '../../hooks/queries/useAnalyticsQuery';
 import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
+
+/** Plafond imposé par l'API sur les listes paginées. */
+const API_PAGE_MAX = 100;
 
 interface DashboardProps {
   role: string;
@@ -19,61 +22,36 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ role: rawRole, onNavigate, onVenteDirecte }) => {
   const role = (rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant') ? 'gerant' : 'boutiquier';
-  const user = useAuthStore((s: any) => s.user);
-  const locationId = user?.locationId || 'b1';
-  
+  const user = useAuthStore((s) => s.user);
+  // Le serveur restreint déjà le boutiquier à sa boutique ; le gérant voit tout le réseau.
+  const boutiqueId = role === 'boutiquier' ? user?.locationId ?? undefined : undefined;
+
   const { data: locRes } = useLocationsListQuery();
-  const boutiques = locRes?.data || [];
-  
-  const { data: salesRes } = useSalesListQuery({ limit: 100 });
-  const ventes = salesRes?.data || [];
-  
-  const { data: clientRes } = useClientsListQuery();
-  const clients = clientRes?.data || [];
-  
-  const { data: stockRes } = useStockLevelsQuery();
-  const produits = stockRes?.data || [];
+  const boutiques = (locRes?.data ?? []).filter((b) => b.type === 'BOUTIQUE');
 
-  // Produits et ventes ciblés selon le rôle
-  const produitsAffiches = useMemo(() => {
-    return role === 'gerant' ? produits : produits.filter((p: any) => p.locationId === locationId);
-  }, [produits, role, locationId]);
+  const { data: salesRes } = useSalesListQuery({ limit: API_PAGE_MAX, ...(boutiqueId ? { boutiqueId } : {}) });
+  const ventes = salesRes?.data ?? [];
 
-  const alertesStock = useMemo(() => {
-    return produitsAffiches.filter((p: any) => p.quantite <= p.seuilAlerte);
-  }, [produitsAffiches]);
+  const { data: stockRes } = useStockLevelsQuery({ limit: API_PAGE_MAX, ...(boutiqueId ? { locationId: boutiqueId } : {}) });
+  const produits = stockRes?.data ?? [];
 
-  const ventesValidees = useMemo(() => {
-    return ventes.filter((v: any) => {
-      const isValide = v.statut === 'VALIDE' || v.statut === 'validée';
-      return role === 'gerant' ? isValide : isValide && v.locationId === locationId;
-    });
-  }, [ventes, role, locationId]);
+  const { data: kpisJour } = useDashboardKpisQuery('AUJOURDHUI', boutiqueId);
+  const { data: kpisSemaine } = useDashboardKpisQuery('CETTE_SEMAINE', boutiqueId);
+  const { data: creances } = useCreancesTotalQuery(boutiqueId);
 
-  const stats = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const ventesJour = ventesValidees
-      .filter((v: any) => v.date?.startsWith(todayStr) || v.createdAt?.startsWith(todayStr))
-      .reduce((s: any, v: any) => s + (v.montant || v.montantTotal || 0), 0);
+  // Le serveur calcule estEnAlerte avec le seuil propre à chaque stock ; les plus bas d'abord.
+  const alertesStock = useMemo(
+    () => produits.filter((p) => p.estEnAlerte).sort((a, b) => a.quantite - b.quantite),
+    [produits],
+  );
 
-    const ventesSemaine = ventesValidees.reduce((s: any, v: any) => s + (v.montant || v.montantTotal || 0), 0);
-    const stockTotal = produitsAffiches.reduce((s: any, p: any) => s + p.quantite, 0);
-    const creancesTotal = clients.reduce((s: any, c: any) => {
-      const solde = (c.creances || []).reduce((sc: any, cr: any) => {
-        const paye = (cr.paiements || []).reduce((sp: any, p: any) => sp + p.montant, 0);
-        return sc + Math.max(0, cr.montantTotal - paye);
-      }, 0);
-      return s + solde;
-    }, 0);
-
-    return {
-      ventesJour,
-      ventesSemaine,
-      nbVentes: ventesValidees.length,
-      stockTotal,
-      creancesTotal,
-    };
-  }, [ventesValidees, produitsAffiches, clients]);
+  const stats = {
+    ventesJour: kpisJour?.caFactureNet ?? 0,
+    ventesSemaine: kpisSemaine?.caFactureNet ?? 0,
+    nbVentes: kpisJour?.nombreVentes ?? 0,
+    stockTotal: Math.round(produits.reduce((s, p) => s + p.quantite, 0) * 100) / 100,
+    creancesTotal: creances?.totalCreancesGlobal ?? 0,
+  };
 
   return (
     <div className="space-y-2">
