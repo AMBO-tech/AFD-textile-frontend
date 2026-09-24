@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Parametres } from '../../components/parametres';
 
 export const ParametresPage: React.FC = () => {
-  const user = useAuthStore((s: any) => s.user); const session = user;
-const setSession: any = [];
-const boutiques: any = [];
+  const { user, clearAuth } = useAuthStore();
+  const session = user as any;
+  const boutiques: any = [];
   const navigate = useNavigate();
 
   if (!session) return null;
@@ -14,7 +14,7 @@ const boutiques: any = [];
   const boutiqueId = session.boutiqueId || boutiques[0]?.id || 'b1';
 
   const handleLogout = () => {
-    setSession(null);
+    clearAuth();
     navigate('/login');
   };
 

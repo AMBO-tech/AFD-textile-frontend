@@ -6,33 +6,6 @@ import LoginPhoneResetView from './LoginPhoneResetView';
 import LoginOtpView from './LoginOtpView';
 import LoginNewPasswordView from './LoginNewPasswordView';
 
-const COMPTES = [
-  {
-    id: 'amadou.diallo@afd-textile.sn',
-    pwd: 'afd2026',
-    role: 'gerant' as const,
-    nom: 'Amadou Diallo',
-  },
-  {
-    id: '+221 77 010 20 30',
-    pwd: 'afd2026',
-    role: 'gerant' as const,
-    nom: 'Amadou Diallo',
-  },
-  {
-    id: 'fatou.sow@afd-textile.sn',
-    pwd: 'afd2026',
-    role: 'gerant' as const,
-    nom: 'Fatou Sow',
-  },
-  {
-    id: 'ibrahima.sarr@afd-textile.sn',
-    pwd: 'afd2026',
-    role: 'boutiquier' as const,
-    nom: 'Ibrahima Sarr',
-  },
-];
-
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [vue, setVue] = useState<LoginVue>('login');
   const [erreur, setErreur] = useState('');
@@ -57,12 +30,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return;
     }
     
-    // On dǸlgue la requǦte d'authentification vers la couche supǸrieure (LoginPage)
-    // qui grera l'appel rǸel API NestJS.
+    // On délègue la requête d'authentification à la couche supérieure (LoginPage)
+    // qui gère l'appel réel à l'API NestJS.
     Promise.resolve(
       onLogin(
-        'gerant', // RǦle temporaire, ǸcrasǸ par l'API rǸelle
-        '', // Nom temporaire, ǸcrasǸ par l'API rǸelle
+        'gerant', // Rôle temporaire, remplacé par celui renvoyé par l'API
+        '', // Nom temporaire, remplacé par celui renvoyé par l'API
         undefined,
         { identifier: identifiant.trim(), motDePasse: motdepasse.trim() }
       )
