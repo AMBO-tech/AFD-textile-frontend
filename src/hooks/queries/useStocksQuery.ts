@@ -6,7 +6,9 @@ export const STOCK_KEYS = {
   levels: (params?: { locationId?: string; categorieId?: string; enAlerte?: boolean; page?: number; limit?: number }) =>
     [...STOCK_KEYS.all, 'levels', params] as const,
   movements: (params?: Record<string, unknown>) => [...STOCK_KEYS.all, 'movements', params] as const,
-  transfers: (params?: Record<string, unknown>) => [...STOCK_KEYS.all, 'transfers', params] as const,
+  /** Préfixe de toutes les listes de transferts (à utiliser pour invalider, quels que soient les filtres). */
+  transfersAll: () => [...STOCK_KEYS.all, 'transfers'] as const,
+  transfers: (params?: Record<string, unknown>) => [...STOCK_KEYS.transfersAll(), params] as const,
 };
 
 /**
@@ -75,7 +77,7 @@ export const useRequestTransferMutation = () => {
       lignes: { produitId: string; quantite: number; unite: string }[];
     }) => stocksService.requestTransfer(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfers() });
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfersAll() });
     },
   });
 };
@@ -113,7 +115,7 @@ export const useCancelTransferMutation = () => {
   return useMutation({
     mutationFn: ({ id, motif }: { id: string; motif: string }) => stocksService.cancelTransfer(id, motif),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfers() });
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfersAll() });
     },
   });
 };
