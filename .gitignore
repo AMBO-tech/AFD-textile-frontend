@@ -28,3 +28,6 @@ dist-ssr
 .env.local
 .env.*.local
 !.env.example
+
+# Script E2E local contenant des identifiants (ne jamais commiter)
+test-e2e.mjs

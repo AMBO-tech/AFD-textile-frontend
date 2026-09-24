@@ -12,7 +12,6 @@ declare type Vente = any;
 declare type HistoriqueItem = any;
 declare type Screen = any;
 declare const formatMontant: any;
-declare const DEFAULT_BOUTIQUE_ID: any;
 declare const VENTES_SEMAINE: any;
 declare const TOP_PRODUITS: any;
 declare const CATEGORIES_DATA: any;

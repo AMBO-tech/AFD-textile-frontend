@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, AlertCircle, Mail, CheckCircle } from 'lucide-react';
-import type { DemoCompte } from './types';
 
 interface LoginFormViewProps {
   dejaConnecte: boolean;
@@ -10,21 +9,6 @@ interface LoginFormViewProps {
   onLoginSubmit: (identifiant: string, motdepasse: string) => void;
   onForgotPassword: () => void;
 }
-
-const COMPTES_DEMO: DemoCompte[] = [
-  {
-    id: 'amadou.diallo@afd-textile.sn',
-    pwd: 'afd2026',
-    role: 'gerant',
-    nom: 'Amadou Diallo',
-  },
-  {
-    id: 'ibrahima.sarr@afd-textile.sn',
-    pwd: 'afd2026',
-    role: 'boutiquier',
-    nom: 'Ibrahima Sarr',
-  },
-];
 
 export const LoginFormView: React.FC<LoginFormViewProps> = ({
   dejaConnecte,
@@ -166,40 +150,6 @@ export const LoginFormView: React.FC<LoginFormViewProps> = ({
           )}
         </button>
       </form>
-
-      {/* Connexion rapide démo */}
-      <div className="mt-8">
-        <div className="relative flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
-            Accès démo rapide
-          </span>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {COMPTES_DEMO.map((c) => (
-            <button
-              key={c.role}
-              type="button"
-              onClick={() => {
-                setIdentifiant(c.id);
-                setMotdepasse(c.pwd);
-              }}
-              className="flex flex-col items-start p-3.5 rounded-2xl border border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/40 transition-all text-left"
-            >
-              <span className="text-xs font-bold text-gray-700">
-                {c.role === 'gerant' ? 'Gérant' : 'Boutiquier'}
-              </span>
-              <span className="text-[11px] text-gray-400 mt-0.5 truncate w-full">
-                {c.nom}
-              </span>
-              <span className="text-[10px] text-blue-400 font-medium mt-1.5">
-                Cliquer pour remplir →
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       <p className="text-center text-xs text-gray-400 mt-6">
         AFD Textile © 2026 · Tous droits réservés
