@@ -1,9 +1,10 @@
 import { formatMontant } from '@/utils/format';
-import React, { useState, useEffect } from 'react';
-import { X, CreditCard, Banknote, Smartphone, CheckCircle2, ShoppingBag, ShoppingCart, User, ArrowRight } from 'lucide-react';
-import type { LigneVente } from './types';
-import { MODES_PAIEMENT } from './types';
-
+import React, { useState, useEffect, useDeferredValue } from 'react';
+import { X, CreditCard, Banknote, CheckCircle2, ShoppingBag, ShoppingCart, User, AlertCircle, FileText } from 'lucide-react';
+import type { LigneVente, ModePaiementPos, PaymentChoice } from './types';
+import { MODES_PAIEMENT, MODE_CREDIT } from './types';
+import { LIBELLES_UNITE, montantsLigne, prixParUnite, totalPanier } from '../../features/pos/pricing';
+import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
 
 export type PaymentTarget =
   | { type: 'direct'; ligne: LigneVente }
@@ -13,8 +14,30 @@ interface SalesPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   target: PaymentTarget | null;
-  onConfirmPayment: (clientNom: string, modePaiement: string) => void;
+  /** Rejette avec un message lisible si la vente est refusée : la fenêtre reste alors ouverte. */
+  onConfirmPayment: (choice: PaymentChoice) => Promise<void>;
 }
+
+const NB_CLIENTS_SUGGERES = 6;
+/** Fiche technique créée par l'API pour les encaissements sans client : jamais proposée au vendeur. */
+const CLIENT_SYSTEME = 'Client Comptoir Anonyme';
+
+const getModeIcon = (mode: ModePaiementPos) => {
+  switch (mode) {
+    case 'Espèces':
+      return <Banknote size={16} className="text-emerald-600" />;
+    case 'Wave':
+      return <span className="w-4 h-4 rounded-full bg-sky-500 text-[9px] font-black text-white flex items-center justify-center">W</span>;
+    case 'Orange Money':
+      return <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] font-black text-white flex items-center justify-center">OM</span>;
+    case 'Free Money':
+      return <span className="w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center">F</span>;
+    case MODE_CREDIT:
+      return <FileText size={16} className="text-violet-600" />;
+    default:
+      return <CreditCard size={16} className="text-blue-600" />;
+  }
+};
 
 export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   isOpen,
@@ -22,53 +45,54 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   target,
   onConfirmPayment,
 }) => {
-  const [modePaiement, setModePaiement] = useState<string>('Espèces');
-  const [nomClient, setNomClient] = useState<string>('');
-  const [montantRecu, setMontantRecu] = useState<string>('');
+  const [modePaiement, setModePaiement] = useState<ModePaiementPos>('Espèces');
+  const [client, setClient] = useState<{ id: string; nom: string } | null>(null);
+  const [rechercheClient, setRechercheClient] = useState('');
+  const [montantRecu, setMontantRecu] = useState('');
+  const [erreur, setErreur] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const recherche = useDeferredValue(rechercheClient.trim());
+  const { data: clientsData } = useClientsListQuery({
+    ...(recherche ? { search: recherche } : {}),
+    limit: NB_CLIENTS_SUGGERES,
+  });
+  const suggestions = (clientsData?.data ?? []).filter((c) => c.nom !== CLIENT_SYSTEME);
 
   // Réinitialiser les champs à l'ouverture
   useEffect(() => {
     if (isOpen) {
       setModePaiement('Espèces');
-      setNomClient('');
+      setClient(null);
+      setRechercheClient('');
       setMontantRecu('');
+      setErreur('');
+      setIsSubmitting(false);
     }
   }, [isOpen]);
 
   if (!isOpen || !target) return null;
 
-  // Calcul du montant total net selon la cible
-  const totalNet =
-    target.type === 'direct'
-      ? target.ligne.produit.prix * target.ligne.qte -
-        Math.min(target.ligne.remise, target.ligne.produit.prix * target.ligne.qte)
-      : target.panier.reduce(
-          (s, l) => s + l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
-          0
-        );
+  const lignes = target.type === 'direct' ? [target.ligne] : target.panier;
+  const totalNet = totalPanier(lignes);
+  const isCredit = modePaiement === MODE_CREDIT;
 
   const montantRecuNum = parseFloat(montantRecu) || 0;
   const monnaieARendre = modePaiement === 'Espèces' && montantRecuNum > 0 ? montantRecuNum - totalNet : 0;
   const isMontantInsuffisant = modePaiement === 'Espèces' && montantRecuNum > 0 && montantRecuNum < totalNet;
+  const clientManquant = isCredit && !client;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isMontantInsuffisant) return;
-    onConfirmPayment(nomClient.trim() || 'Passage', modePaiement);
-  };
-
-  const getModeIcon = (mode: string) => {
-    switch (mode) {
-      case 'Espèces':
-        return <Banknote size={16} className="text-emerald-600" />;
-      case 'Wave':
-        return <span className="w-4 h-4 rounded-full bg-sky-500 text-[9px] font-black text-white flex items-center justify-center">W</span>;
-      case 'Orange Money':
-        return <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] font-black text-white flex items-center justify-center">OM</span>;
-      case 'Free Money':
-        return <span className="w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center">F</span>;
-      default:
-        return <CreditCard size={16} className="text-blue-600" />;
+    if (isMontantInsuffisant || clientManquant || isSubmitting) return;
+    setErreur('');
+    setIsSubmitting(true);
+    try {
+      await onConfirmPayment({ mode: modePaiement, clientId: client?.id ?? null, clientNom: client?.nom ?? '' });
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : "La vente n'a pas pu être enregistrée.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,17 +106,17 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
               {target.type === 'direct' ? <ShoppingBag size={18} /> : <ShoppingCart size={18} />}
             </div>
             <div>
-              <h3 className="font-display font-bold text-gray-900 text-base">
-                Règlement & Encaissement
-              </h3>
+              <h3 className="font-display font-bold text-gray-900 text-base">Règlement & Encaissement</h3>
               <p className="text-xs text-gray-500">
-                {target.type === 'direct' ? 'Vente directe (1 article)' : `Vente groupée (${target.panier.length} articles)`}
+                {target.type === 'direct' ? 'Vente directe (1 article)' : `Vente groupée (${lignes.length} articles)`}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+            aria-label="Fermer"
           >
             <X size={18} />
           </button>
@@ -100,102 +124,90 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
           {/* Récapitulatif de la commande */}
-          {target.type === 'direct' ? (
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100">
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-gray-200 shrink-0">
-                <img
-                  src={target.ligne.produit.photo}
-                  alt={target.ligne.produit.nom}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="font-bold text-gray-900 text-xs truncate">
-                  {target.ligne.produit.nom}
-                </div>
-                <div className="text-[11px] text-gray-500">
-                  {target.ligne.qte} {target.ligne.unite} à {formatMontant(target.ligne.produit.prix)}/{target.ligne.unite}
-                </div>
-                {target.ligne.remise > 0 && (
-                  <div className="text-[11px] text-emerald-600 font-medium">
-                    Remise : -{formatMontant(target.ligne.remise)}
-                  </div>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                <span className="text-[10px] text-gray-400 block uppercase font-bold">Total net</span>
-                <span className="font-display font-extrabold text-blue-900 text-sm">
-                  {formatMontant(totalNet)}
-                </span>
-              </div>
+          <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+            <div className="flex justify-between items-center text-xs text-gray-500 border-b border-gray-200/60 pb-1.5">
+              <span>Articles ({lignes.length})</span>
+              <span className="font-bold text-gray-800">{formatMontant(totalNet)}</span>
             </div>
-          ) : (
-            <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
-              <div className="flex justify-between items-center text-xs text-gray-500 border-b border-gray-200/60 pb-1.5">
-                <span>Panier ({target.panier.length} lignes)</span>
-                <span className="font-bold text-gray-800">{formatMontant(totalNet)}</span>
-              </div>
-              <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1">
-                {target.panier.map((l, idx) => {
-                  const ligneNet = l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte);
-                  return (
-                    <div key={idx} className="flex justify-between text-[11px] text-gray-700">
-                      <span className="truncate pr-2">
-                        {l.produit.nom} ({l.qte} {l.unite})
-                      </span>
-                      <span className="font-medium shrink-0">{formatMontant(ligneNet)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1">
+              {lignes.map((l, idx) => (
+                <div key={idx} className="flex justify-between text-[11px] text-gray-700">
+                  <span className="truncate pr-2">
+                    {l.produit.nom} ({l.qte} {LIBELLES_UNITE[l.unite]} à {formatMontant(prixParUnite(l.unite, l.produit))})
+                  </span>
+                  <span className="font-medium shrink-0">{formatMontant(montantsLigne(l).net)}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Client bénéficiaire */}
+          {/* Client */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <User size={13} className="text-gray-400" />
-                Client bénéficiaire
-              </span>
-              <button
-                type="button"
-                onClick={() => setNomClient('')}
-                className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
-              >
-                Client de passage
-              </button>
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+              <User size={13} className="text-gray-400" />
+              Client {isCredit ? '*' : '(facultatif)'}
             </label>
-            <input
-              type="text"
-              value={nomClient}
-              onChange={(e) => setNomClient(e.target.value)}
-              placeholder="Passage (Comptoir)"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:border-blue-500 bg-white"
-            />
+            {client ? (
+              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-blue-200 bg-blue-50/60 text-xs font-semibold text-blue-900">
+                <span className="truncate">{client.nom}</span>
+                <button
+                  type="button"
+                  onClick={() => setClient(null)}
+                  className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
+                >
+                  Changer
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={rechercheClient}
+                  onChange={(e) => setRechercheClient(e.target.value)}
+                  placeholder="Rechercher un client (nom ou téléphone)…"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:border-blue-500 bg-white"
+                />
+                <div className="mt-1.5 max-h-32 overflow-y-auto space-y-1">
+                  {suggestions.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setClient({ id: c.id, nom: c.nom })}
+                      className="w-full flex justify-between px-3 py-1.5 rounded-lg text-left text-[11px] hover:bg-gray-50 cursor-pointer"
+                    >
+                      <span className="font-semibold text-gray-800 truncate">{c.nom}</span>
+                      <span className="text-gray-400 shrink-0 pl-2">{c.telephone}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {isCredit
+                    ? 'Une vente à crédit doit être rattachée à un client (créez-le dans « Clients » s’il n’existe pas).'
+                    : 'Sans sélection : client de passage.'}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Sélection du mode de paiement */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">
-              Mode d'encaissement *
-            </label>
+            <label className="block text-xs font-semibold text-gray-700 mb-2">Mode d'encaissement *</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {MODES_PAIEMENT.map((m) => {
-                const isSelected = modePaiement === m;
+              {MODES_PAIEMENT.map(({ label }) => {
+                const isSelected = modePaiement === label;
                 return (
                   <button
-                    key={m}
+                    key={label}
                     type="button"
-                    onClick={() => setModePaiement(m)}
+                    onClick={() => setModePaiement(label)}
                     className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all text-left cursor-pointer ${
                       isSelected
                         ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-2xs'
                         : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <div className="shrink-0">{getModeIcon(m)}</div>
-                    <span className="truncate">{m}</span>
+                    <div className="shrink-0">{getModeIcon(label)}</div>
+                    <span className="truncate">{label}</span>
                   </button>
                 );
               })}
@@ -206,9 +218,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
           {modePaiement === 'Espèces' && (
             <div className="p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-emerald-900">
-                  Espèces reçues du client
-                </label>
+                <label className="text-xs font-semibold text-emerald-900">Espèces reçues du client</label>
                 <button
                   type="button"
                   onClick={() => setMontantRecu(totalNet.toString())}
@@ -217,28 +227,22 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
                   Montant exact
                 </button>
               </div>
-
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  step="500"
-                  value={montantRecu}
-                  onChange={(e) => setMontantRecu(e.target.value)}
-                  placeholder={`Ex: ${formatMontant(Math.ceil(totalNet / 1000) * 1000)}`}
-                  className="w-full px-3.5 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Rendu de monnaie dynamique */}
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="numeric"
+                value={montantRecu}
+                onChange={(e) => setMontantRecu(e.target.value)}
+                placeholder={`Ex: ${formatMontant(Math.ceil(totalNet / 1000) * 1000)}`}
+                className="w-full px-3.5 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-emerald-500"
+              />
               {montantRecuNum > 0 && (
                 <div className="pt-1 flex items-center justify-between text-xs">
                   {monnaieARendre >= 0 ? (
                     <>
                       <span className="text-gray-600">Monnaie à rendre :</span>
-                      <span className="font-extrabold text-emerald-700 text-sm">
-                        {formatMontant(monnaieARendre)}
-                      </span>
+                      <span className="font-extrabold text-emerald-700 text-sm">{formatMontant(monnaieARendre)}</span>
                     </>
                   ) : (
                     <span className="text-rose-600 font-semibold text-[11px]">
@@ -253,31 +257,41 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
           {/* Total final */}
           <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-100/80 flex items-center justify-between">
             <div>
-              <span className="text-[11px] text-gray-500 block">Total net à encaisser</span>
+              <span className="text-[11px] text-gray-500 block">
+                {isCredit ? 'Montant porté au compte du client' : 'Total net à encaisser'}
+              </span>
               <span className="text-[10px] text-gray-400">{modePaiement}</span>
             </div>
-            <div className="font-display font-extrabold text-xl text-blue-900">
-              {formatMontant(totalNet)}
-            </div>
+            <div className="font-display font-extrabold text-xl text-blue-900">{formatMontant(totalNet)}</div>
           </div>
+
+          {erreur && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" />
+              <span>{erreur}</span>
+            </div>
+          )}
 
           {/* Boutons d'action */}
           <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="flex-1 py-2.5 px-3 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
             >
               Retour
             </button>
             <button
               type="submit"
-              disabled={isMontantInsuffisant}
+              disabled={isMontantInsuffisant || clientManquant || isSubmitting}
               className="flex-[2] flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-bold text-white shadow-sm hover:opacity-95 transition-all disabled:opacity-50 cursor-pointer"
               style={{ background: '#0F3D5E' }}
             >
               <CheckCircle2 size={16} />
-              <span>Valider l'encaissement</span>
+              <span>
+                {isSubmitting ? 'Enregistrement…' : isCredit ? 'Enregistrer à crédit' : "Valider l'encaissement"}
+              </span>
             </button>
           </div>
         </form>

@@ -22,7 +22,7 @@ export const StockInCategoriesStep: React.FC<StockInCategoriesStepProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors cursor-pointer"
         >
           <Plus size={14} />
-          Nouvelle CatÃ©gorie
+          Nouvelle Catégorie
         </button>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">

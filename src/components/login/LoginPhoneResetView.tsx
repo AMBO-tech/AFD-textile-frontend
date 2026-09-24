@@ -1,8 +1,10 @@
 import React from 'react';
-import { ArrowLeft, Phone } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Phone } from 'lucide-react';
 
 interface LoginPhoneResetViewProps {
   telephone: string;
+  erreur: string;
+  loading: boolean;
   onTelephoneChange: (val: string) => void;
   onBack: () => void;
   onSubmit: () => void;
@@ -10,10 +12,14 @@ interface LoginPhoneResetViewProps {
 
 export const LoginPhoneResetView: React.FC<LoginPhoneResetViewProps> = ({
   telephone,
+  erreur,
+  loading,
   onTelephoneChange,
   onBack,
   onSubmit,
 }) => {
+  const canSubmit = !!telephone.trim() && !loading;
+
   return (
     <div>
       <button
@@ -33,12 +39,18 @@ export const LoginPhoneResetView: React.FC<LoginPhoneResetViewProps> = ({
           Réinitialisation
         </h2>
         <p className="text-gray-400 text-sm mt-1">
-          Entrez votre numéro pour recevoir un code par SMS
+          Entrez votre numéro (ou l'e-mail du gérant) pour recevoir un code
         </p>
       </div>
+      {erreur && (
+        <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-2xl p-4 mb-5">
+          <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+          <span className="text-red-600 text-sm">{erreur}</span>
+        </div>
+      )}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Numéro de téléphone
+          Téléphone ou e-mail
         </label>
         <div className="relative">
           <Phone
@@ -46,12 +58,13 @@ export const LoginPhoneResetView: React.FC<LoginPhoneResetViewProps> = ({
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
           />
           <input
-            type="tel"
+            type="text"
+            autoComplete="username"
             value={telephone}
             onChange={(e) => onTelephoneChange(e.target.value)}
             placeholder="+221 77 XXX XX XX"
             onKeyDown={(e) =>
-              e.key === 'Enter' && telephone.trim() && onSubmit()
+              e.key === 'Enter' && canSubmit && onSubmit()
             }
             className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 transition-all"
           />
@@ -59,14 +72,14 @@ export const LoginPhoneResetView: React.FC<LoginPhoneResetViewProps> = ({
       </div>
       <button
         onClick={onSubmit}
-        disabled={!telephone.trim()}
+        disabled={!canSubmit}
         className="w-full py-4 rounded-2xl text-white font-display font-bold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
         style={{
           background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)',
           boxShadow: '0 8px 24px rgba(15,61,94,0.3)',
         }}
       >
-        Envoyer le code SMS
+        {loading ? 'Envoi en cours…' : 'Envoyer le code'}
       </button>
     </div>
   );

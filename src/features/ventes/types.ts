@@ -1,4 +1,4 @@
-export type SalesTab = 'vente' | 'historique';
+export type { SalesTab } from '../pos/types';
 
 export interface VenteAnnulationData {
   venteId: string;

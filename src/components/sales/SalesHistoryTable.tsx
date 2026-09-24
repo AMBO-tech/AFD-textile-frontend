@@ -1,14 +1,18 @@
 import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { CheckCircle, XCircle, RotateCcw } from 'lucide-react';
-
-
+import type { Vente } from '../../types/sales';
 
 interface SalesHistoryTableProps {
   ventes: Vente[];
   onCancelClick: (vente: Vente) => void;
-  role: 'gerant' | 'boutiquier';
 }
+
+const resumeArticles = (v: Vente) =>
+  v.lignes.map((l) => `${l.produitNom} (${l.quantite} ${l.uniteSaisie.toLowerCase()})`).join(', ');
+
+const formatDateHeure = (iso: string) =>
+  new Date(iso).toLocaleString('fr-SN', { dateStyle: 'short', timeStyle: 'short' });
 
 export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = ({
   ventes,
@@ -29,7 +33,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = ({
           </div>
         ) : (
           ventes.map((v) => {
-            const isAnnulee = v.statut === 'annulée';
+            const isAnnulee = v.statut === 'ANNULEE';
 
             return (
               <div
@@ -47,7 +51,7 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = ({
 
                   <div className="min-w-0">
                     <div className="font-semibold text-gray-900 text-xs truncate">
-                      {v.produit}
+                      {v.referenceFacture} · {resumeArticles(v)}
                       {isAnnulee && (
                         <span className="text-[10px] font-bold ml-2 text-red-500 uppercase">
                           (Annulée)
@@ -55,11 +59,14 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = ({
                       )}
                     </div>
                     <div className="text-[11px] text-gray-400 mt-0.5">
-                      Client : <span className="font-medium text-gray-700">{v.client}</span> •{' '}
-                      {v.quantite} {v.unite} • {v.date} {v.heure}
+                      Client : <span className="font-medium text-gray-700">{v.clientNom || 'Passage'}</span> •{' '}
+                      {formatDateHeure(v.createdAt)}
                     </div>
                     <div className="text-[10px] text-gray-400">
-                      Vendeur : {v.vendeur} • Règl. : {v.paiement}
+                      Vendeur : {v.vendeurNom}
+                      {v.soldeDu > 0 && !isAnnulee && (
+                        <span className="text-amber-600 font-semibold"> • Reste dû : {formatMontant(v.soldeDu)}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -71,10 +78,10 @@ export const SalesHistoryTable: React.FC<SalesHistoryTableProps> = ({
                         isAnnulee ? 'text-gray-400 line-through' : 'text-gray-900'
                       }`}
                     >
-                      {formatMontant(v.montant)}
+                      {formatMontant(v.montantTotal)}
                     </div>
                     <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
-                      {v.typeVente}
+                      {v.statutPaiement.replace('_', ' ')}
                     </span>
                   </div>
 

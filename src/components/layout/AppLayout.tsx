@@ -16,18 +16,18 @@ export const AppLayout: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Compteur de notifications non lues via API rÃƒÂ©elle (polling 60s)
+  // Compteur de notifications non lues via API réelle (polling 60s)
   const { data: notifData } = useNotificationsQuery({ limit: 1 });
   const unreadNotifs = notifData?.nonLuesTotal ?? 0;
 
-  // DÃƒÂ©terminer la session active avec fallback immÃƒÂ©diat sur le user authentifiÃƒÂ©
+  // Déterminer la session active avec fallback immédiat sur le user authentifié
   const effectiveSession = session || (user ? {
     role: ((user as any).role === 'OWNER' ? 'gerant' : 'boutiquier') as 'gerant' | 'boutiquier',
     nom: (user as any).nom || (user as any).name || 'Utilisateur AFD',
     boutiqueId: (user as any).locationId || undefined,
   } : null);
 
-  // Ãƒâ€°viter l'ÃƒÂ©cran blanc : si aucune session ni user actif, rediriger vers login
+  // Éviter l'écran blanc : si aucune session ni user actif, rediriger vers login
   if (!effectiveSession) {
     return <Navigate to="/login" replace />;
   }
@@ -37,7 +37,7 @@ export const AppLayout: React.FC = () => {
 
   const pendingDemandes = demandes.filter((d: any) => d.statut === 'en_attente').length;
 
-  // DÃƒÂ©duire l'ÃƒÂ©cran actif ÃƒÂ  partir de l'URL
+  // Déduire l'écran actif à partir de l'URL
   const getScreenFromPath = (path: string): Screen => {
     const p = path.replace(/^\//, '').split('/')[0];
     if (!p || p === 'dashboard') return 'accueil';
@@ -67,7 +67,7 @@ export const AppLayout: React.FC = () => {
     navigate('/login');
   };
 
-  // PrÃƒÂ©fÃƒÂ©rer le nom depuis le store Zustand (API rÃƒÂ©elle) plutÃƒÂ´t que la session mock
+  // Préférer le nom depuis le store Zustand (API réelle) plutôt que la session mock
   const displayNom = user?.nom || user?.name || effectiveSession.nom;
 
   return (

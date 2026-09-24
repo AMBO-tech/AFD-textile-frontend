@@ -1,61 +1,54 @@
 import { formatMontant } from '@/utils/format';
 import React, { useState } from 'react';
-import { X, Plus, ShoppingCart, Tag } from 'lucide-react';
-
-
-import { UNITES } from './types';
+import { X, ShoppingCart, Tag } from 'lucide-react';
+import type { LigneVente, PosProduit, UniteVente } from './types';
+import {
+  LIBELLES_UNITE,
+  montantsLigne,
+  prixParUnite,
+  quantiteEnStock,
+  unitesDisponibles,
+} from '../../features/pos/pricing';
 
 interface SalesProductConfigProps {
-  produit: Produit | null;
+  produit: PosProduit | null;
   onClose: () => void;
-  onAddToCart: (ligne: { produit: Produit; qte: number; unite: string; remise: number }) => void;
-  onDirectSale: (ligne: { produit: Produit; qte: number; unite: string; remise: number }) => void;
+  onAddToCart: (ligne: LigneVente) => void;
+  onDirectSale: (ligne: LigneVente) => void;
 }
 
+const QTE_PAR_DEFAUT = 1;
+
+/** Fenêtre de configuration d'un article. Remontée à chaque produit (clé = id) pour réinitialiser la saisie. */
 export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
   produit,
   onClose,
   onAddToCart,
   onDirectSale,
 }) => {
-  if (!produit) return null;
-
-  const [qte, setQte] = useState(1);
-  const [unite, setUnite] = useState(produit.unite || 'mètre');
+  const [qte, setQte] = useState(QTE_PAR_DEFAUT);
+  const [unite, setUnite] = useState<UniteVente | null>(produit?.unite ?? null);
   const [remiseMontant, setRemiseMontant] = useState(0);
 
-  const sousTotal = produit.prix * qte;
-  const remiseAppliquee = Math.min(remiseMontant, sousTotal);
-  const totalNet = sousTotal - remiseAppliquee;
+  if (!produit || !unite) return null;
 
-  const handleAjouter = () => {
-    onAddToCart({
-      produit,
-      qte,
-      unite,
-      remise: remiseAppliquee,
-    });
-    onClose();
-  };
+  const ligne: LigneVente = { produit, qte, unite, remise: remiseMontant };
+  const { brut, remise, net } = montantsLigne(ligne);
+  const qteStock = quantiteEnStock(qte, unite, produit) ?? 0;
+  const depasseStock = qteStock > produit.quantite;
+  const isValide = qte > 0 && !depasseStock && net > 0;
 
-  const handleVenteDirecte = () => {
-    onDirectSale({
-      produit,
-      qte,
-      unite,
-      remise: remiseAppliquee,
-    });
-    onClose();
+  const valider = (action: (l: LigneVente) => void) => {
+    if (!isValide) return;
+    action({ ...ligne, remise });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-md p-5 shadow-2xl border border-gray-100">
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
-          <div className="font-display font-bold text-gray-900 text-base">
-            Configurer l'Article
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+          <div className="font-display font-bold text-gray-900 text-base">Configurer l'article</div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1" aria-label="Fermer">
             <X size={18} />
           </button>
         </div>
@@ -65,13 +58,12 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
           <div className="w-12 h-12 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
             <img src={produit.photo} alt={produit.nom} className="w-full h-full object-cover" />
           </div>
-          <div>
-            <div className="font-bold text-gray-900 text-sm">{produit.nom}</div>
-            <div className="text-xs text-gray-500">
-              {produit.categorie} • {produit.couleur}
-            </div>
+          <div className="min-w-0">
+            <div className="font-bold text-gray-900 text-sm truncate">{produit.nom}</div>
+            <div className="text-xs text-gray-500">{produit.reference}</div>
             <div className="text-xs font-semibold text-blue-600 mt-0.5">
-              {formatMontant(produit.prix)} / {produit.unite} (En stock : {produit.quantite})
+              {formatMontant(prixParUnite(unite, produit))} / {LIBELLES_UNITE[unite]} (En stock :{' '}
+              {produit.quantite} {LIBELLES_UNITE[produit.unite]})
             </div>
           </div>
         </div>
@@ -79,29 +71,27 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
         <div className="space-y-3.5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Quantité commandée
-              </label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Quantité</label>
               <div className="flex items-center">
                 <button
                   type="button"
-                  onClick={() => setQte((q) => Math.max(1, q - 1))}
+                  onClick={() => setQte((q) => Math.max(QTE_PAR_DEFAUT, q - 1))}
                   className="w-9 h-9 flex items-center justify-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100"
                 >
                   -
                 </button>
                 <input
                   type="number"
-                  min="0.5"
+                  min="0.1"
                   step="any"
-                  max={produit.quantite}
+                  inputMode="decimal"
                   value={qte}
-                  onChange={(e) => setQte(Math.max(1, parseFloat(e.target.value) || 1))}
+                  onChange={(e) => setQte(Math.max(0, parseFloat(e.target.value) || 0))}
                   className="w-full h-9 border border-gray-200 text-center font-bold text-sm focus:outline-none"
                 />
                 <button
                   type="button"
-                  onClick={() => setQte((q) => Math.min(produit.quantite, q + 1))}
+                  onClick={() => setQte((q) => q + 1)}
                   className="w-9 h-9 flex items-center justify-center rounded-r-xl border border-l-0 border-gray-200 bg-gray-50 font-bold text-gray-700 hover:bg-gray-100"
                 >
                   +
@@ -113,27 +103,36 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
               <label className="block text-xs font-semibold text-gray-700 mb-1">Unité</label>
               <select
                 value={unite}
-                onChange={(e) => setUnite(e.target.value)}
+                onChange={(e) => setUnite(e.target.value as UniteVente)}
                 className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
               >
-                {UNITES.map((u) => (
+                {unitesDisponibles(produit).map((u) => (
                   <option key={u} value={u}>
-                    {u}
+                    {LIBELLES_UNITE[u]}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
+          {unite !== produit.unite && qte > 0 && (
+            <p className="text-[11px] text-gray-500">
+              Soit {qteStock} {LIBELLES_UNITE[produit.unite]} retiré(s) du stock.
+            </p>
+          )}
+          {depasseStock && (
+            <p className="text-[11px] font-semibold text-rose-600">
+              Stock insuffisant : {produit.quantite} {LIBELLES_UNITE[produit.unite]} disponible(s).
+            </p>
+          )}
+
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Remise commerciale (FCFA)
-            </label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Remise commerciale (FCFA)</label>
             <div className="relative">
               <input
                 type="number"
                 min="0"
-                max={sousTotal}
+                max={brut}
                 value={remiseMontant || ''}
                 onChange={(e) => setRemiseMontant(Math.max(0, parseFloat(e.target.value) || 0))}
                 placeholder="0"
@@ -143,37 +142,35 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
             </div>
           </div>
 
-          {/* Calcul du total */}
           <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-100 flex items-center justify-between">
             <div>
               <div className="text-[11px] text-gray-500">Total net à payer :</div>
-              {remiseAppliquee > 0 && (
-                <div className="text-[10px] text-gray-400 line-through">
-                  {formatMontant(sousTotal)}
-                </div>
-              )}
+              {remise > 0 && <div className="text-[10px] text-gray-400 line-through">{formatMontant(brut)}</div>}
             </div>
-            <div className="font-display font-bold text-lg text-blue-900">
-              {formatMontant(totalNet)}
-            </div>
+            <div className="font-display font-bold text-lg text-blue-900">{formatMontant(net)}</div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
             <button
               type="button"
-              onClick={handleAjouter}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors"
+              onClick={() => valider((l) => {
+                onAddToCart(l);
+                onClose();
+              })}
+              disabled={!isValide}
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               <ShoppingCart size={15} />
               Mettre au panier
             </button>
             <button
               type="button"
-              onClick={handleVenteDirecte}
-              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-xs font-semibold shadow-sm hover:opacity-95 transition-all"
+              onClick={() => valider(onDirectSale)}
+              disabled={!isValide}
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-xs font-semibold shadow-sm hover:opacity-95 transition-all disabled:opacity-50"
               style={{ background: '#0F3D5E' }}
             >
-              Valider de suite
+              Encaisser maintenant
             </button>
           </div>
         </div>

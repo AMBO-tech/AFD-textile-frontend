@@ -33,6 +33,8 @@ export type MoyenPaiement =
   | 'ESPECES'
   | 'WAVE'
   | 'ORANGE_MONEY'
+  | 'FREE_MONEY'
+  | 'CARTE_BANCAIRE'
   | 'VIREMENT'
   | 'CHEQUE'
   | 'AUTRE'

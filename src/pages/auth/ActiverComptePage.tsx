@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { setupPassword } from '@/services/auth/password';
+
+const MIN_PASSWORD_LENGTH = 8;
+const REDIRECT_DELAY_MS = 2800;
 
 export const ActiverComptePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
-  const utilisateurs: any = [];
-const activateUserPassword: any = [];
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,11 +17,9 @@ const activateUserPassword: any = [];
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Vérifier si un utilisateur correspond à ce token d'invitation
-  const invitedUser = utilisateurs.find((u: any) => u.invitationToken === token);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -28,7 +28,7 @@ const activateUserPassword: any = [];
       return;
     }
 
-    if (password.length < 8) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       setError('Le mot de passe doit comporter au moins 8 caractères.');
       return;
     }
@@ -38,16 +38,16 @@ const activateUserPassword: any = [];
       return;
     }
 
-    const success = activateUserPassword(token, password);
-    if (!success) {
-      setError("Ce lien d'invitation a expiré ou le compte a déjà été activé.");
-      return;
+    setIsSubmitting(true);
+    try {
+      await setupPassword(token, password);
+      setIsSuccess(true);
+      setTimeout(() => navigate('/login', { replace: true }), REDIRECT_DELAY_MS);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ce lien d'invitation a expiré ou le compte a déjà été activé.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSuccess(true);
-    setTimeout(() => {
-      navigate('/login');
-    }, 2800);
   };
 
   return (
@@ -105,15 +105,9 @@ const activateUserPassword: any = [];
           <div>
             <div className="mb-6 text-center">
               <h2 className="font-display font-bold text-lg text-gray-900">Activation de votre compte</h2>
-              {invitedUser ? (
-                <p className="text-xs text-blue-600 font-semibold mt-1">
-                  Bienvenue, {invitedUser.nom} ({invitedUser.telephone})
-                </p>
-              ) : (
-                <p className="text-xs text-gray-500 mt-1">
-                  Définissez votre mot de passe secret pour votre première connexion
-                </p>
-              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Définissez votre mot de passe secret pour votre première connexion
+              </p>
             </div>
 
             {error && (
@@ -135,7 +129,7 @@ const activateUserPassword: any = [];
                     required
                     autoFocus
                     value={password}
-                    onChange={(e: any) => setPassword(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                     placeholder="Au moins 8 caractères"
                     className="w-full pl-10 pr-10 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
@@ -159,7 +153,7 @@ const activateUserPassword: any = [];
                     type={showConfirm ? 'text' : 'password'}
                     required
                     value={confirmPassword}
-                    onChange={(e: any) => setConfirmPassword(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
                     placeholder="Répétez le mot de passe"
                     className="w-full pl-10 pr-10 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
@@ -174,7 +168,7 @@ const activateUserPassword: any = [];
               </div>
 
               <div className="text-[11px] text-gray-400 space-y-1 pt-1">
-                <div className={password.length >= 8 ? 'text-green-600 font-medium' : ''}>
+                <div className={password.length >= MIN_PASSWORD_LENGTH ? 'text-green-600 font-medium' : ''}>
                   • Minimum 8 caractères
                 </div>
                 <div className={password && password === confirmPassword ? 'text-green-600 font-medium' : ''}>
@@ -184,10 +178,11 @@ const activateUserPassword: any = [];
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2"
+                disabled={isSubmitting}
+                className="w-full py-3 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
               >
-                <span>Activer mon compte</span>
+                <span>{isSubmitting ? 'Activation…' : 'Activer mon compte'}</span>
                 <ArrowRight size={16} />
               </button>
             </form>

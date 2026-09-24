@@ -3,11 +3,13 @@ import { Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface LoginNewPasswordViewProps {
   erreurMdp: string;
+  loading: boolean;
   onSavePassword: (newPwd: string, confirmPwd: string) => void;
 }
 
 export const LoginNewPasswordView: React.FC<LoginNewPasswordViewProps> = ({
   erreurMdp,
+  loading,
   onSavePassword,
 }) => {
   const [newPwd, setNewPwd] = useState('');
@@ -33,7 +35,7 @@ export const LoginNewPasswordView: React.FC<LoginNewPasswordViewProps> = ({
           Nouveau mot de passe
         </h2>
         <p className="text-gray-400 text-sm mt-1">
-          Choisissez un mot de passe sécurisé (min. 6 caractères)
+          Choisissez un mot de passe sécurisé (min. 8 caractères)
         </p>
       </div>
 
@@ -99,13 +101,14 @@ export const LoginNewPasswordView: React.FC<LoginNewPasswordViewProps> = ({
 
         <button
           type="submit"
-          className="w-full py-4 rounded-2xl text-white font-display font-bold text-sm transition-all active:scale-[0.98] mt-2"
+          disabled={loading}
+          className="w-full py-4 rounded-2xl text-white font-display font-bold text-sm transition-all active:scale-[0.98] mt-2 disabled:opacity-60"
           style={{
             background: 'linear-gradient(135deg, #16a34a, #22C55E)',
             boxShadow: '0 8px 24px rgba(22,163,74,0.3)',
           }}
         >
-          Enregistrer le mot de passe
+          {loading ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
         </button>
       </form>
     </div>

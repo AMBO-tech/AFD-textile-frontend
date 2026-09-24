@@ -13,10 +13,10 @@ type Statut = Demande['statut'];
 
 const STATUTS: { id: Statut; label: string; color: string; bg: string }[] = [
   { id: 'en_attente', label: 'En attente', color: '#F59E0B', bg: '#FFFBEB' },
-  { id: 'acceptee', label: 'AcceptÃ©e', color: '#22C55E', bg: '#F0FDF4' },
-  { id: 'refusee', label: 'RefusÃ©e', color: '#EF4444', bg: '#FEF2F2' },
+  { id: 'acceptee', label: 'Acceptée', color: '#22C55E', bg: '#F0FDF4' },
+  { id: 'refusee', label: 'Refusée', color: '#EF4444', bg: '#FEF2F2' },
   { id: 'en_transfert', label: 'En transfert', color: '#1E88E5', bg: '#EBF5FB' },
-  { id: 'livree', label: 'LivrÃ©e', color: '#22C55E', bg: '#F0FDF4' },
+  { id: 'livree', label: 'Livrée', color: '#22C55E', bg: '#F0FDF4' },
 ];
 
 interface DemandesProps {
@@ -55,16 +55,16 @@ const updateDemandeStatut: any = [];
   const maBoutique = boutiques.find((b: any) => b.id === boutiqueId) || boutiques[0];
 
   const getBoutiqueName = (id: string) => {
-    if (id === 'entrepot') return 'EntrepÃ´t Central';
+    if (id === 'entrepot') return 'Entrepôt Central';
     return boutiques.find((b: any) => b.id === id)?.nom ?? id;
   };
 
-  // PÃ©rimÃ¨tre des stocks selon le rÃ´le
+  // Périmètre des stocks selon le rôle
   const produitsEmplacement = role === 'gerant'
     ? produits
     : produits.filter((p: any) => p.boutique === boutiqueId);
 
-  // Filtrage et tri des stocks (ordre croissant de quantitÃ©)
+  // Filtrage et tri des stocks (ordre croissant de quantité)
   const stocksTries = produitsEmplacement
     .filter((p: any) => {
       const matchSearch = p.nom.toLowerCase().includes(search.toLowerCase()) ||
@@ -97,7 +97,7 @@ const updateDemandeStatut: any = [];
     const qteNum = qteModif ? parseFloat(qteModif) : undefined;
     updateDemandeStatut(validation.demande.id, validation.action, qteNum);
     setValidation(null);
-    setSuccessMsg(`Demande ${validation.action === 'acceptee' ? 'validÃ©e' : 'refusÃ©e'}.`);
+    setSuccessMsg(`Demande ${validation.action === 'acceptee' ? 'validée' : 'refusée'}.`);
     setTimeout(() => setSuccessMsg(null), 3000);
   };
 
@@ -114,12 +114,12 @@ const updateDemandeStatut: any = [];
       boutique_demande: role === 'boutiquier' ? boutiqueId : 'b1',
       boutique_source: 'entrepot',
       priorite: data.priorite,
-      demandeur: role === 'gerant' ? 'GÃ©rant' : 'Boutiquier',
+      demandeur: role === 'gerant' ? 'Gérant' : 'Boutiquier',
     });
 
     setShowNew(false);
     setSelectedProduit(null);
-    setSuccessMsg(`Demande de ${data.quantite} ${data.unite} envoyÃ©e.`);
+    setSuccessMsg(`Demande de ${data.quantite} ${data.unite} envoyée.`);
     setTimeout(() => setSuccessMsg(null), 3500);
   };
 
@@ -127,18 +127,18 @@ const updateDemandeStatut: any = [];
 
   return (
     <div className="space-y-4">
-      {/* â”€â”€ En-tÃªte Ã©purÃ© â”€â”€ */}
+      {/* ── En-tête épuré ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-xl font-bold text-gray-900">Demandes</h1>
           <p className="text-sm text-gray-500">
             {role === 'boutiquier' ? (
               <span>
-                {stocksCritiques.length} alerte{stocksCritiques.length !== 1 ? 's' : ''} Â· {demandesEnAttente.length} en attente Â· <strong className="text-gray-700">{maBoutique?.nom}</strong>
+                {stocksCritiques.length} alerte{stocksCritiques.length !== 1 ? 's' : ''} · {demandesEnAttente.length} en attente · <strong className="text-gray-700">{maBoutique?.nom}</strong>
               </span>
             ) : (
               <span>
-                {demandesEnAttente.length} en attente Â· {stocksCritiques.length} stock{stocksCritiques.length !== 1 ? 's' : ''} critique{stocksCritiques.length !== 1 ? 's' : ''}
+                {demandesEnAttente.length} en attente · {stocksCritiques.length} stock{stocksCritiques.length !== 1 ? 's' : ''} critique{stocksCritiques.length !== 1 ? 's' : ''}
               </span>
             )}
           </p>
@@ -152,7 +152,7 @@ const updateDemandeStatut: any = [];
         </button>
       </div>
 
-      {/* â”€â”€ Notification â”€â”€ */}
+      {/* ── Notification ── */}
       {successMsg && (
         <div className="bg-green-50 border border-green-200 rounded-2xl p-3.5 flex items-center gap-2.5 text-green-800 text-sm animate-fade-in shadow-sm">
           <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
@@ -160,7 +160,7 @@ const updateDemandeStatut: any = [];
         </div>
       )}
 
-      {/* â”€â”€ Onglets bleus unifiÃ©s â”€â”€ */}
+      {/* ── Onglets bleus unifiés ── */}
       <div className="flex gap-2">
         <button
           onClick={() => setActiveTab('stocks')}
@@ -172,7 +172,7 @@ const updateDemandeStatut: any = [];
           style={activeTab === 'stocks' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
         >
           <Boxes size={15} />
-          <span>Stocks & RÃ©appro</span>
+          <span>Stocks & Réappro</span>
           {stocksCritiques.length > 0 && (
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -207,9 +207,9 @@ const updateDemandeStatut: any = [];
         </button>
       </div>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-          VUE 1 : STOCKS (TriÃ© par quantitÃ© croissante)
-         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          VUE 1 : STOCKS (Trié par quantité croissante)
+         ═══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'stocks' && (
         <div className="space-y-3">
           {/* Recherche */}
@@ -218,12 +218,12 @@ const updateDemandeStatut: any = [];
             <input
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
-              placeholder="Rechercher un tissuâ€¦"
+              placeholder="Rechercher un tissu…"
               className="w-full pl-9 pr-4 py-2.5 bg-white rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 shadow-sm"
             />
           </div>
 
-          {/* Filtres catÃ©gories */}
+          {/* Filtres catégories */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
             <button
               onClick={() => setFiltreCat('toutes')}
@@ -255,7 +255,7 @@ const updateDemandeStatut: any = [];
             })}
           </div>
 
-          {/* Liste Ã©purÃ©e des stocks */}
+          {/* Liste épurée des stocks */}
           <DemandesStockList
             stocks={stocksTries}
             onOpenDemande={handleOpenDemande}
@@ -263,9 +263,9 @@ const updateDemandeStatut: any = [];
         </div>
       )}
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ═══════════════════════════════════════════════════════════════════
           VUE 2 : SUIVI DES DEMANDES
-         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+         ═══════════════════════════════════════════════════════════════════ */}
       {activeTab === 'demandes' && (
         <div className="space-y-3">
           {/* Recherche */}
@@ -274,7 +274,7 @@ const updateDemandeStatut: any = [];
             <input
               value={search}
               onChange={(e: any) => setSearch(e.target.value)}
-              placeholder="Rechercher une demandeâ€¦"
+              placeholder="Rechercher une demande…"
               className="w-full pl-9 pr-4 py-2.5 bg-white rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 shadow-sm"
             />
           </div>
@@ -315,7 +315,7 @@ const updateDemandeStatut: any = [];
         </div>
       )}
 
-      {/* â”€â”€ MODAL : NOUVELLE DEMANDE â”€â”€ */}
+      {/* ── MODAL : NOUVELLE DEMANDE ── */}
       <NewDemandeModal
         isOpen={showNew}
         onClose={() => {
@@ -326,7 +326,7 @@ const updateDemandeStatut: any = [];
         onSubmit={handleSendDemande}
       />
 
-      {/* â”€â”€ MODAL : VALIDATION GÃ‰RANT â”€â”€ */}
+      {/* ── MODAL : VALIDATION GÉRANT ── */}
       <DemandeValidationModal boutiques={[]} allStocks={[]} getBoutiqueName={() => ""} 
         validation={validation as any}
         

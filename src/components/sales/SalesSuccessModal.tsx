@@ -9,6 +9,7 @@ interface SalesSuccessModalProps {
   montant: number;
   paiement: string;
   client: string;
+  reference?: string;
 }
 
 export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
@@ -17,6 +18,7 @@ export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
   montant,
   paiement,
   client,
+  reference,
 }) => {
   if (!isOpen) return null;
 
@@ -35,6 +37,12 @@ export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
         </div>
 
         <div className="p-3.5 rounded-2xl bg-gray-50 text-left space-y-1.5 text-xs">
+          {reference && (
+            <div className="flex justify-between">
+              <span className="text-gray-400">Facture :</span>
+              <span className="font-semibold text-gray-800">{reference}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-gray-400">Client :</span>
             <span className="font-semibold text-gray-800">{client || 'Passage'}</span>
@@ -44,7 +52,7 @@ export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
             <span className="font-semibold text-gray-800">{paiement}</span>
           </div>
           <div className="flex justify-between pt-1 border-t border-gray-200">
-            <span className="font-bold text-gray-900">Total payé :</span>
+            <span className="font-bold text-gray-900">Montant de la vente :</span>
             <span className="font-bold text-green-700">{formatMontant(montant)}</span>
           </div>
         </div>
