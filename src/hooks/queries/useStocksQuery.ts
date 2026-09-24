@@ -40,16 +40,11 @@ export const useStockMovementsQuery = (params?: Record<string, unknown>) => {
 export const useExecuteMovementMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
-      produitId: string;
-      locationId: string;
-      quantite: number;
-      unite: string;
-      sens: 'ENTREE' | 'SORTIE';
-      justification?: string;
-    }) => stocksService.executeMovement(data as any),
+    mutationFn: (data: Parameters<typeof stocksService.executeMovement>[0]) =>
+      stocksService.executeMovement(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };
@@ -60,14 +55,10 @@ export const useExecuteMovementMutation = () => {
 export const useAdjustStockMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
-      produitId: string;
-      locationId: string;
-      quantiteReelle: number;
-      justification: string;
-    }) => stocksService.adjust(data),
+    mutationFn: (data: Parameters<typeof stocksService.adjust>[0]) => stocksService.adjust(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };

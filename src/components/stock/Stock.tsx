@@ -1,255 +1,234 @@
-﻿import React, { useState, useMemo } from 'react';
-import { toast } from 'sonner';
-import type { StockEnriched } from '@/types/stocks'; import type { Produit } from '@/types/products';
-import StockHeader from './StockHeader';
-import StockFilters from './StockFilters';
-import StockCategoryGroup from './StockCategoryGroup';
-import QuickCategoryModal from './QuickCategoryModal';
-import QuickProductModal from './QuickProductModal';
-import QuickStockAdjustmentModal from './QuickStockAdjustmentModal';
-import StockInWizardModal from './StockInWizardModal';
-import {
-  useAdjustStockMutation,
-  useExecuteMovementMutation,
-} from '../../hooks/queries/useStocksQuery';
+import { formatMontant } from '@/utils/format';
+import React, { useMemo, useState } from 'react';
+import { Search, PackagePlus, AlertTriangle, ClipboardCheck, ChevronDown, ChevronRight, Boxes } from 'lucide-react';
+import type { StockLevel } from '@/types/stocks';
+import StockEntryModal from './StockEntryModal';
+import StockAdjustModal from './StockAdjustModal';
+import { LIBELLES_UNITE } from '../../features/pos/pricing';
+import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
+import { useCategoriesQuery } from '../../hooks/queries/useProductsQuery';
+
+/** Plafond imposé par l'API sur les listes paginées. */
+const API_PAGE_MAX = 100;
+const TOUS = 'tous';
 
 interface StockProps {
-  role?: 'gerant' | 'boutiquier';
-  boutiqueId?: string;
+  role?: string;
+  /** Boutique du boutiquier (lecture seule de son stock). */
+  boutiqueId?: string | null;
   onNavigate?: (s: string) => void;
 }
 
-export const Stock: React.FC<StockProps> = ({
-  role = 'gerant',
-  boutiqueId = 'b1',
-  onNavigate,
-}) => {
-  const produits: any[] = [];
-  const stocks: any[] = [];
-  const categories: any[] = [];
-  const boutiques: any[] = [];
-  const adjustStock = (...args: any[]) => {};
-  const upsertStockItem = (p: any) => {};
-  const addProduit = (p: any) => {};
-  const addCategorie = (c: any) => {};
-  const getStocksEnriched = (loc?: any) => [] as any[];
+/** Stocks par emplacement. Gérant : tous les emplacements, mise en stock et inventaire. Boutiquier : sa boutique. */
+export const Stock: React.FC<StockProps> = ({ role: rawRole = 'gerant', boutiqueId, onNavigate }) => {
+  const isGerant = rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant';
 
   const [search, setSearch] = useState('');
-  const [filtreEmplacement, setFiltreEmplacement] = useState<string>(
-    role === 'boutiquier' ? boutiqueId : 'tous'
+  const [emplacement, setEmplacement] = useState<string>(TOUS);
+  const [categorie, setCategorie] = useState<string>(TOUS);
+  const [fermees, setFermees] = useState<Set<string>>(new Set());
+  const [showEntree, setShowEntree] = useState(false);
+  const [stockAAjuster, setStockAAjuster] = useState<StockLevel | null>(null);
+
+  const locationId = isGerant ? (emplacement === TOUS ? undefined : emplacement) : (boutiqueId ?? undefined);
+
+  const { data: locRes } = useLocationsListQuery();
+  const emplacements = useMemo(
+    () => [...(locRes?.data ?? [])].sort((a, b) => (a.type === b.type ? a.nom.localeCompare(b.nom) : a.type === 'ENTREPOT' ? -1 : 1)),
+    [locRes],
   );
-  const [filtreCat, setFiltreCat] = useState('toutes');
+  const { data: categories = [] } = useCategoriesQuery();
+  const { data: stockRes, isLoading } = useStockLevelsQuery(
+    { limit: API_PAGE_MAX, ...(locationId ? { locationId } : {}) },
+    { enabled: isGerant || Boolean(boutiqueId) },
+  );
+  const stocks = stockRes?.data ?? [];
 
-  // Catégories existantes + celles dérivées des produits
-  const allCategories = Array.from(
-    new Set(categories.map((c: any) => c.nom))
+  const recherche = search.trim().toLowerCase();
+  const stocksFiltres = stocks.filter(
+    (s) =>
+      (categorie === TOUS || s.categorieId === categorie) &&
+      (!recherche ||
+        s.produitNom.toLowerCase().includes(recherche) ||
+        s.produitReference.toLowerCase().includes(recherche)),
   );
 
-  const [ouvertes, setOuvertes] = useState<Set<string>>(
-    new Set(categories.map((c: any) => c.nom))
-  );
+  const groupes = categories
+    .map((c) => ({
+      categorie: c,
+      lignes: stocksFiltres
+        .filter((s) => s.categorieId === c.id)
+        .sort((a, b) => a.produitNom.localeCompare(b.produitNom) || a.locationNom.localeCompare(b.locationNom)),
+    }))
+    .filter((g) => g.lignes.length > 0);
 
-  // Modals state
-  const [showMiseEnStock, setShowMiseEnStock] = useState(false);
-  const [showQuickCatModal, setShowQuickCatModal] = useState(false);
-  const [showQuickProdModal, setShowQuickProdModal] = useState(false);
-  const [modalEntreeRapide, setModalEntreeRapide] = useState<StockEnriched | null>(null);
+  const nbAlertes = stocksFiltres.filter((s) => s.estEnAlerte).length;
+  const valeur = stocksFiltres.reduce((t, s) => t + s.quantite * (s.prixEffectif ?? 0), 0);
 
-  // Stocks physiques enrichis selon l'emplacement (réactif à toute modification de stocks ou produits)
-  const stocksEnriched = useMemo(() => {
-    const targetLoc = role === 'boutiquier' ? boutiqueId : filtreEmplacement;
-    return getStocksEnriched(targetLoc);
-  }, [getStocksEnriched, role, boutiqueId, filtreEmplacement, stocks, produits]);
-
-  // Filtrage selon la catégorie et la recherche
-  const produitsFiltres = useMemo(() => {
-    return stocksEnriched.filter((p: any) => {
-      // Filtre catégorie
-      if (filtreCat !== 'toutes' && p.categorie !== filtreCat) {
-        return false;
-      }
-
-      // Recherche texte
-      if (search.trim()) {
-        const query = search.toLowerCase();
-        return (
-          p.nom.toLowerCase().includes(query) ||
-          p.categorie.toLowerCase().includes(query) ||
-          (p.couleur && p.couleur.toLowerCase().includes(query)) ||
-          (p.reference && p.reference.toLowerCase().includes(query))
-        );
-      }
-
-      return true;
-    });
-  }, [stocksEnriched, filtreCat, search]);
-
-  const toggleCategory = (catNom: string) => {
-    setOuvertes((prev) => {
+  const basculer = (id: string) =>
+    setFermees((prev) => {
       const next = new Set(prev);
-      if (next.has(catNom)) next.delete(catNom);
-      else next.add(catNom);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
-  };
-
-  // Catégories visibles avec leurs produits associés
-  const categoriesAffichees = useMemo(() => {
-    return categories
-      .filter((cat: any) => (filtreCat === 'toutes' ? true : cat.nom === filtreCat))
-      .map((cat: any) => ({
-        categorie: cat,
-        produits: produitsFiltres.filter((p: any) => p.categorie === cat.nom),
-      }))
-      .filter((group: any) => group.produits.length > 0 || search === '');
-  }, [categories, produitsFiltres, filtreCat, search]);
-
-  const { mutate: executeMovementApi } = useExecuteMovementMutation();
-  const { mutate: adjustStockApi } = useAdjustStockMutation();
 
   return (
     <div className="space-y-4">
-      {/* En-tête avec métriques */}
-      <StockHeader role={role as any}
-        produits={produitsFiltres}
-        
-        onOpenMiseEnStock={() => setShowMiseEnStock(true)}
-      />
-
-      {/* Barre de filtres et recherche */}
-      <StockFilters role={role as any}
-        search={search}
-        onSearchChange={setSearch}
-        boutiques={[]} filtreEmplacement={filtreEmplacement}
-        onEmplacementChange={setFiltreEmplacement}
-        filtreCat={filtreCat}
-        onCatChange={setFiltreCat}
-        categories={categories}
-        
-        
-        boutiqueId={boutiqueId}
-      />
-
-      {/* Liste des catégories et articles */}
-      <div className="space-y-3">
-        {categoriesAffichees.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
-            <div className="text-gray-400 text-sm">
-              Aucun produit ne correspond à votre recherche.
-            </div>
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">Stocks</h1>
+            <p className="text-xs sm:text-sm text-gray-500">
+              {isGerant ? 'Entrepôt et boutiques : quantités, prix et alertes' : 'Stock de votre boutique'}
+            </p>
           </div>
-        ) : (
-          categoriesAffichees.map(({ categorie, produits: prodsCat }) => (
-            <StockCategoryGroup
-              key={categorie.nom}
-              categorie={categorie}
-              produits={prodsCat}
-              isOuverte={ouvertes.has(categorie.nom)}
-              onToggle={() => toggleCategory(categorie.nom)}
-              onEntreeRapide={(prod) => setModalEntreeRapide(prod)}
-              onVenteRapide={(id) => onNavigate?.('ventes')}
-              
-              
-              
-            />
-          ))
-        )}
+          {isGerant && (
+            <button
+              onClick={() => setShowEntree(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-white shadow-sm self-start sm:self-auto"
+              style={{ background: '#0F3D5E' }}
+            >
+              <PackagePlus size={16} /> Mise en stock
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="p-2.5 rounded-xl bg-gray-50">
+            <div className="text-[11px] text-gray-500">Lignes de stock</div>
+            <div className="font-display font-bold text-gray-900">{stocksFiltres.length}</div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-amber-50">
+            <div className="text-[11px] text-amber-700">Sous le seuil</div>
+            <div className="font-display font-bold text-amber-700">{nbAlertes}</div>
+          </div>
+          <div className="p-2.5 rounded-xl bg-blue-50">
+            <div className="text-[11px] text-blue-700">Valeur au prix de vente</div>
+            <div className="font-display font-bold text-blue-900 text-sm">{formatMontant(valeur)}</div>
+          </div>
+        </div>
       </div>
 
-      {/* Modals modulaires d'approvisionnement et d'ajustement - Réservées au Gérant */}
-      {role === 'gerant' && (
-        <>
-          <StockInWizardModal role={role as any}
-            isOpen={showMiseEnStock}
-            onClose={() => setShowMiseEnStock(false)}
-            categories={categories}
-            boutiques={[]} produitsCatalogue={produits}
-            
-            
-            boutiqueId={boutiqueId}
-            
-            onOpenNewCat={() => setShowQuickCatModal(true)}
-            onOpenNewProd={() => setShowQuickProdModal(true)}
-            onSubmit={({ produitId, quantite, prix,  unite, pieces, seuil, emplacement }) => {
-              upsertStockItem({
-                produitId,
-                boutiqueId: emplacement,
-                quantite,
-                prixVente: prix,
-                
-                unite,
-                pieces,
-                seuil,
-              });
-
-              // Synchronisation API réelle
-              executeMovementApi({
-                produitId,
-                locationId: emplacement,
-                quantite,
-                
-                
-                unite, sens: 'ENTREE',
-                justification: `Arrivage / Réassort (+${quantite} ${unite})`,
-              });
-              const prodNom = produits.find((p: any) => p.id === produitId)?.nom || 'Produit';
-              const nomCible = emplacement === 'entrepot'
-                ? 'Entrepôt Central'
-                : (boutiques.find((b: any) => b.id === emplacement)?.nom || emplacement);
-              toast.success(`Mise en stock réussie à ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
-            }}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-[2]">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un tissu ou une référence…"
+            className="w-full pl-9 pr-3 h-10 rounded-xl border border-gray-200 text-xs bg-white"
           />
+        </div>
+        {isGerant && (
+          <select
+            value={emplacement}
+            onChange={(e) => setEmplacement(e.target.value)}
+            className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs bg-white"
+            aria-label="Emplacement"
+          >
+            <option value={TOUS}>Tous les emplacements</option>
+            {emplacements.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.nom}
+              </option>
+            ))}
+          </select>
+        )}
+        <select
+          value={categorie}
+          onChange={(e) => setCategorie(e.target.value)}
+          className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs bg-white"
+          aria-label="Catégorie"
+        >
+          <option value={TOUS}>Toutes les catégories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nom}
+            </option>
+          ))}
+        </select>
+      </div>
 
-          <QuickCategoryModal
-            isOpen={showQuickCatModal}
-            onClose={() => setShowQuickCatModal(false)}
-            onSubmit={(cat: any) => {
-              addCategorie(cat);
-              toast.success(`Catégorie "${cat.nom}" créée avec succès`);
-            }}
-          />
+      {isLoading ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 text-sm text-gray-400">Chargement du stock…</div>
+      ) : groupes.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 text-sm text-gray-400">
+          {stocks.length === 0 ? 'Aucun stock à cet emplacement.' : 'Aucun tissu ne correspond à votre recherche.'}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {groupes.map(({ categorie: cat, lignes }) => {
+            const ouverte = !fermees.has(cat.id);
+            return (
+              <div key={cat.id} className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+                <button
+                  onClick={() => basculer(cat.id)}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/60"
+                >
+                  <span className="flex items-center gap-2 font-semibold text-gray-900 text-sm">
+                    <Boxes size={16} className="text-blue-600" /> {cat.nom}
+                    <span className="text-[11px] font-normal text-gray-400">({lignes.length})</span>
+                  </span>
+                  {ouverte ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                </button>
+                {ouverte && (
+                  <div className="divide-y divide-gray-50 border-t border-gray-50">
+                    {lignes.map((s) => (
+                      <div key={s.id} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img src={s.produitPhotoUrl} alt={s.produitNom} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-gray-900 truncate">{s.produitNom}</div>
+                            <div className="text-[11px] text-gray-400 truncate">
+                              {s.produitReference} • {s.locationNom}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="text-right">
+                            <div className={`text-xs font-bold ${s.estEnAlerte ? 'text-red-600' : 'text-gray-900'}`}>
+                              {s.estEnAlerte && <AlertTriangle size={12} className="inline mr-1 -mt-0.5" />}
+                              {s.quantite} {LIBELLES_UNITE[s.uniteStockage]}
+                            </div>
+                            <div className="text-[10px] text-gray-400">
+                              {formatMontant(s.prixEffectif ?? 0)}/{LIBELLES_UNITE[s.uniteStockage]}
+                            </div>
+                          </div>
+                          {isGerant && (
+                            <button
+                              onClick={() => setStockAAjuster(s)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                              title="Inventaire / correction"
+                            >
+                              <ClipboardCheck size={15} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-          <QuickProductModal
-            isOpen={showQuickProdModal}
-            onClose={() => setShowQuickProdModal(false)}
-            categories={categories}
-            onSubmit={(prod) => {
-              addProduit({
-                nom: prod.nom,
-                categorie: prod.categorie,
-                couleur: prod.couleur,
-                photo: prod.photo,
-              });
-              toast.success(`Tissu "${prod.nom}" ajouté au catalogue`);
-            }}
-          />
+      {isGerant && showEntree && (
+        <StockEntryModal
+          isOpen
+          onClose={() => setShowEntree(false)}
+          emplacements={emplacements}
+          onOpenCatalogue={() => {
+            setShowEntree(false);
+            onNavigate?.('produits');
+          }}
+        />
+      )}
 
-          <QuickStockAdjustmentModal
-            produit={modalEntreeRapide}
-            
-            onClose={() => setModalEntreeRapide(null)}
-            onSubmit={(prodId, qte, motif) => {
-              adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
-
-              // Synchronisation API réelle
-              const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique || 'b1';
-              adjustStockApi({
-                produitId: prodId,
-                locationId: bId,
-                quantiteReelle: qte,
-                justification: motif,
-              });
-              const nomCible = bId === 'entrepot' || bId === 'b-ent'
-                ? 'Entrepôt Central'
-                : (boutiques.find((b: any) => b.id === bId)?.nom || 'la boutique');
-              if (qte > 0) {
-                toast.success(`Entrée de stock validée à ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
-              } else {
-                toast.warning(`Sortie / perte enregistrée à ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
-              }
-            }}
-          />
-        </>
+      {isGerant && stockAAjuster && (
+        <StockAdjustModal key={stockAAjuster.id} stock={stockAAjuster} onClose={() => setStockAAjuster(null)} />
       )}
     </div>
   );
