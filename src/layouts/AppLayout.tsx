@@ -5,10 +5,10 @@ import { Navigation } from '../components/navigation';
 import { useLocationsListQuery } from '../hooks/queries/useLocationsQuery';
 
 export const AppLayout: React.FC = () => {
-  const user = useAuthStore((s: any) => s.user); const session = user;
-const setSession: any = [];
-const notifications: any = [];
-const demandes: any = [];
+  const { user, clearAuth } = useAuthStore();
+  const session = user as any;
+  const notifications: any = [];
+  const demandes: any = [];
 
   const { data: locationsResponse } = useLocationsListQuery();
   const boutiques = locationsResponse?.data || [];
@@ -43,7 +43,7 @@ const demandes: any = [];
   };
 
   const handleLogout = () => {
-    setSession(null);
+    clearAuth();
     navigate('/login');
   };
 
