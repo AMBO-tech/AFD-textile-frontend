@@ -3,14 +3,16 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navigation } from '../components/navigation';
 import { useLocationsListQuery } from '../hooks/queries/useLocationsQuery';
+import { useTransfersQuery } from '../hooks/queries/useStocksQuery';
 
 export const AppLayout: React.FC = () => {
   const { user, clearAuth } = useAuthStore();
   const session = user as any;
   const notifications: any = [];
-  const demandes: any = [];
 
   const { data: locationsResponse } = useLocationsListQuery();
+  // Badge : demandes de transfert en attente (le serveur limite le boutiquier aux siennes)
+  const { data: demandesEnAttente } = useTransfersQuery({ statut: 'DEMANDE', limit: 1 });
   const boutiques = locationsResponse?.data || [];
 
   const location = useLocation();
@@ -23,7 +25,7 @@ export const AppLayout: React.FC = () => {
     boutiques.find((b: any) => b.id === (session.boutiqueId || session.locationId)) || boutiques[0] || { id: 'temp', nom: 'Chargement...', lieu: '' };
 
   const unreadNotifs = notifications.filter((n: any) => !n.lu).length;
-  const pendingDemandes = demandes.filter((d: any) => d.statut === 'en_attente').length;
+  const pendingDemandes = demandesEnAttente?.total ?? demandesEnAttente?.meta?.total ?? 0;
 
   // Déduire l'écran actif à partir de l'URL
   const getScreenFromPath = (path: string): string => {

@@ -50,8 +50,17 @@ export const stocksService = {
     const res = await API.post<Transfert>('/stocks/transferts/demande', data);
     return res.data;
   },
-  validateTransfer: async (id: string) => {
-    const res = await API.post<Transfert>(`/stocks/transferts/${id}/valider`);
+  /** Validation par le gérant : déplace le stock depuis l'emplacement source choisi. */
+  validateTransfer: async (id: string, locationSourceId?: string) => {
+    const res = await API.post<Transfert>(
+      `/stocks/transferts/${id}/valider`,
+      locationSourceId ? { locationSourceId } : {},
+    );
+    return res.data;
+  },
+  /** Refus (gérant) ou retrait de sa propre demande (boutiquier), avec motif. */
+  cancelTransfer: async (id: string, motif: string) => {
+    const res = await API.post<Transfert>(`/stocks/transferts/${id}/annuler`, { motif });
     return res.data;
   },
 };

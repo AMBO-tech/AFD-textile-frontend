@@ -79,3 +79,41 @@ export const useRequestTransferMutation = () => {
     },
   });
 };
+
+/**
+ * Liste des transferts (le serveur limite un boutiquier à ceux de sa boutique)
+ */
+export const useTransfersQuery = (params?: Record<string, unknown>) => {
+  return useQuery({
+    queryKey: STOCK_KEYS.transfers(params),
+    queryFn: () => stocksService.getTransfers(params),
+    staleTime: 1000 * 30,
+  });
+};
+
+/**
+ * Validation d'une demande de transfert par le gérant (mouvement de stock source -> destination)
+ */
+export const useValidateTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, locationSourceId }: { id: string; locationSourceId?: string }) =>
+      stocksService.validateTransfer(id, locationSourceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+    },
+  });
+};
+
+/**
+ * Refus / annulation d'une demande de transfert
+ */
+export const useCancelTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motif }: { id: string; motif: string }) => stocksService.cancelTransfer(id, motif),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfers() });
+    },
+  });
+};

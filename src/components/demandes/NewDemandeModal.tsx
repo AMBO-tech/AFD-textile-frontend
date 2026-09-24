@@ -1,185 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { X, Send, Package } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Search, Send, Trash2, AlertCircle, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import type { UniteStockage } from '@/types/enums';
+import { LIBELLES_UNITE } from '../../features/pos/pricing';
+import { useStockLevelsQuery, useRequestTransferMutation } from '../../hooks/queries/useStocksQuery';
+import { useProductsQuery } from '../../hooks/queries/useProductsQuery';
+import { getErrorMessage } from '../../services/api';
 
+/** Plafond imposé par l'API sur les listes paginées. */
+const API_PAGE_MAX = 100;
+
+interface ArticleDemandable {
+  produitId: string;
+  nom: string;
+  reference: string;
+  photo: string;
+  unite: UniteStockage;
+  /** Quantité disponible dans la boutique du demandeur (0 si jamais stocké). */
+  disponible: number;
+  enAlerte: boolean;
+}
+
+interface LigneDemande {
+  article: ArticleDemandable;
+  quantite: number;
+}
 
 interface NewDemandeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedProduit: Produit | null;
-  onSubmit: (data: {
-    produit: string;
-    quantite: number;
-    unite: string;
-    priorite: Demande['priorite'];
-  }) => void;
+  /** Boutique du demandeur : destination de la demande. */
+  boutiqueId: string;
 }
 
-export const NewDemandeModal: React.FC<NewDemandeModalProps> = ({
-  isOpen,
-  onClose,
-  selectedProduit,
-  onSubmit,
-}) => {
-  const [form, setForm] = useState({
-    produit: '',
-    quantite: '20',
-    unite: 'mètre',
-    priorite: 'normale' as Demande['priorite'],
-  });
+/**
+ * Demande de réassort (boutiquier). Les tissus sont choisis dans le catalogue réel — aucune saisie
+ * libre, donc aucune erreur de référence — et triés par disponibilité croissante dans SA boutique.
+ */
+export const NewDemandeModal: React.FC<NewDemandeModalProps> = ({ isOpen, onClose, boutiqueId }) => {
+  const [search, setSearch] = useState('');
+  const [lignes, setLignes] = useState<LigneDemande[]>([]);
+  const [quantites, setQuantites] = useState<Record<string, string>>({});
+  const [erreur, setErreur] = useState('');
 
-  useEffect(() => {
-    if (selectedProduit) {
-      setForm({
-        produit: selectedProduit.nom,
-        quantite: String(Math.max(selectedProduit.seuil * 2, 20)),
-        unite: selectedProduit.unite || 'mètre',
-        priorite: selectedProduit.quantite <= selectedProduit.seuil ? 'haute' : 'normale',
-      });
-    } else {
-      setForm({
-        produit: '',
-        quantite: '20',
-        unite: 'mètre',
-        priorite: 'normale',
-      });
-    }
-  }, [selectedProduit, isOpen]);
+  const { data: stockRes, isLoading: loadingStock } = useStockLevelsQuery(
+    { locationId: boutiqueId, limit: API_PAGE_MAX },
+    { enabled: isOpen },
+  );
+  const { data: catalogueRes, isLoading: loadingCatalogue } = useProductsQuery({ limit: API_PAGE_MAX, statut: 'ACTIF' });
+  const { mutateAsync: requestTransfer, isPending } = useRequestTransferMutation();
+
+  const articles = useMemo<ArticleDemandable[]>(() => {
+    const stocks = stockRes?.data ?? [];
+    const enBoutique = new Map(stocks.map((s) => [s.produitId, s]));
+    return (catalogueRes?.data ?? [])
+      .map((p) => {
+        const s = enBoutique.get(p.id);
+        return {
+          produitId: p.id,
+          nom: p.nom,
+          reference: p.reference,
+          photo: p.photoUrl,
+          unite: p.uniteStockage,
+          disponible: s?.quantite ?? 0,
+          enAlerte: s ? s.estEnAlerte : true,
+        };
+      })
+      .sort((a, b) => a.disponible - b.disponible || a.nom.localeCompare(b.nom));
+  }, [stockRes, catalogueRes]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
-    if (!form.produit.trim() || !form.quantite) return;
-    const qteNum = parseFloat(form.quantite) || 0;
-    if (qteNum <= 0) return;
+  const recherche = search.trim().toLowerCase();
+  const dejaAjoutes = new Set(lignes.map((l) => l.article.produitId));
+  const visibles = articles.filter(
+    (a) =>
+      !dejaAjoutes.has(a.produitId) &&
+      (!recherche || a.nom.toLowerCase().includes(recherche) || a.reference.toLowerCase().includes(recherche)),
+  );
 
-    onSubmit({
-      produit: form.produit.trim(),
-      quantite: qteNum,
-      unite: form.unite,
-      priorite: form.priorite,
-    });
+  const ajouter = (a: ArticleDemandable) => {
+    const qte = parseFloat(quantites[a.produitId] ?? '');
+    if (!(qte > 0)) {
+      setErreur(`Indiquez la quantité souhaitée pour ${a.nom}.`);
+      return;
+    }
+    setErreur('');
+    setLignes((prev) => [...prev, { article: a, quantite: qte }]);
+  };
+
+  const envoyer = async () => {
+    if (lignes.length === 0 || isPending) return;
+    setErreur('');
+    try {
+      const transfert = await requestTransfer({
+        locationDestinationId: boutiqueId,
+        lignes: lignes.map((l) => ({ produitId: l.article.produitId, quantite: l.quantite, unite: l.article.unite })),
+      });
+      toast.success(`Demande ${transfert.reference} envoyée au gérant.`);
+      setLignes([]);
+      onClose();
+    } catch (error) {
+      setErreur(getErrorMessage(error, "La demande n'a pas pu être envoyée."));
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl w-full max-w-sm shadow-2xl p-5 animate-scale-up">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-bold text-gray-900 text-base">
-            Nouvelle demande
-          </h2>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500"
-          >
-            <X size={15} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div>
+            <h3 className="font-display font-bold text-gray-900 text-base">Nouvelle demande de stock</h3>
+            <p className="text-xs text-gray-500">Tissus classés du moins disponible au plus disponible dans votre boutique</p>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Fermer">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Aperçu produit */}
-        {selectedProduit && (
-          <div className="bg-blue-50/60 rounded-xl p-3 mb-3 flex items-center gap-2.5 border border-blue-100/50">
-            <div className="w-9 h-9 rounded-lg overflow-hidden bg-white flex items-center justify-center border border-blue-100 flex-shrink-0">
-              {selectedProduit.photo ? (
-                <img src={selectedProduit.photo} alt={selectedProduit.nom} className="w-full h-full object-cover" />
-              ) : (
-                <Package size={16} className="text-blue-500" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-gray-900 text-xs truncate">{selectedProduit.nom}</div>
-              <div className="text-[11px] text-gray-500">Stock actuel : {selectedProduit.quantite} {selectedProduit.unite}</div>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          {!selectedProduit && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Tissu</label>
-              <input
-                value={form.produit}
-                onChange={(e) => setForm((f) => ({ ...f, produit: e.target.value }))}
-                placeholder="Nom du tissu"
-                className="w-full px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 text-sm focus:outline-none"
-              />
+        <div className="p-5 overflow-y-auto space-y-3">
+          {lignes.length > 0 && (
+            <div className="p-3 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-1.5">
+              <div className="text-[11px] font-bold text-blue-900 uppercase tracking-wider">Ma demande</div>
+              {lignes.map((l) => (
+                <div key={l.article.produitId} className="flex items-center justify-between text-xs">
+                  <span className="truncate">
+                    {l.article.nom} — {l.quantite} {LIBELLES_UNITE[l.article.unite]}
+                  </span>
+                  <button
+                    onClick={() => setLignes((prev) => prev.filter((x) => x.article.produitId !== l.article.produitId))}
+                    className="text-gray-400 hover:text-rose-600 shrink-0"
+                    aria-label="Retirer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Quantité & Unité */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Quantité</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={form.quantite}
-                onChange={(e) => setForm((f) => ({ ...f, quantite: e.target.value }))}
-                min="1"
-                placeholder="20"
-                className="w-28 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 text-sm font-bold text-gray-900 focus:outline-none"
-              />
-              <select
-                value={form.unite}
-                onChange={(e) => setForm((f) => ({ ...f, unite: e.target.value }))}
-                className="flex-1 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100 text-sm text-gray-700 focus:outline-none"
-              >
-                {['mètre', 'yard', 'kilo', 'rouleau', 'pièce'].map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
-            </div>
-            {/* Raccourcis */}
-            <div className="flex gap-1.5 mt-1.5">
-              {['+10', '+20', '+50'].map((plus) => (
-                <button
-                  key={plus}
-                  type="button"
-                  onClick={() => {
-                    const cur = parseFloat(form.quantite) || 0;
-                    const add = parseInt(plus.replace('+', ''), 10);
-                    setForm((f) => ({ ...f, quantite: String(cur + add) }));
-                  }}
-                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded text-[11px] font-medium"
-                >
-                  {plus}
-                </button>
-              ))}
-            </div>
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un tissu ou une référence…"
+              className="w-full pl-9 pr-3 h-9 rounded-xl border border-gray-200 text-xs"
+            />
           </div>
 
-          {/* Priorité */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Urgence</label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'normale', label: 'Normale' },
-                { id: 'haute', label: 'Urgente' },
-              ].map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, priorite: p.id as any }))}
-                  className={`py-2 rounded-xl text-xs font-medium transition-all ${
-                    form.priorite === p.id
-                      ? 'text-white shadow-sm'
-                      : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100'
-                  }`}
-                  style={form.priorite === p.id ? { background: '#0F3D5E' } : {}}
-                >
-                  {p.label}
-                </button>
+          {loadingStock || loadingCatalogue ? (
+            <p className="text-xs text-gray-400 text-center py-6">Chargement…</p>
+          ) : (
+            <div className="space-y-1.5">
+              {visibles.map((a) => (
+                <div key={a.produitId} className="p-2.5 rounded-xl border border-gray-100 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img src={a.photo} alt={a.nom} className="w-9 h-9 rounded-lg object-cover bg-gray-100 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-gray-900 truncate">{a.nom}</div>
+                      <div className={`text-[11px] ${a.enAlerte ? 'text-red-600 font-semibold' : 'text-gray-400'}`}>
+                        {a.disponible} {LIBELLES_UNITE[a.unite]} en boutique
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="number"
+                      min="0.001"
+                      step="any"
+                      value={quantites[a.produitId] ?? ''}
+                      onChange={(e) => setQuantites((q) => ({ ...q, [a.produitId]: e.target.value }))}
+                      placeholder="Qté"
+                      className="w-16 h-8 px-2 rounded-lg border border-gray-200 text-xs"
+                      aria-label={`Quantité de ${a.nom}`}
+                    />
+                    <button
+                      onClick={() => ajouter(a)}
+                      className="h-8 w-8 rounded-lg text-white flex items-center justify-center"
+                      style={{ background: '#0F3D5E' }}
+                      aria-label={`Ajouter ${a.nom}`}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
               ))}
+              {visibles.length === 0 && <p className="text-xs text-gray-400 text-center py-4">Aucun tissu trouvé.</p>}
             </div>
-          </div>
+          )}
 
+          {erreur && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" /> <span>{erreur}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-gray-100">
           <button
-            onClick={handleSubmit}
-            disabled={!form.produit || !form.quantite || parseFloat(form.quantite) <= 0}
-            className="w-full py-3 rounded-xl text-white font-semibold text-sm shadow-md active:scale-95 disabled:opacity-40 transition-all flex items-center justify-center gap-2 mt-2"
-            style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
+            onClick={envoyer}
+            disabled={lignes.length === 0 || isPending}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-50"
+            style={{ background: '#0F3D5E' }}
           >
             <Send size={14} />
-            <span>Envoyer</span>
+            {isPending ? 'Envoi…' : `Envoyer la demande (${lignes.length} tissu${lignes.length > 1 ? 's' : ''})`}
           </button>
         </div>
       </div>
