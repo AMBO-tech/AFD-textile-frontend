@@ -19,6 +19,8 @@ interface SalesPaymentModalProps {
 }
 
 const NB_CLIENTS_SUGGERES = 6;
+/** Fiche technique créée par l'API pour les encaissements sans client : jamais proposée au vendeur. */
+const CLIENT_SYSTEME = 'Client Comptoir Anonyme';
 
 const getModeIcon = (mode: ModePaiementPos) => {
   switch (mode) {
@@ -55,7 +57,7 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
     ...(recherche ? { search: recherche } : {}),
     limit: NB_CLIENTS_SUGGERES,
   });
-  const suggestions = clientsData?.data ?? [];
+  const suggestions = (clientsData?.data ?? []).filter((c) => c.nom !== CLIENT_SYSTEME);
 
   // Réinitialiser les champs à l'ouverture
   useEffect(() => {
@@ -228,7 +230,8 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
               <input
                 type="number"
                 min="0"
-                step="500"
+                step="any"
+                inputMode="numeric"
                 value={montantRecu}
                 onChange={(e) => setMontantRecu(e.target.value)}
                 placeholder={`Ex: ${formatMontant(Math.ceil(totalNet / 1000) * 1000)}`}
