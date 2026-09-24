@@ -31,3 +31,10 @@ dist-ssr
 
 # Script E2E local contenant des identifiants (ne jamais commiter)
 test-e2e.mjs
+
+# Scripts ponctuels de réécriture de code (ont corrompu l'encodage UTF-8) : ne pas commiter
+/fix*.cjs
+/fix*.js
+/fix*.ts
+/fix*.py
+/final-fixes.cjs

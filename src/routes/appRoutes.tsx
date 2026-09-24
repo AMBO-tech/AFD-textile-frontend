@@ -28,10 +28,10 @@ export const AppRoutes: React.FC = () => {
       {/* Route publique : activation d'un compte invité (lien reçu par SMS / e-mail) */}
       <Route path="/activer-compte" element={<ActiverComptePage />} />
 
-      {/* Routes protÃ©gÃ©es : Authentification requise */}
+      {/* Routes protégées : Authentification requise */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-          {/* Espace commun (GÃ©rant & Boutiquier) */}
+          {/* Espace commun (Gérant & Boutiquier) */}
           <Route path="/" element={<DashboardPage />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/stock" element={<StockPage />} />
@@ -43,7 +43,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/parametres" element={<ParametresPage />} />
           <Route path="/profil" element={<Navigate to="/parametres" replace />} />
 
-          {/* Espace restreint : GÃ©rant uniquement */}
+          {/* Espace restreint : Gérant uniquement */}
           <Route element={<RoleProtectedRoute allowedRoles={['gerant']} />}>
             <Route path="/entrepot" element={<EntrepotPage />} />
             <Route path="/utilisateurs" element={<UsersPage />} />

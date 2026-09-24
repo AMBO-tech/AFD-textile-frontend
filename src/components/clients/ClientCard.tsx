@@ -25,7 +25,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
     if (!client.telephone) return;
     const cleanPhone = client.telephone.replace(/[^0-9]/g, '');
     const message = encodeURIComponent(
-      `Bonjour ${client.nom}, AFD Textile vous informe d'un solde restant de ${solde} sur vos achats de tissus. Merci de nous contacter pour votre rÃ¨glement.`
+      `Bonjour ${client.nom}, AFD Textile vous informe d'un solde restant de ${solde} sur vos achats de tissus. Merci de nous contacter pour votre règlement.`
     );
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
   };
@@ -61,11 +61,11 @@ export const ClientCard: React.FC<ClientCardProps> = ({
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
             <span className="text-gray-600 font-normal">
-              TÃ©l : {client.telephone || 'Non renseignÃ©'}
+              Tél : {client.telephone || 'Non renseigné'}
             </span>
             <span className="flex items-center gap-1">
               <MapPin size={12} className="text-gray-400" />
-              {client.adresse || 'Adresse non renseignÃ©e'}
+              {client.adresse || 'Adresse non renseignée'}
             </span>
           </div>
         </div>
@@ -81,7 +81,7 @@ export const ClientCard: React.FC<ClientCardProps> = ({
               aDesDettes ? 'text-red-600' : 'text-green-600'
             }`}
           >
-            {aDesDettes ? formatMontant(solde) : 'Ã€ jour (0 FCFA)'}
+            {aDesDettes ? formatMontant(solde) : 'À jour (0 FCFA)'}
           </div>
           <div className="text-[10px] text-gray-400">
             {client.creances.length} dossier{client.creances.length > 1 ? 's' : ''}

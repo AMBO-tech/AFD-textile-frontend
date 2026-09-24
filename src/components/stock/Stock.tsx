@@ -40,7 +40,7 @@ export const Stock: React.FC<StockProps> = ({
   );
   const [filtreCat, setFiltreCat] = useState('toutes');
 
-  // CatÃ©gories existantes + celles dÃ©rivÃ©es des produits
+  // Catégories existantes + celles dérivées des produits
   const allCategories = Array.from(
     new Set(categories.map((c: any) => c.nom))
   );
@@ -55,16 +55,16 @@ export const Stock: React.FC<StockProps> = ({
   const [showQuickProdModal, setShowQuickProdModal] = useState(false);
   const [modalEntreeRapide, setModalEntreeRapide] = useState<StockEnriched | null>(null);
 
-  // Stocks physiques enrichis selon l'emplacement (rÃ©actif Ã  toute modification de stocks ou produits)
+  // Stocks physiques enrichis selon l'emplacement (réactif à toute modification de stocks ou produits)
   const stocksEnriched = useMemo(() => {
     const targetLoc = role === 'boutiquier' ? boutiqueId : filtreEmplacement;
     return getStocksEnriched(targetLoc);
   }, [getStocksEnriched, role, boutiqueId, filtreEmplacement, stocks, produits]);
 
-  // Filtrage selon la catÃ©gorie et la recherche
+  // Filtrage selon la catégorie et la recherche
   const produitsFiltres = useMemo(() => {
     return stocksEnriched.filter((p: any) => {
-      // Filtre catÃ©gorie
+      // Filtre catégorie
       if (filtreCat !== 'toutes' && p.categorie !== filtreCat) {
         return false;
       }
@@ -93,7 +93,7 @@ export const Stock: React.FC<StockProps> = ({
     });
   };
 
-  // CatÃ©gories visibles avec leurs produits associÃ©s
+  // Catégories visibles avec leurs produits associés
   const categoriesAffichees = useMemo(() => {
     return categories
       .filter((cat: any) => (filtreCat === 'toutes' ? true : cat.nom === filtreCat))
@@ -109,7 +109,7 @@ export const Stock: React.FC<StockProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* En-tÃªte avec mÃ©triques */}
+      {/* En-tête avec métriques */}
       <StockHeader role={role as any}
         produits={produitsFiltres}
         
@@ -130,12 +130,12 @@ export const Stock: React.FC<StockProps> = ({
         boutiqueId={boutiqueId}
       />
 
-      {/* Liste des catÃ©gories et articles */}
+      {/* Liste des catégories et articles */}
       <div className="space-y-3">
         {categoriesAffichees.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
             <div className="text-gray-400 text-sm">
-              Aucun produit ne correspond Ã  votre recherche.
+              Aucun produit ne correspond à votre recherche.
             </div>
           </div>
         ) : (
@@ -156,7 +156,7 @@ export const Stock: React.FC<StockProps> = ({
         )}
       </div>
 
-      {/* Modals modulaires d'approvisionnement et d'ajustement - RÃ©servÃ©es au GÃ©rant */}
+      {/* Modals modulaires d'approvisionnement et d'ajustement - Réservées au Gérant */}
       {role === 'gerant' && (
         <>
           <StockInWizardModal role={role as any}
@@ -182,7 +182,7 @@ export const Stock: React.FC<StockProps> = ({
                 seuil,
               });
 
-              // Synchronisation API rÃ©elle
+              // Synchronisation API réelle
               executeMovementApi({
                 produitId,
                 locationId: emplacement,
@@ -190,13 +190,13 @@ export const Stock: React.FC<StockProps> = ({
                 
                 
                 unite, sens: 'ENTREE',
-                justification: `Arrivage / RÃ©assort (+${quantite} ${unite})`,
+                justification: `Arrivage / Réassort (+${quantite} ${unite})`,
               });
               const prodNom = produits.find((p: any) => p.id === produitId)?.nom || 'Produit';
               const nomCible = emplacement === 'entrepot'
-                ? 'EntrepÃ´t Central'
+                ? 'Entrepôt Central'
                 : (boutiques.find((b: any) => b.id === emplacement)?.nom || emplacement);
-              toast.success(`Mise en stock rÃ©ussie Ã  ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
+              toast.success(`Mise en stock réussie à ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
             }}
           />
 
@@ -205,7 +205,7 @@ export const Stock: React.FC<StockProps> = ({
             onClose={() => setShowQuickCatModal(false)}
             onSubmit={(cat: any) => {
               addCategorie(cat);
-              toast.success(`CatÃ©gorie "${cat.nom}" crÃ©Ã©e avec succÃ¨s`);
+              toast.success(`Catégorie "${cat.nom}" créée avec succès`);
             }}
           />
 
@@ -220,7 +220,7 @@ export const Stock: React.FC<StockProps> = ({
                 couleur: prod.couleur,
                 photo: prod.photo,
               });
-              toast.success(`Tissu "${prod.nom}" ajoutÃ© au catalogue`);
+              toast.success(`Tissu "${prod.nom}" ajouté au catalogue`);
             }}
           />
 
@@ -231,7 +231,7 @@ export const Stock: React.FC<StockProps> = ({
             onSubmit={(prodId, qte, motif) => {
               adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
 
-              // Synchronisation API rÃ©elle
+              // Synchronisation API réelle
               const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique || 'b1';
               adjustStockApi({
                 produitId: prodId,
@@ -240,12 +240,12 @@ export const Stock: React.FC<StockProps> = ({
                 justification: motif,
               });
               const nomCible = bId === 'entrepot' || bId === 'b-ent'
-                ? 'EntrepÃ´t Central'
+                ? 'Entrepôt Central'
                 : (boutiques.find((b: any) => b.id === bId)?.nom || 'la boutique');
               if (qte > 0) {
-                toast.success(`EntrÃ©e de stock validÃ©e Ã  ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
+                toast.success(`Entrée de stock validée à ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
               } else {
-                toast.warning(`Sortie / perte enregistrÃ©e Ã  ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
+                toast.warning(`Sortie / perte enregistrée à ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
               }
             }}
           />

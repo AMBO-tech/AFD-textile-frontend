@@ -27,27 +27,27 @@ export const Historique: React.FC<HistoriqueProps> = ({
 
   // Emplacements disponibles
   const emplacements: EmplacementFilterItem[] = useMemo(() => [
-    { id: 'tous', nom: 'Toutes les boutiques', lieu: 'RÃ©seau global AFD', type: 'global' },
-    { id: 'entrepot', nom: 'EntrepÃ´t Central', lieu: 'Dakar - Zone Industrielle', type: 'entrepot' },
+    { id: 'tous', nom: 'Toutes les boutiques', lieu: 'Réseau global AFD', type: 'global' },
+    { id: 'entrepot', nom: 'Entrepôt Central', lieu: 'Dakar - Zone Industrielle', type: 'entrepot' },
     ...boutiques.map((b: any) => ({ ...b, type: 'boutique' as const })),
   ], [boutiques]);
 
-  // DÃ©terminer la catÃ©gorie d'action d'un Ã©lÃ©ment
+  // Déterminer la catégorie d'action d'un élément
   const getActionCategory = (item: HistoryItem): string => {
     const rawItem = item as unknown as Record<string, unknown>;
     if (typeof rawItem.typeAction === 'string') return rawItem.typeAction;
     const act = item.action.toLowerCase();
     if (act.includes('vente')) return 'vente';
-    if (act.includes('stock') || act.includes('rÃ©ception')) return 'stock';
+    if (act.includes('stock') || act.includes('réception')) return 'stock';
     if (act.includes('transfert')) return 'transfert';
-    if (act.includes('crÃ©ance') || act.includes('paiement') || act.includes('rÃ¨glement')) return 'creance';
+    if (act.includes('créance') || act.includes('paiement') || act.includes('règlement')) return 'creance';
     if (act.includes('ajout') || act.includes('modif')) return 'catalogue';
     if (act.includes('annul')) return 'annulation';
     if (act.includes('connex')) return 'connexion';
     return 'vente';
   };
 
-  // Liste filtrÃ©e
+  // Liste filtrée
   const itemsFiltres = useMemo(() => {
     return historique.filter((item: any) => {
       const matchBoutique = filtreBoutique === 'tous' || item.boutique === filtreBoutique;
@@ -65,7 +65,7 @@ export const Historique: React.FC<HistoriqueProps> = ({
     });
   }, [historique, filtreBoutique, filtreAction, search]);
 
-  // Compteurs par action pour la boutique sÃ©lectionnÃ©e
+  // Compteurs par action pour la boutique sélectionnée
   const actionCounts = useMemo(() => {
     const itemsInBoutique = historique.filter(
       (item: any) => filtreBoutique === 'tous' || item.boutique === filtreBoutique
@@ -114,8 +114,8 @@ export const Historique: React.FC<HistoriqueProps> = ({
   const formatDateLabel = (dateStr: string) => {
     const today = '2026-09-13';
     const yesterday = '2026-09-12';
-    if (dateStr === today) return "Aujourd'hui Â· 13 Septembre 2026";
-    if (dateStr === yesterday) return 'Hier Â· 12 Septembre 2026';
+    if (dateStr === today) return "Aujourd'hui · 13 Septembre 2026";
+    if (dateStr === yesterday) return 'Hier · 12 Septembre 2026';
     return new Date(dateStr).toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -145,17 +145,17 @@ export const Historique: React.FC<HistoriqueProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* â”€â”€ En-tÃªte Principal â”€â”€ */}
+      {/* ── En-tête Principal ── */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-display text-xl font-bold text-gray-900">Journal d'ActivitÃ©</h1>
+            <h1 className="font-display text-xl font-bold text-gray-900">Journal d'Activité</h1>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-              {itemsFiltres.length} Ã©vÃ©nement{itemsFiltres.length !== 1 ? 's' : ''}
+              {itemsFiltres.length} événement{itemsFiltres.length !== 1 ? 's' : ''}
             </span>
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
-            TraÃ§abilitÃ© complÃ¨te des opÃ©rations, ventes, mouvements et accÃ¨s
+            Traçabilité complète des opérations, ventes, mouvements et accès
           </p>
         </div>
 
@@ -165,15 +165,15 @@ export const Historique: React.FC<HistoriqueProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 shadow-xs transition-all active:scale-95"
           >
             <RefreshCw size={12} />
-            <span>RÃ©initialiser</span>
+            <span>Réinitialiser</span>
           </button>
         )}
       </div>
 
-      {/* â”€â”€ Cartes SynthÃ©tiques Rapides â”€â”€ */}
+      {/* ── Cartes Synthétiques Rapides ── */}
       <HistoriqueStatsCards actionCounts={actionCounts} />
 
-      {/* â”€â”€ Recherche & Filtres â”€â”€ */}
+      {/* ── Recherche & Filtres ── */}
       <HistoriqueFilters
         role={role}
         search={search}
@@ -187,7 +187,7 @@ export const Historique: React.FC<HistoriqueProps> = ({
         actionCounts={actionCounts}
       />
 
-      {/* â”€â”€ Timeline des Ã‰vÃ©nements â”€â”€ */}
+      {/* ── Timeline des Événements ── */}
       <HistoriqueTimeline
         groupesParDate={groupesParDate}
         boutiques={boutiques}

@@ -12,7 +12,7 @@ interface NotificationCardProps {
 const TYPE_CONFIG = {
   stock_faible: { icon: AlertTriangle, color: '#EF4444', bg: '#FEF2F2', label: 'Stock critique' },
   demande: { icon: MessageSquare, color: '#1E88E5', bg: '#EBF5FB', label: 'Demande' },
-  creance: { icon: CreditCard, color: '#F59E0B', bg: '#FFFBEB', label: 'CrÃ©ance' },
+  creance: { icon: CreditCard, color: '#F59E0B', bg: '#FFFBEB', label: 'Créance' },
   validation: { icon: CheckCircle, color: '#22C55E', bg: '#F0FDF4', label: 'Validation' },
   refus: { icon: X, color: '#EF4444', bg: '#FEF2F2', label: 'Refus' },
   sauvegarde: { icon: HardDrive, color: '#22C55E', bg: '#F0FDF4', label: 'Sauvegarde' },

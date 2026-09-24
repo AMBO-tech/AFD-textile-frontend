@@ -72,16 +72,16 @@ export const Clients: React.FC<ClientsProps> = ({
   // const { mutate: deleteClient } = useArchiveClientMutation();
   const { mutate: recordPaymentApi } = useRecordPaymentMutation();
 
-  // Synchronisation du client sÃ©lectionnÃ© aprÃ¨s mutation
+  // Synchronisation du client sélectionné après mutation
   const activeClient = useMemo(() => {
     if (!selectedClient) return null;
     return clients.find((c: any) => c.id === selectedClient.id) || null;
   }, [clients, selectedClient]);
 
-  // Filtrage selon le rÃ´le et les critÃ¨res
+  // Filtrage selon le rôle et les critères
   const clientsFiltres = useMemo(() => {
     return clients.filter((c: any) => {
-      // Filtre boutique selon rÃ´le
+      // Filtre boutique selon rôle
       if (role === 'boutiquier') {
         if (c.boutiqueId !== boutiqueId) return false;
       } else if (filtreBoutique !== 'toutes') {
@@ -113,7 +113,7 @@ export const Clients: React.FC<ClientsProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* En-tÃªte avec mÃ©triques financiÃ¨res */}
+      {/* En-tête avec métriques financières */}
       <ClientHeader
         clients={clientsFiltres}
         role={role}
@@ -137,7 +137,7 @@ export const Clients: React.FC<ClientsProps> = ({
         {clientsFiltres.length === 0 ? (
           <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
             <div className="text-gray-400 text-sm">
-              Aucun client ne correspond Ã  votre filtre.
+              Aucun client ne correspond à votre filtre.
             </div>
           </div>
         ) : (
@@ -170,14 +170,14 @@ export const Clients: React.FC<ClientsProps> = ({
         onSubmit={(nouveau) => {
           const c = addClient(nouveau);
 
-          // Synchronisation API rÃ©elle
+          // Synchronisation API réelle
           createClientApi({
             nom: nouveau.nom,
             telephone: nouveau.telephone,
             adresse: nouveau.adresse,
           });
 
-          toast.success(`Client "${c.nom}" enregistrÃ© avec succÃ¨s`);
+          toast.success(`Client "${c.nom}" enregistré avec succès`);
           setSelectedClient(c);
         }}
       />
@@ -191,7 +191,7 @@ export const Clients: React.FC<ClientsProps> = ({
         onSubmit={(id, updates) => {
           updateClient(id, updates);
 
-          // Synchronisation API rÃ©elle
+          // Synchronisation API réelle
           updateClientApi({
             id,
             data: {
@@ -201,7 +201,7 @@ export const Clients: React.FC<ClientsProps> = ({
             },
           });
 
-          toast.success(`Client "${updates.nom}" mis Ã  jour avec succÃ¨s`);
+          toast.success(`Client "${updates.nom}" mis à jour avec succès`);
           if (selectedClient?.id === id) {
             setSelectedClient((prev: any) => (prev ? { ...prev, ...updates } : null));
           }
@@ -219,7 +219,7 @@ export const Clients: React.FC<ClientsProps> = ({
                 Confirmer la suppression
               </h3>
               <p className="text-xs text-gray-500">
-                ÃŠtes-vous sÃ»r de vouloir archiver / supprimer le client <strong>{clientToDelete.nom}</strong> ? Les factures et crÃ©ances passÃ©es resteront historisÃ©es.
+                Êtes-vous sûr de vouloir archiver / supprimer le client <strong>{clientToDelete.nom}</strong> ? Les factures et créances passées resteront historisées.
               </p>
             </div>
 
@@ -236,7 +236,7 @@ export const Clients: React.FC<ClientsProps> = ({
                 onClick={() => {
                   deleteClient(clientToDelete.id);
                   deleteClient(clientToDelete.id);
-                  toast.success(`Client "${clientToDelete.nom}" supprimÃ© avec succÃ¨s`);
+                  toast.success(`Client "${clientToDelete.nom}" supprimé avec succès`);
                   if (selectedClient?.id === clientToDelete.id) {
                     setSelectedClient(null);
                   }
@@ -259,7 +259,7 @@ export const Clients: React.FC<ClientsProps> = ({
           produits={getStocksEnriched(activeClient.boutiqueId)}
           onSubmit={(lignes, acompte, modeAcompte) => {
             addCreance(activeClient.id, lignes, undefined, acompte, modeAcompte);
-            toast.success(`Nouvelle vente Ã  crÃ©dit crÃ©Ã©e pour ${activeClient.nom}`);
+            toast.success(`Nouvelle vente à crédit créée pour ${activeClient.nom}`);
           }}
         />
       )}
@@ -280,7 +280,7 @@ export const Clients: React.FC<ClientsProps> = ({
                 session?.nom
               );
 
-              // Synchronisation API rÃ©elle
+              // Synchronisation API réelle
               recordPaymentApi({
                 clientId: activeClient.id,
                 data: {
@@ -293,7 +293,7 @@ export const Clients: React.FC<ClientsProps> = ({
               const totalPaye = selectedCreanceForPayment.paiements.reduce((s: any, p: any) => s + p.montant, 0) + montant;
               const resteDuApres = Math.max(0, selectedCreanceForPayment.montantTotal - totalPaye);
 
-              toast.success(`RÃ¨glement de ${formatMontant(montant)} enregistrÃ© pour ${activeClient.nom}`);
+              toast.success(`Règlement de ${formatMontant(montant)} enregistré pour ${activeClient.nom}`);
 
               setReceiptData({
                 receiptId: `REC-${Date.now().toString().slice(-6)}`,
@@ -315,7 +315,7 @@ export const Clients: React.FC<ClientsProps> = ({
         />
       )}
 
-      {/* ReÃ§u thermique et quittance de rÃ¨glement */}
+      {/* Reçu thermique et quittance de règlement */}
       <PaymentReceiptModal
         isOpen={Boolean(receiptData)}
         onClose={() => setReceiptData(null)}
