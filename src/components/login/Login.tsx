@@ -29,7 +29,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setLoading(true);
     setErreur('');
     
-    if (!identifiant.trim() || !motdepasse.trim()) {
+    if (!identifiant.trim() || !motdepasse) {
       setErreur('Veuillez remplir tous les champs.');
       setLoading(false);
       return;
@@ -42,7 +42,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         'gerant', // Rôle temporaire, remplacé par celui renvoyé par l'API
         '', // Nom temporaire, remplacé par celui renvoyé par l'API
         undefined,
-        { identifier: identifiant.trim(), motDePasse: motdepasse.trim() }
+        { identifier: identifiant.trim(), motDePasse: motdepasse }
       )
     ).catch((err: unknown) => {
       setErreur(err instanceof Error && err.message ? err.message : 'Identifiant ou mot de passe incorrect.');
