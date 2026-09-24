@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Sales } from '../../components/sales';
 
 export const SalesPage: React.FC = () => {
-  const user = useAuthStore((s: any) => s.user);
+  const user = useAuthStore((s) => s.user);
   const session = user;
   const [searchParams, setSearchParams] = useSearchParams();
   const produitDirectId = searchParams.get('produit') || undefined;
@@ -13,7 +13,6 @@ export const SalesPage: React.FC = () => {
 
   return (
     <Sales
-      role={session.role}
       produitDirectId={produitDirectId}
       onReset={() => setSearchParams({})}
     />

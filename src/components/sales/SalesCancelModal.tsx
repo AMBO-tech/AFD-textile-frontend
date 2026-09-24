@@ -1,14 +1,14 @@
 import { formatMontant } from '@/utils/format';
 import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
-
-
+import type { Vente } from '../../types/sales';
 import { MOTIFS_ANNULATION } from './types';
 
 interface SalesCancelModalProps {
   vente: Vente | null;
   onClose: () => void;
-  onConfirmCancel: (venteId: string, motif: string) => void;
+  /** Ferme la fenêtre elle-même en cas de succès ; la laisse ouverte en cas d'échec. */
+  onConfirmCancel: (venteId: string, motif: string) => Promise<void>;
 }
 
 export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
@@ -17,13 +17,19 @@ export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
   onConfirmCancel,
 }) => {
   const [motif, setMotif] = useState<string>(MOTIFS_ANNULATION[0]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!vente) return null;
 
-  const handleConfirm = (e: React.FormEvent) => {
+  const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirmCancel(vente.id, motif);
-    onClose();
+    if (isSubmitting) return; // évite la double annulation (double clic)
+    setIsSubmitting(true);
+    try {
+      await onConfirmCancel(vente.id, motif);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -35,7 +41,7 @@ export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
               <AlertCircle size={18} />
             </div>
             <div className="font-display font-bold text-gray-900 text-base">
-              Annuler la Vente #{vente.id}
+              Annuler la vente {vente.referenceFacture}
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
@@ -45,10 +51,13 @@ export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
 
         <div className="p-3 rounded-xl bg-red-50/50 border border-red-100 mb-4 space-y-1 text-xs text-red-900">
           <div>
-            Article : <span className="font-bold">{vente.produit}</span> ({vente.quantite} {vente.unite})
+            Articles :{' '}
+            <span className="font-bold">
+              {vente.lignes.map((l) => `${l.produitNom} (${l.quantite} ${l.uniteSaisie.toLowerCase()})`).join(', ')}
+            </span>
           </div>
           <div>
-            Montant : <span className="font-bold">{formatMontant(vente.montant)}</span>
+            Montant : <span className="font-bold">{formatMontant(vente.montantTotal)}</span>
           </div>
           <p className="text-[11px] text-red-600 pt-1">
             Le stock vendu sera automatiquement réintégré dans l'inventaire boutique.
@@ -83,9 +92,10 @@ export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all disabled:opacity-60"
             >
-              Confirmer l'annulation
+              {isSubmitting ? 'Annulation…' : "Confirmer l'annulation"}
             </button>
           </div>
         </form>

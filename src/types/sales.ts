@@ -44,7 +44,8 @@ export interface CreateSaleLineDto {
   quantite: number
   uniteSaisie: string
   longueurDecoupeMetres?: number
-  prixUnitaireApplique: number
+  /** Ignoré par le serveur, qui fixe lui-même le prix. */
+  prixUnitaireApplique?: number
   remiseMontant?: number
 }
 

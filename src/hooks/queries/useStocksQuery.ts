@@ -12,11 +12,15 @@ export const STOCK_KEYS = {
 /**
  * Récupère les niveaux de stock par boutique ou global
  */
-export const useStockLevelsQuery = (params?: { locationId?: string; categorieId?: string; enAlerte?: boolean; page?: number; limit?: number }) => {
+export const useStockLevelsQuery = (
+  params?: { locationId?: string; categorieId?: string; enAlerte?: boolean; page?: number; limit?: number },
+  options?: { enabled?: boolean },
+) => {
   return useQuery({
     queryKey: STOCK_KEYS.levels(params),
     queryFn: () => stocksService.getLevels(params),
     staleTime: 1000 * 60 * 1, // 1 minute
+    enabled: options?.enabled ?? true,
   });
 };
 

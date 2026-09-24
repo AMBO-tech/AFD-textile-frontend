@@ -1,9 +1,8 @@
 import { formatMontant } from '@/utils/format';
 import React from 'react';
-import { X, Trash2, ShoppingCart, CreditCard } from 'lucide-react';
+import { X, Trash2, ShoppingCart } from 'lucide-react';
 import type { LigneVente } from './types';
-
-import { MODES_PAIEMENT } from './types';
+import { LIBELLES_UNITE, montantsLigne, prixParUnite, totalPanier } from '../../features/pos/pricing';
 
 interface SalesCartDrawerProps {
   isOpen: boolean;
@@ -11,10 +10,6 @@ interface SalesCartDrawerProps {
   panier: LigneVente[];
   onUpdateQte: (index: number, newQte: number) => void;
   onRemoveItem: (index: number) => void;
-  modePaiement: string;
-  onModePaiementChange: (mode: string) => void;
-  nomClient: string;
-  onNomClientChange: (nom: string) => void;
   onCheckout: () => void;
 }
 
@@ -24,18 +19,11 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
   panier,
   onUpdateQte,
   onRemoveItem,
-  modePaiement,
-  onModePaiementChange,
-  nomClient,
-  onNomClientChange,
   onCheckout,
 }) => {
   if (!isOpen) return null;
 
-  const total = panier.reduce(
-    (s, l) => s + l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
-    0
-  );
+  const total = totalPanier(panier);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -64,7 +52,7 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
             </div>
           ) : (
             panier.map((l, idx) => {
-              const ligneNet = l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte);
+              const ligneNet = montantsLigne(l).net;
 
               return (
                 <div
@@ -80,7 +68,7 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                         {l.produit.nom}
                       </div>
                       <div className="text-[11px] text-gray-500">
-                        {formatMontant(l.produit.prix)}/{l.unite}
+                        {formatMontant(prixParUnite(l.unite, l.produit))}/{LIBELLES_UNITE[l.unite]}
                         {l.remise > 0 && (
                           <span className="text-green-600 ml-1.5 font-medium">
                             (-{formatMontant(l.remise)})
@@ -99,7 +87,9 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                       >
                         -
                       </button>
-                      <span className="px-2 py-1 text-xs font-bold text-gray-800">{l.qte}</span>
+                      <span className="px-2 py-1 text-xs font-bold text-gray-800">
+                        {l.qte} {LIBELLES_UNITE[l.unite]}
+                      </span>
                       <button
                         type="button"
                         onClick={() => onUpdateQte(idx, l.qte + 1)}
@@ -129,39 +119,6 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
 
         {panier.length > 0 && (
           <div className="pt-3 border-t border-gray-100 space-y-3 flex-shrink-0">
-            {/* Nom du client ou Passage */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Client bénéficiaire
-                </label>
-                <input
-                  type="text"
-                  value={nomClient}
-                  onChange={(e) => onNomClientChange(e.target.value)}
-                  placeholder="Passage (Comptoir)"
-                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Moyen d'encaissement
-                </label>
-                <select
-                  value={modePaiement}
-                  onChange={(e) => onModePaiementChange(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-                >
-                  {MODES_PAIEMENT.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* Total et encaissement */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
               <div>

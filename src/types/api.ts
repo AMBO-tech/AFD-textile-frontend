@@ -33,6 +33,8 @@ export interface PaginatedResponse<T> {
 
 export interface PaginationParams {
   page?: number
+  /** Nom attendu par l'API NestJS (max 100). */
+  limit?: number
   pageSize?: number
   search?: string
   sortBy?: string

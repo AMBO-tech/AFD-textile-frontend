@@ -18,6 +18,13 @@ export interface StockLevel {
   locationNom: string
   locationType: LocationType
   quantite: number
+  prixVente?: number
+  prixMinimum?: number
+  prixEffectif: number
+  prixMinimumEffectif?: number
+  categorieId?: string
+  poidsAuMetreKg?: number | null
+  longueurRouleauMetres?: number | null
   estEnAlerte: boolean
   updatedAt: string
 }

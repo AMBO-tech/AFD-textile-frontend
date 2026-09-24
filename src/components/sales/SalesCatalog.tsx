@@ -1,40 +1,46 @@
 import { formatMontant } from '@/utils/format';
 import React from 'react';
-import { Search, ChevronLeft, Package } from 'lucide-react';
-
-
+import { Search, ChevronLeft } from 'lucide-react';
+import type { PosProduit } from './types';
+import { LIBELLES_UNITE } from '../../features/pos/pricing';
 
 interface SalesCatalogProps {
-  categories: Categorie[];
-  produits: Produit[];
+  categories: { id: string; nom: string }[];
+  produits: PosProduit[];
+  isLoading: boolean;
   categorieChoisie: string | null;
-  onSelectCategorie: (cat: string | null) => void;
+  onSelectCategorie: (categorieId: string | null) => void;
   searchProd: string;
   onSearchChange: (v: string) => void;
-  onSelectProduit: (prod: Produit) => void;
+  onSelectProduit: (prod: PosProduit) => void;
 }
 
 export const SalesCatalog: React.FC<SalesCatalogProps> = ({
   categories,
   produits,
+  isLoading,
   categorieChoisie,
   onSelectCategorie,
   searchProd,
   onSearchChange,
   onSelectProduit,
 }) => {
+  const enStock = produits.filter((p) => p.quantite > 0);
+  const categorieActive = categories.find((c) => c.id === categorieChoisie);
+
   // Catégories qui possèdent au moins un produit disponible
-  const categoriesDisponibles = categories.filter((c) =>
-    produits.some((p) => p.categorie === c.nom && p.quantite > 0)
+  const categoriesDisponibles = categories.filter((c) => enStock.some((p) => p.categorieId === c.id));
+
+  const recherche = searchProd.trim().toLowerCase();
+  const produitsFiltres = enStock.filter(
+    (p) =>
+      p.categorieId === categorieChoisie &&
+      (p.nom.toLowerCase().includes(recherche) || p.reference.toLowerCase().includes(recherche)),
   );
 
-  const produitsFiltres = produits.filter(
-    (p) =>
-      (!categorieChoisie || p.categorie === categorieChoisie) &&
-      (p.nom.toLowerCase().includes(searchProd.toLowerCase()) ||
-        p.categorie.toLowerCase().includes(searchProd.toLowerCase()) ||
-        p.couleur.toLowerCase().includes(searchProd.toLowerCase()))
-  );
+  if (isLoading) {
+    return <div className="text-center py-10 text-xs text-gray-400">Chargement du stock…</div>;
+  }
 
   return (
     <div className="space-y-3">
@@ -44,19 +50,25 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
           <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
             1. Choisissez un type de tissu
           </div>
+          {categoriesDisponibles.length === 0 && (
+            <div className="text-center py-8 text-xs text-gray-400">
+              Aucun tissu en stock dans cette boutique.
+            </div>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {categoriesDisponibles.map((cat) => {
-              const count = produits.filter((p) => p.categorie === cat.nom && p.quantite > 0).length;
+              const produitsCategorie = enStock.filter((p) => p.categorieId === cat.id);
+              const count = produitsCategorie.length;
 
               return (
                 <button
-                  key={cat.nom}
-                  onClick={() => onSelectCategorie(cat.nom)}
+                  key={cat.id}
+                  onClick={() => onSelectCategorie(cat.id)}
                   className="p-3 rounded-2xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm transition-all flex flex-col items-center text-center group"
                 >
                   <div className="w-16 h-16 rounded-xl overflow-hidden mb-2 bg-gray-100 border border-gray-100">
                     <img
-                      src={cat.photo}
+                      src={produitsCategorie[0]?.photo}
                       alt={cat.nom}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
@@ -82,7 +94,7 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
               Toutes les catégories
             </button>
             <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800">
-              {categorieChoisie}
+              {categorieActive?.nom}
             </span>
           </div>
 
@@ -92,7 +104,7 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
               type="text"
               value={searchProd}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={`Rechercher dans ${categorieChoisie}...`}
+              placeholder={`Rechercher dans ${categorieActive?.nom ?? 'la catégorie'}...`}
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -117,9 +129,12 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
                       <div className="font-semibold text-gray-900 text-xs truncate group-hover:text-blue-600">
                         {prod.nom}
                       </div>
-                      <div className="text-[11px] text-gray-500 truncate">{prod.couleur}</div>
+                      <div className="text-[11px] text-gray-500 truncate">{prod.reference}</div>
                       <div className="text-[10px] text-gray-400">
-                        Stock : <span className="font-medium text-gray-700">{prod.quantite} {prod.unite}</span>
+                        Stock :{' '}
+                        <span className="font-medium text-gray-700">
+                          {prod.quantite} {LIBELLES_UNITE[prod.unite]}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -128,7 +143,7 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
                     <div className="font-bold text-gray-900 text-xs">
                       {formatMontant(prod.prix)}
                     </div>
-                    <div className="text-[10px] text-gray-400">par {prod.unite}</div>
+                    <div className="text-[10px] text-gray-400">par {LIBELLES_UNITE[prod.unite]}</div>
                   </div>
                 </button>
               ))
