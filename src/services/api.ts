@@ -64,12 +64,30 @@ async function attemptRefresh(): Promise<string> {
 
 // ─── Response Interceptor (Handle 401 with Queue-based Silent Refresh) ────────
 
+// Routes publiques : un 401 y signifie « identifiants / code invalides », pas « session expirée ».
+// Les rafraîchir masquerait le vrai message d'erreur (et redirigerait vers /login).
+const PUBLIC_AUTH_PATHS = [
+  '/auth/login',
+  '/auth/refresh',
+  '/auth/setup-password',
+  '/auth/otp/',
+  '/auth/reset-password',
+];
+
+function isPublicAuthRequest(url?: string): boolean {
+  return !!url && PUBLIC_AUTH_PATHS.some((path) => url.startsWith(path));
+}
+
 API.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isPublicAuthRequest(originalRequest.url)
+    ) {
       if (isRefreshing) {
         // Queue this request until the ongoing refresh completes
         return new Promise<string>((resolve, reject) => {

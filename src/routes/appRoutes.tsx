@@ -17,7 +17,7 @@ import {
   UsersPage,
   RapportsPage,
   HistoriquePage,
-
+  ActiverComptePage,
 } from '../pages';
 
 export const AppRoutes: React.FC = () => {
@@ -25,6 +25,8 @@ export const AppRoutes: React.FC = () => {
     <Routes>
       {/* Route publique : Connexion */}
       <Route path="/login" element={<LoginPage />} />
+      {/* Route publique : activation d'un compte invité (lien reçu par SMS / e-mail) */}
+      <Route path="/activer-compte" element={<ActiverComptePage />} />
 
       {/* Routes protÃ©gÃ©es : Authentification requise */}
       <Route element={<ProtectedRoute />}>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { LoginVue, LoginProps } from './types';
+import { MIN_PASSWORD_LENGTH, OTP_LENGTH } from './types';
+import { resetPassword, sendResetCode } from '@/services/auth/password';
 import LoginBrandingSide from './LoginBrandingSide';
 import LoginFormView from './LoginFormView';
 import LoginPhoneResetView from './LoginPhoneResetView';
@@ -12,8 +14,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [telephone, setTelephone] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [otp, setOtp] = useState<string[]>(() => Array(OTP_LENGTH).fill(''));
   const [erreurMdp, setErreurMdp] = useState('');
+  const [resetErreur, setResetErreur] = useState('');
+  const [resetInfo, setResetInfo] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const [dejaConnecte, setDejaConnecte] = useState(false);
 
   useEffect(() => {
@@ -39,28 +44,60 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         undefined,
         { identifier: identifiant.trim(), motDePasse: motdepasse.trim() }
       )
-    ).catch((err: any) => {
-      setErreur(err.message || 'Identifiant ou mot de passe incorrect.');
+    ).catch((err: unknown) => {
+      setErreur(err instanceof Error && err.message ? err.message : 'Identifiant ou mot de passe incorrect.');
     }).finally(() => {
       setLoading(false);
     });
   };
 
-  const handleSavePassword = (newPwd: string, confirmPwd: string) => {
+  const clearOtp = () => setOtp(Array(OTP_LENGTH).fill(''));
+
+  const handleSendCode = async (nextVue: LoginVue = 'code') => {
+    setResetErreur('');
+    setResetLoading(true);
+    try {
+      const { message } = await sendResetCode(telephone.trim());
+      setResetInfo(message);
+      clearOtp();
+      setVue(nextVue);
+    } catch (err) {
+      setResetErreur(err instanceof Error ? err.message : "Impossible d'envoyer le code.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleSavePassword = async (newPwd: string, confirmPwd: string) => {
     setErreurMdp('');
-    if (newPwd.length < 6) {
-      setErreurMdp('Minimum 6 caractères.');
+    if (newPwd.length < MIN_PASSWORD_LENGTH) {
+      setErreurMdp(`Minimum ${MIN_PASSWORD_LENGTH} caractères.`);
       return;
     }
     if (newPwd !== confirmPwd) {
       setErreurMdp('Les mots de passe ne correspondent pas.');
       return;
     }
-    setOtp(['', '', '', '']);
+
+    setResetLoading(true);
+    try {
+      await resetPassword(telephone.trim(), otp.join(''), newPwd);
+    } catch (err) {
+      // Le code est vérifié à cette étape : on revient à la saisie du code avec le message de l'API.
+      setResetErreur(err instanceof Error ? err.message : 'Code invalide ou expiré.');
+      clearOtp();
+      setVue('code');
+      return;
+    } finally {
+      setResetLoading(false);
+    }
+
+    clearOtp();
     setTelephone('');
-    setSuccessMsg('Mot de passe réinitialisé avec succès.');
+    setResetInfo('');
+    setSuccessMsg('Mot de passe réinitialisé. Connectez-vous avec le nouveau mot de passe.');
     setVue('login');
-    setTimeout(() => setSuccessMsg(''), 4000);
+    setTimeout(() => setSuccessMsg(''), 6000);
   };
 
   return (
@@ -112,6 +149,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               onLoginSubmit={handleLoginSubmit}
               onForgotPassword={() => {
                 setErreur('');
+                setResetErreur('');
                 setVue('telephone');
               }}
             />
@@ -121,9 +159,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {vue === 'telephone' && (
             <LoginPhoneResetView
               telephone={telephone}
+              erreur={resetErreur}
+              loading={resetLoading}
               onTelephoneChange={setTelephone}
               onBack={() => setVue('login')}
-              onSubmit={() => setVue('code')}
+              onSubmit={() => handleSendCode()}
             />
           )}
 
@@ -132,10 +172,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <LoginOtpView
               telephone={telephone}
               otp={otp}
+              erreur={resetErreur}
+              info={resetInfo}
+              resending={resetLoading}
               onOtpChange={setOtp}
               onBack={() => setVue('telephone')}
-              onVerify={() => setVue('nouveau_mdp')}
-              onResend={() => setOtp(['', '', '', ''])}
+              onVerify={() => {
+                setResetErreur('');
+                setErreurMdp('');
+                setVue('nouveau_mdp');
+              }}
+              onResend={() => handleSendCode('code')}
             />
           )}
 
@@ -143,6 +190,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {vue === 'nouveau_mdp' && (
             <LoginNewPasswordView
               erreurMdp={erreurMdp}
+              loading={resetLoading}
               onSavePassword={handleSavePassword}
             />
           )}
