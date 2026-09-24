@@ -1,7 +1,8 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
 import { X, Trash2, ShoppingCart, CreditCard } from 'lucide-react';
 import type { LigneVente } from './types';
-import { formatMontant } from '../../data/mock';
+
 import { MODES_PAIEMENT } from './types';
 
 interface SalesCartDrawerProps {
@@ -10,6 +11,10 @@ interface SalesCartDrawerProps {
   panier: LigneVente[];
   onUpdateQte: (index: number, newQte: number) => void;
   onRemoveItem: (index: number) => void;
+  modePaiement: string;
+  onModePaiementChange: (mode: string) => void;
+  nomClient: string;
+  onNomClientChange: (nom: string) => void;
   onCheckout: () => void;
 }
 
@@ -19,6 +24,10 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
   panier,
   onUpdateQte,
   onRemoveItem,
+  modePaiement,
+  onModePaiementChange,
+  nomClient,
+  onNomClientChange,
   onCheckout,
 }) => {
   if (!isOpen) return null;
@@ -82,41 +91,19 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="flex items-center border border-gray-200 rounded-xl bg-white overflow-hidden shadow-xs">
+                    <div className="flex items-center border border-gray-200 rounded-lg bg-white overflow-hidden">
                       <button
                         type="button"
-                        onClick={() => {
-                          const step = l.qte <= 1 ? 0.25 : 0.5;
-                          const next = Math.max(0.25, Math.round((l.qte - step) * 100) / 100);
-                          onUpdateQte(idx, next);
-                        }}
-                        className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer active:scale-95"
-                        title="Diminuer la coupe"
+                        onClick={() => onUpdateQte(idx, Math.max(1, l.qte - 1))}
+                        className="px-2 py-1 text-xs font-bold text-gray-600 hover:bg-gray-100"
                       >
                         -
                       </button>
-                      <input
-                        type="number"
-                        min="0.25"
-                        step="0.25"
-                        value={l.qte}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value);
-                          if (!isNaN(val) && val > 0) {
-                            onUpdateQte(idx, val);
-                          }
-                        }}
-                        className="w-12 text-center text-xs font-bold text-gray-900 focus:outline-none focus:bg-blue-50/50 py-1"
-                      />
+                      <span className="px-2 py-1 text-xs font-bold text-gray-800">{l.qte}</span>
                       <button
                         type="button"
-                        onClick={() => {
-                          const step = l.qte < 1 ? 0.25 : 0.5;
-                          const next = Math.round((l.qte + step) * 100) / 100;
-                          onUpdateQte(idx, next);
-                        }}
-                        className="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer active:scale-95"
-                        title="Augmenter la coupe"
+                        onClick={() => onUpdateQte(idx, l.qte + 1)}
+                        className="px-2 py-1 text-xs font-bold text-gray-600 hover:bg-gray-100"
                       >
                         +
                       </button>
@@ -129,10 +116,9 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => onRemoveItem(idx)}
-                      className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                      title="Supprimer du panier"
+                      className="text-gray-400 hover:text-red-500 p-1"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -142,22 +128,54 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
         </div>
 
         {panier.length > 0 && (
-          <div className="pt-3 border-t border-gray-100 flex-shrink-0">
+          <div className="pt-3 border-t border-gray-100 space-y-3 flex-shrink-0">
+            {/* Nom du client ou Passage */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Client bénéficiaire
+                </label>
+                <input
+                  type="text"
+                  value={nomClient}
+                  onChange={(e) => onNomClientChange(e.target.value)}
+                  placeholder="Passage (Comptoir)"
+                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Moyen d'encaissement
+                </label>
+                <select
+                  value={modePaiement}
+                  onChange={(e) => onModePaiementChange(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
+                >
+                  {MODES_PAIEMENT.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Total et encaissement */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 border border-gray-100">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
               <div>
                 <div className="text-xs text-gray-500">Montant total net :</div>
-                <div className="font-display font-bold text-xl text-blue-900">{formatMontant(total)}</div>
+                <div className="font-display font-bold text-xl text-gray-900">{formatMontant(total)}</div>
               </div>
 
               <button
                 type="button"
                 onClick={onCheckout}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-semibold text-xs shadow-sm hover:opacity-95 transition-all cursor-pointer"
-                style={{ background: '#0F3D5E' }}
+                className="px-5 py-2.5 rounded-xl text-white font-semibold text-sm shadow-sm hover:opacity-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
               >
-                <CreditCard size={15} />
-                <span>Passer à l'encaissement</span>
+                Encaisser la vente
               </button>
             </div>
           </div>

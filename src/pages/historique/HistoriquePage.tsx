@@ -1,9 +1,10 @@
+import { useAuthStore } from '../../stores/useAuthStore';
 import React from 'react';
 import { Historique } from '../../components/historique';
-import { useMockStore } from '../../data/useMockStore';
 
 export const HistoriquePage: React.FC = () => {
-  const { session, boutiques } = useMockStore();
+  const user = useAuthStore((s: any) => s.user); const session = user;
+const boutiques: any = [];
 
   const boutiqueId = session?.boutiqueId || boutiques[0]?.id || 'b1';
 

@@ -3,8 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Login } from '../../components/login';
 import type { LoginCredentials } from '../../components/login/types';
 import { useAuthUser } from '../../hooks/useAuthUser';
-import { useMockStore } from '../../data/useMockStore';
-import { DEFAULT_BOUTIQUE_ID } from '../../data/mock';
+
 
 /**
  * @component LoginPage
@@ -12,7 +11,7 @@ import { DEFAULT_BOUTIQUE_ID } from '../../data/mock';
  */
 export const LoginPage: React.FC = () => {
   const { isAuthenticated, login } = useAuthUser();
-  const { setSession } = useMockStore();
+  const setSession: any = [];
   const navigate = useNavigate();
 
   if (isAuthenticated) {

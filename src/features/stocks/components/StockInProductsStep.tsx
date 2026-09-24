@@ -1,6 +1,7 @@
+import { formatMontant } from '../../../utils/format';
 import React from 'react';
 import { Search, Plus } from 'lucide-react';
-import type { Produit } from '../../../data/useMockStore';
+import type { Produit } from '../../../types/products';
 
 interface StockInProductsStepProps {
   searchProd: string;

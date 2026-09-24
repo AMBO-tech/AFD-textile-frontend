@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useMockStore } from '../../data/useMockStore';
+
 import type { BoutiqueFilter, BoutiqueFormData, BoutiqueWithStaff } from './types';
 import BoutiquesList from './BoutiquesList';
 import BoutiqueModal from './BoutiqueModal';
@@ -12,14 +12,12 @@ import {
 } from '../../hooks/queries/useLocationsQuery';
 
 export const Boutiques: React.FC = () => {
-  const {
-    boutiques,
-    utilisateurs,
-    stocks,
-    addBoutique,
-    updateBoutique,
-    toggleBoutiqueActif,
-  } = useMockStore();
+  const boutiques: any[] = [];
+  const utilisateurs: any[] = [];
+  const stocks: any[] = [];
+  const addBoutique = (data: any) => {};
+  const updateBoutique = (id: any, data: any) => {};
+  const toggleBoutiqueActif = (id: any) => {};
 
   const [search, setSearch] = useState('');
   const [filtre, setFiltre] = useState<BoutiqueFilter>('tous');
@@ -30,10 +28,10 @@ export const Boutiques: React.FC = () => {
 
   // Construction des données enrichies (personnel + stock par boutique)
   const boutiquesWithStaff: BoutiqueWithStaff[] = useMemo(() => {
-    return boutiques.map((b) => {
-      const staff = utilisateurs.filter((u) => u.boutique === b.id);
+    return boutiques.map((b: any) => {
+      const staff = utilisateurs.filter((u: any) => u.boutique === b.id);
       const nbStock = stocks.filter(
-        (s) =>
+        (s: any) =>
           s.boutiqueId === b.id ||
           ((b.id === 'b-ent' || b.id === 'entrepot') &&
             (s.boutiqueId === 'b-ent' || s.boutiqueId === 'entrepot'))
@@ -110,7 +108,7 @@ export const Boutiques: React.FC = () => {
   const handleToggleStatus = (id: string) => {
     toggleBoutiqueActif(id);
     toggleLocationApi(id);
-    const target = boutiques.find((b) => b.id === id);
+    const target = boutiques.find((b: any) => b.id === id);
     if (target) {
       const statutTxt = target.actif ? 'désactivé' : 'activé';
       setFeedbackMsg(`L'emplacement ${target.nom} a été ${statutTxt}.`);
@@ -148,7 +146,6 @@ export const Boutiques: React.FC = () => {
         onOpenCreateModal={handleOpenCreate}
         onEditBoutique={handleOpenEdit}
         onToggleStatus={handleToggleStatus}
-        onViewStaff={setStaffModalBoutique}
       />
 
       {/* Modal d'ajout / modification */}

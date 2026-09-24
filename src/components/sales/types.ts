@@ -1,7 +1,7 @@
-import type { Produit, StockEnriched, Vente } from '../../data/useMockStore';
+
 
 export interface LigneVente {
-  produit: StockEnriched;
+  produit: Produit;
   qte: number;
   unite: string;
   remise: number;

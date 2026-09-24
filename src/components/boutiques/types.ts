@@ -1,4 +1,4 @@
-import type { UtilisateurItem } from '../../data/useMockStore';
+
 
 export interface BoutiqueItem {
   id: string;

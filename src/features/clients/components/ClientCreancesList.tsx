@@ -1,3 +1,4 @@
+import { formatMontant } from '../../../utils/format';
 import React from 'react';
 import {
   Clock,
@@ -9,7 +10,7 @@ import {
   Calendar,
   Plus,
 } from 'lucide-react';
-import type { ClientDetailed, Creance } from '../../../data/useMockStore';
+import type { ClientDetailed, Creance } from '../../../types/clients';
 
 interface ClientCreancesListProps {
   client: ClientDetailed;

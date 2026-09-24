@@ -1,9 +1,9 @@
+import { formatMontant } from '@/utils/format';
 import React, { useState } from 'react';
-import { X, AlertTriangle, AlertCircle, ChevronDown } from 'lucide-react';
-import type { Vente } from '../../data/useMockStore';
-import { formatMontant } from '../../data/mock';
+import { X, AlertCircle } from 'lucide-react';
+
+
 import { MOTIFS_ANNULATION } from './types';
-import CustomDropdownSelect from '../ui/CustomDropdownSelect';
 
 interface SalesCancelModalProps {
   vente: Vente | null;
@@ -57,18 +57,20 @@ export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
 
         <form onSubmit={handleConfirm} className="space-y-3.5">
           <div>
-            <CustomDropdownSelect
-              label="Motif de l'annulation"
-              menuTitle="Justification de l'annulation"
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              Motif de l'annulation *
+            </label>
+            <select
               value={motif}
-              onChange={setMotif}
-              options={MOTIFS_ANNULATION.map((m) => ({
-                value: m,
-                label: m,
-                icon: <AlertCircle size={16} className="text-red-500" />,
-              }))}
-              icon={<AlertTriangle size={16} className="text-red-500" />}
-            />
+              onChange={(e) => setMotif(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-red-500"
+            >
+              {MOTIFS_ANNULATION.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">

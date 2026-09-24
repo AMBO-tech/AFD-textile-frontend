@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, ImagePlus, Layers, Tag } from 'lucide-react';
-import type { Produit, Categorie } from '../../data/useMockStore';
-import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
+import { X, ImagePlus } from 'lucide-react';
+
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -14,7 +13,6 @@ interface ProductFormModalProps {
     categorie: string;
     couleur: string;
     photo: string;
-    photoFile?: File | null;
   }) => void;
 }
 
@@ -32,7 +30,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     couleur: '',
     photo: '',
   });
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (editingProduct) {
@@ -42,7 +39,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         couleur: editingProduct.couleur || '',
         photo: editingProduct.photo || '',
       });
-      setPhotoFile(null);
     } else {
       setForm({
         nom: '',
@@ -50,7 +46,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         couleur: '',
         photo: '',
       });
-      setPhotoFile(null);
     }
   }, [editingProduct, defaultCategory, isOpen]);
 
@@ -59,7 +54,6 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPhotoFile(file);
     const url = URL.createObjectURL(file);
     setForm((f) => ({ ...f, photo: url }));
   };
@@ -67,7 +61,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nom.trim() || !form.categorie) return;
-    onSave({ ...form, photoFile });
+    onSave(form);
   };
 
   return (
@@ -129,20 +123,21 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           <div>
-            <CustomDropdownSelect
-              label="Catégorie de tissu"
-              placeholder="Sélectionner une catégorie..."
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Catégorie *
+            </label>
+            <select
               value={form.categorie}
-              onChange={(cat) => setForm((f) => ({ ...f, categorie: cat }))}
-              icon={<Layers size={15} />}
-              menuTitle="Catégories de tissu"
-              options={categories.map((c) => ({
-                value: c.nom,
-                label: c.nom,
-                sublabel: 'Catégorie de tissu',
-                icon: <Tag size={14} className="text-blue-500" />,
-              }))}
-            />
+              onChange={(e) => setForm((f) => ({ ...f, categorie: e.target.value }))}
+              className="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30"
+            >
+              <option value="">Sélectionner une catégorie</option>
+              {categories.map((c) => (
+                <option key={c.nom} value={c.nom}>
+                  {c.nom}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

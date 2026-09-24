@@ -1,7 +1,6 @@
 import React from 'react';
-import { Search, Building2, Store } from 'lucide-react';
-import type { Boutique } from '../../data/useMockStore';
-import CustomDropdownSelect, { type DropdownOption } from '../ui/CustomDropdownSelect';
+import { Search } from 'lucide-react';
+
 
 interface ClientFiltersProps {
   search: string;
@@ -24,23 +23,6 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
   boutiques,
   role,
 }) => {
-  const optionsBoutique: DropdownOption[] = [
-    {
-      value: 'toutes',
-      label: 'Toutes les boutiques',
-      sublabel: 'Clients de tout le réseau',
-      badge: 'TOUS',
-      icon: <Building2 size={16} />,
-    },
-    ...boutiques.map((b) => ({
-      value: b.id,
-      label: b.nom,
-      sublabel: b.lieu,
-      badge: b.code || undefined,
-      icon: <Store size={16} />,
-    })),
-  ];
-
   return (
     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm mb-5 space-y-3">
       <div className="relative">
@@ -89,14 +71,18 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
         {/* Filtre boutique si gérant */}
         {role === 'gerant' && (
           <div className="flex-1">
-            <CustomDropdownSelect
-              label="Point de vente"
-              menuTitle="Filtrer les clients par boutique"
+            <select
               value={filtreBoutique}
-              onChange={onBoutiqueChange}
-              options={optionsBoutique}
-              icon={<Store size={16} />}
-            />
+              onChange={(e) => onBoutiqueChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-700 bg-gray-50/50 focus:outline-none focus:border-blue-500"
+            >
+              <option value="toutes">Toutes les boutiques</option>
+              {boutiques.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.nom}
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>

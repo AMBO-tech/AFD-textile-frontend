@@ -7,4 +7,3 @@ export * from './ClientDetailModal';
 export * from './NewClientModal';
 export * from './NewDebtModal';
 export * from './RecordPaymentModal';
-export * from './PaymentReceiptModal';

@@ -1,21 +1,19 @@
+import { useAuthStore } from '@/stores/useAuthStore';
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Sales } from '../../components/sales';
-import { useMockStore } from '../../data/useMockStore';
-
-import { useAuthStore } from '../../stores/useAuthStore';
 
 export const SalesPage: React.FC = () => {
-  const { session } = useMockStore();
-  const { user } = useAuthStore();
+  const user = useAuthStore((s: any) => s.user);
+  const session = user;
   const [searchParams, setSearchParams] = useSearchParams();
   const produitDirectId = searchParams.get('produit') || undefined;
 
-  const role = session?.role || (user?.role === 'OWNER' ? 'gerant' : 'boutiquier');
+  if (!session) return null;
 
   return (
     <Sales
-      role={role}
+      role={session.role}
       produitDirectId={produitDirectId}
       onReset={() => setSearchParams({})}
     />

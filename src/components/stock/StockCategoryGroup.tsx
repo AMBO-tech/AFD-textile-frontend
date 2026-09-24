@@ -1,18 +1,15 @@
 import React from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import type { StockEnriched, Categorie, Boutique } from '../../data/useMockStore';
+
 import StockItemCard from './StockItemCard';
 
 interface StockCategoryGroupProps {
   categorie: Categorie;
-  produits: StockEnriched[];
+  produits: Produit[];
   isOuverte: boolean;
   onToggle: () => void;
-  onEntreeRapide: (produit: StockEnriched) => void;
+  onEntreeRapide: (produit: Produit) => void;
   onVenteRapide?: (produitId: string) => void;
-  boutiques?: Boutique[];
-  afficherEmplacement?: boolean;
-  role?: 'gerant' | 'boutiquier';
 }
 
 export const StockCategoryGroup: React.FC<StockCategoryGroupProps> = ({
@@ -22,9 +19,6 @@ export const StockCategoryGroup: React.FC<StockCategoryGroupProps> = ({
   onToggle,
   onEntreeRapide,
   onVenteRapide,
-  boutiques = [],
-  afficherEmplacement = false,
-  role = 'gerant',
 }) => {
   const totalStockCat = produits.reduce((s, p) => s + p.quantite, 0);
   const alertesCat = produits.filter((p) => p.quantite <= p.seuil).length;
@@ -74,25 +68,14 @@ export const StockCategoryGroup: React.FC<StockCategoryGroupProps> = ({
               Aucun modèle dans cette catégorie pour le filtre actif.
             </div>
           ) : (
-            produits.map((prod) => {
-              const bId = prod.boutiqueId || prod.boutique;
-              const isEntrepot = bId === 'entrepot' || bId === 'b-ent';
-              const nomEmp = isEntrepot
-                ? 'Entrepôt Central'
-                : (boutiques.find((b) => b.id === bId)?.nom || bId);
-
-              return (
-                <StockItemCard
-                  key={prod.stockId || `${prod.id}_${bId}`}
-                  produit={prod}
-                  onEntreeRapide={onEntreeRapide}
-                  onVenteRapide={onVenteRapide}
-                  nomEmplacement={afficherEmplacement ? nomEmp : undefined}
-                  typeEmplacement={isEntrepot ? 'entrepot' : 'boutique'}
-                  role={role}
-                />
-              );
-            })
+            produits.map((prod) => (
+              <StockItemCard
+                key={prod.id}
+                produit={prod}
+                onEntreeRapide={onEntreeRapide}
+                onVenteRapide={onVenteRapide}
+              />
+            ))
           )}
         </div>
       )}

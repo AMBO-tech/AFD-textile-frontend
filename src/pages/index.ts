@@ -1,4 +1,4 @@
-export { LoginPage } from './login/LoginPage';
+﻿export { LoginPage } from './login/LoginPage';
 export { DashboardPage } from './dashboard/DashboardPage';
 export { StockPage } from './stock/StockPage';
 export { SalesPage } from './sales/SalesPage';
@@ -11,5 +11,4 @@ export { EntrepotPage } from './entrepot/EntrepotPage';
 export { UsersPage } from './users/UsersPage';
 export { RapportsPage } from './rapports/RapportsPage';
 export { HistoriquePage } from './historique/HistoriquePage';
-export { BoutiquesPage } from './boutiques/BoutiquesPage';
-export { ActiverComptePage } from './auth/ActiverComptePage';
+

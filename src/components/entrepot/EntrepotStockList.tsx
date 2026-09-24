@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Search, Package, Check } from 'lucide-react';
-import type { StockEnriched } from '../../data/useMockStore';
+
 
 interface EntrepotStockListProps {
-  produits: StockEnriched[];
-  produitSelectionne: StockEnriched | null;
-  onSelectProduit: (p: StockEnriched) => void;
+  produits: Produit[];
+  produitSelectionne: Produit | null;
+  onSelectProduit: (p: Produit) => void;
 }
 
 export const EntrepotStockList: React.FC<EntrepotStockListProps> = ({

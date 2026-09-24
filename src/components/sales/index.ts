@@ -6,4 +6,3 @@ export * from './SalesCartDrawer';
 export * from './SalesSuccessModal';
 export * from './SalesHistoryTable';
 export * from './SalesCancelModal';
-export * from './SalesPaymentModal';

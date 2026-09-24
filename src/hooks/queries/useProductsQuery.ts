@@ -8,6 +8,15 @@ export const PRODUCT_KEYS = {
   list: (params?: ProductQueryParams) => [...PRODUCT_KEYS.lists(), params] as const,
   details: () => [...PRODUCT_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...PRODUCT_KEYS.details(), id] as const,
+  categories: () => [...PRODUCT_KEYS.all, 'categories'] as const,
+};
+
+export const useCategoriesQuery = () => {
+  return useQuery({
+    queryKey: PRODUCT_KEYS.categories(),
+    queryFn: () => productsService.getCategories(),
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
 };
 
 /**
@@ -69,27 +78,5 @@ export const useArchiveProductMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.lists() });
     },
-  });
-};
-
-/**
- * Récupère les familles / catégories textiles de l'API
- */
-export const useCategoriesQuery = () => {
-  return useQuery({
-    queryKey: ['categories'],
-    queryFn: () => productsService.getCategories(),
-    staleTime: 1000 * 60 * 10,
-  });
-};
-
-/**
- * Récupère les unités de mesure standard de l'API
- */
-export const useUnitesQuery = () => {
-  return useQuery({
-    queryKey: ['unites'],
-    queryFn: () => productsService.getUnites(),
-    staleTime: 1000 * 60 * 10,
   });
 };

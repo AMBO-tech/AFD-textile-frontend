@@ -1,57 +1,70 @@
+import { useAuthStore } from '../../stores/useAuthStore';
 import React, { useMemo } from 'react';
-import { useMockStore, VENTES_SEMAINE, TOP_PRODUITS } from '../../data/useMockStore';
 import DashboardKpiCards from './DashboardKpiCards';
 import DashboardSalesChart from './DashboardSalesChart';
 import DashboardTopProducts from './DashboardTopProducts';
 import DashboardStockAlerts from './DashboardStockAlerts';
 import DashboardQuickActions from './DashboardQuickActions';
 import DashboardBoutiquesOverview from './DashboardBoutiquesOverview';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
+import { useSalesListQuery } from '../../hooks/queries/useSalesQuery';
+import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
+import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
 
 interface DashboardProps {
-  role: 'gerant' | 'boutiquier';
+  role: string;
   onNavigate?: (s: string) => void;
   onVenteDirecte?: (produitId: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteDirecte }) => {
-  const { stocks, produits, ventes, clients, boutiques, session, getStocksEnriched } = useMockStore();
-  const boutiqueId = session?.boutiqueId || 'b1';
+export const Dashboard: React.FC<DashboardProps> = ({ role: rawRole, onNavigate, onVenteDirecte }) => {
+  const role = (rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant') ? 'gerant' : 'boutiquier';
+  const user = useAuthStore((s: any) => s.user);
+  const locationId = user?.locationId || 'b1';
+  
+  const { data: locRes } = useLocationsListQuery();
+  const boutiques = locRes?.data || [];
+  
+  const { data: salesRes } = useSalesListQuery({ limit: 100 });
+  const ventes = salesRes?.data || [];
+  
+  const { data: clientRes } = useClientsListQuery();
+  const clients = clientRes?.data || [];
+  
+  const { data: stockRes } = useStockLevelsQuery();
+  const produits = stockRes?.data || [];
 
-  // Stocks et ventes ciblés selon le rôle
-  const stocksAffiches = useMemo(() => {
-    return role === 'gerant' ? getStocksEnriched() : getStocksEnriched(boutiqueId);
-  }, [getStocksEnriched, role, boutiqueId, stocks, produits]);
+  // Produits et ventes ciblés selon le rôle
+  const produitsAffiches = useMemo(() => {
+    return role === 'gerant' ? produits : produits.filter((p: any) => p.locationId === locationId);
+  }, [produits, role, locationId]);
 
   const alertesStock = useMemo(() => {
-    return stocksAffiches.filter((p) => p.quantite <= p.seuil);
-  }, [stocksAffiches]);
+    return produitsAffiches.filter((p: any) => p.quantite <= p.seuilAlerte);
+  }, [produitsAffiches]);
 
   const ventesValidees = useMemo(() => {
-    return ventes.filter((v) => {
-      const isValide = v.statut === 'validée';
-      return role === 'gerant' ? isValide : isValide && v.boutique === boutiqueId;
+    return ventes.filter((v: any) => {
+      const isValide = v.statut === 'VALIDE' || v.statut === 'validée';
+      return role === 'gerant' ? isValide : isValide && v.locationId === locationId;
     });
-  }, [ventes, role, boutiqueId]);
+  }, [ventes, role, locationId]);
 
   const stats = useMemo(() => {
-    const todayStr = '2026-09-13';
+    const todayStr = new Date().toISOString().split('T')[0];
     const ventesJour = ventesValidees
-      .filter((v) => v.date === todayStr || v.date === new Date().toISOString().split('T')[0])
-      .reduce((s, v) => s + v.montant, 0);
+      .filter((v: any) => v.date?.startsWith(todayStr) || v.createdAt?.startsWith(todayStr))
+      .reduce((s: any, v: any) => s + (v.montant || v.montantTotal || 0), 0);
 
-    const ventesSemaine = VENTES_SEMAINE.reduce((s, v) => s + v.montant, 0);
-    const stockTotal = stocksAffiches.reduce((s, p) => s + p.quantite, 0);
-    const creancesTotal = clients.reduce((s, c) => {
-      const solde = c.creances.reduce((sc, cr) => {
-        const paye = cr.paiements.reduce((sp, p) => sp + p.montant, 0);
+    const ventesSemaine = ventesValidees.reduce((s: any, v: any) => s + (v.montant || v.montantTotal || 0), 0);
+    const stockTotal = produitsAffiches.reduce((s: any, p: any) => s + p.quantite, 0);
+    const creancesTotal = clients.reduce((s: any, c: any) => {
+      const solde = (c.creances || []).reduce((sc: any, cr: any) => {
+        const paye = (cr.paiements || []).reduce((sp: any, p: any) => sp + p.montant, 0);
         return sc + Math.max(0, cr.montantTotal - paye);
       }, 0);
       return s + solde;
     }, 0);
-
-    const nbProduitsVendus = ventesValidees.reduce((acc, v) => acc + (v.quantite || 1), 0);
-    const stockFaibleCount = stocksAffiches.filter((p) => p.quantite > 0 && p.quantite <= p.seuil).length;
-    const produitsEnRuptureCount = stocksAffiches.filter((p) => p.quantite <= 0).length;
 
     return {
       ventesJour,
@@ -59,43 +72,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
       nbVentes: ventesValidees.length,
       stockTotal,
       creancesTotal,
-      nbProduitsVendus,
-      stockFaibleCount,
-      produitsEnRuptureCount,
     };
-  }, [ventesValidees, stocksAffiches, clients]);
-
-  const isGerant = role === 'gerant';
+  }, [ventesValidees, produitsAffiches, clients]);
 
   return (
     <div className="space-y-2">
-      {/* En-tête de bienvenue contextuelle */}
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">
-            {isGerant ? 'Tableau de bord Global' : 'Tableau de bord Boutique'}
+            {role === 'gerant' ? 'Tableau de bord Global' : 'Tableau de bord Caisse'}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500">
-            {isGerant
+            {role === 'gerant'
               ? 'Aperçu consolidé des ventes, stocks et créances du réseau'
-              : 'Gestion des ventes et suivi opérationnel du stock de votre boutique'}
+              : 'Gestion des ventes du jour et état du stock de votre boutique'}
           </p>
         </div>
         <span
           className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block"
           style={{
-            background: isGerant ? '#EEF4FF' : '#F0FDF4',
-            color: isGerant ? '#1E88E5' : '#16A34A',
+            background: role === 'gerant' ? '#EEF4FF' : '#F0FDF4',
+            color: role === 'gerant' ? '#1E88E5' : '#16A34A',
           }}
         >
-          {isGerant ? 'Mode Gérant' : 'Mode Boutiquier'}
+          {role === 'gerant' ? 'Mode Gérant' : 'Mode Boutiquier'}
         </span>
       </div>
 
-      {/* 1. Actions Rapides tout en haut */}
-      <DashboardQuickActions role={role} onNavigate={onNavigate} />
-
-      {/* 2. Cartes KPI (Financières pour Gérant, Quantitatives pour Boutiquier) */}
       <DashboardKpiCards
         role={role}
         ventesJour={stats.ventesJour}
@@ -104,34 +107,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ role, onNavigate, onVenteD
         stockTotal={stats.stockTotal}
         creancesTotal={stats.creancesTotal}
         alertesCount={alertesStock.length}
-        nbProduitsVendus={stats.nbProduitsVendus}
-        stockFaibleCount={stats.stockFaibleCount}
-        produitsEnRuptureCount={stats.produitsEnRuptureCount}
         onNavigate={onNavigate}
       />
 
-      {/* 3. Alertes de stock critique */}
+      <DashboardQuickActions role={role} onNavigate={onNavigate} />
+
       <DashboardStockAlerts
         alerts={alertesStock}
         onNavigate={onNavigate}
         onVenteDirecte={onVenteDirecte}
       />
 
-      {/* Graphiques */}
-      <div className={`grid grid-cols-1 ${isGerant ? 'lg:grid-cols-2' : ''} gap-4`}>
-        {isGerant && <DashboardSalesChart data={VENTES_SEMAINE} />}
-        <DashboardTopProducts data={TOP_PRODUITS} />
-      </div>
-
-      {/* Vue comparative multi-boutiques réservée au Gérant */}
-      {isGerant && (
+      {role === 'gerant' && (
         <DashboardBoutiquesOverview
           boutiques={boutiques}
-          produits={stocksAffiches}
+          produits={produits}
           ventes={ventes}
           onNavigate={onNavigate}
         />
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardSalesChart data={[]} />
+        <DashboardTopProducts data={[]} />
+      </div>
     </div>
   );
 };

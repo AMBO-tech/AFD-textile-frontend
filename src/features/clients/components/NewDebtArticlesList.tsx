@@ -1,6 +1,7 @@
+import { formatMontant } from '../../../utils/format';
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import type { LigneProduitCreance } from '../../../data/useMockStore';
+import type { LigneProduitCreance } from '../../../types/clients';
 
 interface NewDebtArticlesListProps {
   lignes: LigneProduitCreance[];

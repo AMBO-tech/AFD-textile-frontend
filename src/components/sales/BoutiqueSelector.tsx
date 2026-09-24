@@ -1,37 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Store, ChevronDown, Check, MapPin, Building2 } from 'lucide-react';
-import type { Boutique } from '../../data/useMockStore';
+import { Store, ChevronDown, Check, MapPin } from 'lucide-react';
+
 
 interface BoutiqueSelectorProps {
   boutiques: Boutique[];
   selectedId: string;
   onSelect: (id: string) => void;
-  allowAll?: boolean;
 }
 
 export const BoutiqueSelector: React.FC<BoutiqueSelectorProps> = ({
   boutiques,
   selectedId,
   onSelect,
-  allowAll = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedBoutique =
-    selectedId === 'tous'
-      ? {
-          id: 'tous',
-          code: 'GLOBAL',
-          nom: 'Toutes les boutiques (Réseau)',
-          type: 'BOUTIQUE' as const,
-          lieu: 'Réseau AFD Textile',
-          adresse: '',
-          telephone: '',
-          gerant: 'Tous',
-          actif: true,
-        }
-      : boutiques.find((b) => b.id === selectedId) || boutiques[0];
+    boutiques.find((b) => b.id === selectedId) || boutiques[0];
 
   // Fermeture au clic à l'extérieur
   useEffect(() => {
@@ -118,47 +104,6 @@ export const BoutiqueSelector: React.FC<BoutiqueSelectorProps> = ({
           </div>
 
           <div className="p-1.5 space-y-1 max-h-64 overflow-y-auto">
-            {allowAll && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect('tous');
-                  setIsOpen(false);
-                }}
-                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer group ${
-                  selectedId === 'tous'
-                    ? 'bg-blue-50/80 text-blue-900 font-semibold'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-              >
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <div
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      selectedId === 'tous'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-500 group-hover:bg-blue-100 group-hover:text-blue-600'
-                    }`}
-                  >
-                    <Building2 size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold truncate">
-                      Toutes les boutiques (Réseau)
-                    </div>
-                    <div className="text-[11px] text-gray-500">
-                      Vue consolidée multi-boutiques
-                    </div>
-                  </div>
-                </div>
-
-                {selectedId === 'tous' && (
-                  <div className="shrink-0 pl-2 text-blue-600">
-                    <Check size={16} strokeWidth={2.5} />
-                  </div>
-                )}
-              </button>
-            )}
-
             {boutiques.map((b) => {
               const isSelected = b.id === selectedBoutique?.id;
               return (

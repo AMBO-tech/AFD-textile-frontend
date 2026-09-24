@@ -40,11 +40,10 @@ export const useExecuteMovementMutation = () => {
       produitId: string;
       locationId: string;
       quantite: number;
-      type: 'ENTREE_STOCK' | 'SORTIE_STOCK' | 'AJUSTEMENT' | 'TRANSFERT_SORTIE' | 'TRANSFERT_ENTREE';
-      uniteUtilisee: string;
+      unite: string;
       sens: 'ENTREE' | 'SORTIE';
       justification?: string;
-    }) => stocksService.executeMovement(data),
+    }) => stocksService.executeMovement(data as any),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
     },

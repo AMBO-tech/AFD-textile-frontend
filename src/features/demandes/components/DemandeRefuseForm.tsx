@@ -1,6 +1,6 @@
 import React from 'react';
 import { Ban, AlertCircle } from 'lucide-react';
-import type { Demande } from '../../../data/useMockStore';
+import type { Demande } from '../../../types/demandes';
 
 interface DemandeRefuseFormProps {
   demande: Demande;

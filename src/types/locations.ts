@@ -1,6 +1,6 @@
-import type { LocationType } from './enums'
+﻿import type { LocationType } from './enums'
 
-export interface Location {
+export interface Location { lieu?: string;
   id: string
   type: LocationType
   nom: string
@@ -26,3 +26,6 @@ export interface UpdateLocationDto {
   telephone?: string
   actif?: boolean
 }
+export type Boutique = Location;
+
+

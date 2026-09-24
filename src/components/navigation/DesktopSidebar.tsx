@@ -4,7 +4,7 @@ import type { Screen, NavTabItem } from './types';
 
 interface DesktopSidebarProps {
   boutique: { nom: string; lieu: string };
-  role: 'gerant' | 'boutiquier';
+  role: string;
   current: Screen;
   onNavigate: (s: Screen) => void;
   nom: string;

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Search } from 'lucide-react';
-import { CATEGORIES_DATA } from '../../../data/mock';
-import { type StockEnriched } from '../../../data/useMockStore';
+import { type StockEnriched } from '../../../types/stocks';
 import DemandesStockList from '../../../components/demandes/DemandesStockList';
+
+const CATEGORIES_DATA: any[] = [];
 
 interface DemandesStockTabProps {
   search: string;
@@ -49,7 +50,7 @@ export const DemandesStockTab: React.FC<DemandesStockTabProps> = ({
         >
           Toutes
         </button>
-        {CATEGORIES_DATA.map((c) => {
+        {CATEGORIES_DATA.map((c: any) => {
           const active = filtreCat === c.nom;
           return (
             <button
@@ -72,7 +73,6 @@ export const DemandesStockTab: React.FC<DemandesStockTabProps> = ({
       <DemandesStockList
         stocks={stocks}
         onOpenDemande={onOpenDemande}
-        role={role}
       />
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search } from 'lucide-react';
-import { type Demande } from '../../../data/useMockStore';
+import { type Demande } from '../../../types/demandes';
 import DemandesTrackingList from '../../../components/demandes/DemandesTrackingList';
 
 type Statut = Demande['statut'];
@@ -74,9 +74,8 @@ export const DemandesTrackingTab: React.FC<DemandesTrackingTabProps> = ({
         demandes={demandesFiltrees}
         role={role}
         getBoutiqueName={getBoutiqueName}
-        getStatutCfg={getStatutCfg}
+        getStatutCfg={getStatutCfg as any}
         onValidate={onValidate}
-        onConfirmReception={onConfirmReception}
       />
     </div>
   );

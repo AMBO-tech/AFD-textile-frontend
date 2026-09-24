@@ -1,24 +1,19 @@
+import { formatMontant } from '@/utils/format';
 import React from 'react';
-import { Plus, AlertTriangle, CheckCircle, Store, Warehouse, ShoppingCart } from 'lucide-react';
-import type { StockEnriched } from '../../data/useMockStore';
-import { formatMontant } from '../../data/mock';
+import { Plus, AlertTriangle, CheckCircle, Package } from 'lucide-react';
+
+
 
 interface StockItemCardProps {
-  produit: StockEnriched;
-  onEntreeRapide: (produit: StockEnriched) => void;
+  produit: Produit;
+  onEntreeRapide: (produit: Produit) => void;
   onVenteRapide?: (produitId: string) => void;
-  nomEmplacement?: string;
-  typeEmplacement?: 'boutique' | 'entrepot';
-  role?: 'gerant' | 'boutiquier';
 }
 
 export const StockItemCard: React.FC<StockItemCardProps> = ({
   produit,
   onEntreeRapide,
   onVenteRapide,
-  nomEmplacement,
-  typeEmplacement = 'boutique',
-  role = 'gerant',
 }) => {
   const isCritique = produit.quantite <= produit.seuil;
   const isRupture = produit.quantite === 0;
@@ -39,24 +34,7 @@ export const StockItemCard: React.FC<StockItemCardProps> = ({
           <div className="text-xs text-gray-500 mt-0.5">
             {produit.couleur} • <span className="font-medium text-gray-700">{formatMontant(produit.prix)}</span>/{produit.unite}
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap mt-1">
-            {nomEmplacement && (
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                  typeEmplacement === 'entrepot'
-                    ? 'bg-amber-50 text-amber-800 border-amber-200/70'
-                    : 'bg-blue-50 text-blue-800 border-blue-200/70'
-                }`}
-                title={`Stock physique situé à : ${nomEmplacement}`}
-              >
-                {typeEmplacement === 'entrepot' ? (
-                  <Warehouse size={10} className="text-amber-600" />
-                ) : (
-                  <Store size={10} className="text-blue-600" />
-                )}
-                {nomEmplacement}
-              </span>
-            )}
+          <div className="flex items-center gap-1.5 mt-1">
             {isRupture ? (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
                 <AlertTriangle size={10} />
@@ -79,25 +57,14 @@ export const StockItemCard: React.FC<StockItemCardProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        {role === 'gerant' ? (
-          <button
-            onClick={() => onEntreeRapide(produit)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors"
-            title="Ajuster le stock physique"
-          >
-            <Plus size={14} />
-            <span className="hidden sm:inline">Ajuster</span>
-          </button>
-        ) : produit.quantite > 0 && onVenteRapide ? (
-          <button
-            onClick={() => onVenteRapide(produit.id)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition-colors"
-            title="Vendre à la caisse"
-          >
-            <ShoppingCart size={13} />
-            <span className="hidden sm:inline">Vendre</span>
-          </button>
-        ) : null}
+        <button
+          onClick={() => onEntreeRapide(produit)}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors"
+          title="Ajouter du stock"
+        >
+          <Plus size={14} />
+          <span className="hidden sm:inline">Entrée</span>
+        </button>
       </div>
     </div>
   );

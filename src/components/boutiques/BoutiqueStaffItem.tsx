@@ -9,7 +9,7 @@ import {
   Check,
   MessageCircle,
 } from 'lucide-react';
-import type { UtilisateurItem } from '../../data/useMockStore';
+
 
 interface BoutiqueStaffItemProps {
   user: UtilisateurItem;
@@ -42,7 +42,7 @@ export const BoutiqueStaffItem: React.FC<BoutiqueStaffItemProps> = ({
             >
               {u.nom
                 .split(' ')
-                .map((n) => n[0])
+                .map((n: any) => n[0])
                 .join('')
                 .slice(0, 2)}
             </div>

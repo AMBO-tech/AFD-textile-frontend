@@ -1,12 +1,9 @@
+import { formatMontant } from '@/utils/format';
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, CheckCircle2, ShoppingBag, ShoppingCart, User } from 'lucide-react';
+import { X, CreditCard, Banknote, Smartphone, CheckCircle2, ShoppingBag, ShoppingCart, User, ArrowRight } from 'lucide-react';
 import type { LigneVente } from './types';
-import BceaoCashKeypad from '../../features/pos/components/BceaoCashKeypad';
-import { formatMontant } from '../../data/mock';
-import { useMockStore } from '../../data/useMockStore';
-import CustomDropdownSelect from '../ui/CustomDropdownSelect';
+import { MODES_PAIEMENT } from './types';
 
-import { OPTIONS_PAIEMENT } from '../../features/pos/types';
 
 export type PaymentTarget =
   | { type: 'direct'; ligne: LigneVente }
@@ -25,41 +22,54 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   target,
   onConfirmPayment,
 }) => {
-  const { clients } = useMockStore();
   const [modePaiement, setModePaiement] = useState<string>('Espèces');
   const [nomClient, setNomClient] = useState<string>('');
   const [montantRecu, setMontantRecu] = useState<string>('');
 
+  // Réinitialiser les champs à l'ouverture
+  useEffect(() => {
+    if (isOpen) {
+      setModePaiement('Espèces');
+      setNomClient('');
+      setMontantRecu('');
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !target) return null;
+
   // Calcul du montant total net selon la cible
   const totalNet =
-    target?.type === 'direct'
+    target.type === 'direct'
       ? target.ligne.produit.prix * target.ligne.qte -
         Math.min(target.ligne.remise, target.ligne.produit.prix * target.ligne.qte)
-      : (target?.panier || []).reduce(
+      : target.panier.reduce(
           (s, l) => s + l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
           0
         );
 
-  // Réinitialiser les champs à l'ouverture et pré-remplir avec le montant exact
-  useEffect(() => {
-    if (isOpen && target) {
-      setModePaiement('Espèces');
-      setNomClient('');
-      setMontantRecu(totalNet.toString());
-    }
-  }, [isOpen, target, totalNet]);
-
-  if (!isOpen || !target) return null;
-
   const montantRecuNum = parseFloat(montantRecu) || 0;
   const monnaieARendre = modePaiement === 'Espèces' && montantRecuNum > 0 ? montantRecuNum - totalNet : 0;
-  const isMontantInsuffisant = modePaiement === 'Espèces' && (montantRecuNum <= 0 || montantRecuNum < totalNet);
-  const isCreditSansClient = modePaiement === 'Vente à crédit' && !nomClient.trim();
+  const isMontantInsuffisant = modePaiement === 'Espèces' && montantRecuNum > 0 && montantRecuNum < totalNet;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isMontantInsuffisant || isCreditSansClient) return;
+    if (isMontantInsuffisant) return;
     onConfirmPayment(nomClient.trim() || 'Passage', modePaiement);
+  };
+
+  const getModeIcon = (mode: string) => {
+    switch (mode) {
+      case 'Espèces':
+        return <Banknote size={16} className="text-emerald-600" />;
+      case 'Wave':
+        return <span className="w-4 h-4 rounded-full bg-sky-500 text-[9px] font-black text-white flex items-center justify-center">W</span>;
+      case 'Orange Money':
+        return <span className="w-4 h-4 rounded-full bg-amber-500 text-[9px] font-black text-white flex items-center justify-center">OM</span>;
+      case 'Free Money':
+        return <span className="w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center">F</span>;
+      default:
+        return <CreditCard size={16} className="text-blue-600" />;
+    }
   };
 
   return (
@@ -146,65 +156,98 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
             <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1">
                 <User size={13} className="text-gray-400" />
-                Client bénéficiaire {modePaiement === 'Vente à crédit' && <span className="text-rose-600 font-bold">* (Obligatoire pour crédit)</span>}
+                Client bénéficiaire
               </span>
-              {modePaiement !== 'Vente à crédit' && (
-                <button
-                  type="button"
-                  onClick={() => setNomClient('')}
-                  className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
-                >
-                  Client de passage
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setNomClient('')}
+                className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
+              >
+                Client de passage
+              </button>
             </label>
             <input
               type="text"
-              list="clients-comptoir-list"
               value={nomClient}
               onChange={(e) => setNomClient(e.target.value)}
-              placeholder={modePaiement === 'Vente à crédit' ? "Rechercher ou saisir le client (ex: Cheikh Ndiaye)..." : "Passage (Comptoir)"}
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none bg-white transition-all ${
-                modePaiement === 'Vente à crédit' && !nomClient.trim()
-                  ? 'border-amber-400 focus:border-amber-500 ring-2 ring-amber-100'
-                  : 'border-gray-200 focus:border-blue-500'
-              }`}
+              placeholder="Passage (Comptoir)"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:border-blue-500 bg-white"
             />
-            <datalist id="clients-comptoir-list">
-              {clients.map((c) => (
-                <option key={c.id} value={c.nom}>
-                  {c.nom} ({c.telephone || 'Sans tel'})
-                </option>
-              ))}
-            </datalist>
-            {modePaiement === 'Vente à crédit' && (
-              <p className="text-[11px] text-amber-700 mt-1 flex items-center gap-1 font-medium">
-                ⚠️ Une créance de {formatMontant(totalNet)} sera inscrite sur la fiche de ce client.
-              </p>
-            )}
           </div>
 
-          {/* Sélection du mode de paiement (Même design que BoutiqueSelector) */}
+          {/* Sélection du mode de paiement */}
           <div>
-            <CustomDropdownSelect
-              label="Mode de règlement"
-              menuTitle="Modes de paiement acceptés"
-              value={modePaiement}
-              onChange={setModePaiement}
-              options={OPTIONS_PAIEMENT}
-              icon={<CreditCard size={16} />}
-            />
+            <label className="block text-xs font-semibold text-gray-700 mb-2">
+              Mode d'encaissement *
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {MODES_PAIEMENT.map((m) => {
+                const isSelected = modePaiement === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setModePaiement(m)}
+                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition-all text-left cursor-pointer ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-2xs'
+                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="shrink-0">{getModeIcon(m)}</div>
+                    <span className="truncate">{m}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Calcul de monnaie si Espèces avec touches rapides FCFA */}
+          {/* Calcul de monnaie si Espèces */}
           {modePaiement === 'Espèces' && (
-            <BceaoCashKeypad
-              montantRecu={montantRecu}
-              totalNet={totalNet}
-              monnaieRendue={monnaieARendre}
-              onSetMontantRecu={setMontantRecu}
-              formatMontant={formatMontant}
-            />
+            <div className="p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-emerald-900">
+                  Espèces reçues du client
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setMontantRecu(totalNet.toString())}
+                  className="text-[10px] text-emerald-700 hover:underline font-bold cursor-pointer"
+                >
+                  Montant exact
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  step="500"
+                  value={montantRecu}
+                  onChange={(e) => setMontantRecu(e.target.value)}
+                  placeholder={`Ex: ${formatMontant(Math.ceil(totalNet / 1000) * 1000)}`}
+                  className="w-full px-3.5 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-bold text-gray-900 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Rendu de monnaie dynamique */}
+              {montantRecuNum > 0 && (
+                <div className="pt-1 flex items-center justify-between text-xs">
+                  {monnaieARendre >= 0 ? (
+                    <>
+                      <span className="text-gray-600">Monnaie à rendre :</span>
+                      <span className="font-extrabold text-emerald-700 text-sm">
+                        {formatMontant(monnaieARendre)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-rose-600 font-semibold text-[11px]">
+                      Montant insuffisant (manque {formatMontant(Math.abs(monnaieARendre))})
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Total final */}

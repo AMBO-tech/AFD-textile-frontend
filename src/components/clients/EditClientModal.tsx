@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit2, Phone, MapPin, Store } from 'lucide-react';
-import type { Boutique, ClientDetailed } from '../../data/useMockStore';
+
 import { CustomDropdownSelect } from '../ui/CustomDropdownSelect';
 
 interface EditClientModalProps {

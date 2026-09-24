@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { CheckCircle, AlertCircle, LogOut } from 'lucide-react';
-import { useMockStore } from '../../data/useMockStore';
 import type { ParametresProps } from './types';
 import ParametresProfileHeader from './ParametresProfileHeader';
 import ParametresPersonalInfo from './ParametresPersonalInfo';
@@ -13,8 +12,8 @@ export const Parametres: React.FC<ParametresProps> = ({
   boutiqueId = 'b1',
   onLogout,
 }) => {
-  const { boutiques } = useMockStore();
-  const maBoutique = boutiques.find((b) => b.id === boutiqueId) || boutiques[0];
+  const boutiques: any = [];
+  const maBoutique = boutiques.find((b: any) => b.id === boutiqueId) || boutiques[0];
 
   const [userNom, setUserNom] = useState(nom);
   const [telephone, setTelephone] = useState(

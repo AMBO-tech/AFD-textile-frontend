@@ -1,7 +1,7 @@
 import React from 'react';
 import { Banknote, Smartphone, CreditCard, FileText } from 'lucide-react';
 import type { DropdownOption } from '../../components/ui/CustomDropdownSelect';
-import type { StockEnriched } from '../../data/useMockStore';
+import type { StockEnriched } from '../../types/stocks';
 
 export interface LigneVente {
   produit: StockEnriched;

@@ -1,4 +1,4 @@
-import type { UtilisateurItem, Boutique } from '../../data/useMockStore';
+
 
 export type Utilisateur = UtilisateurItem;
 

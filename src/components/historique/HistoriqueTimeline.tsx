@@ -2,7 +2,7 @@ import React from 'react';
 import { Calendar, History, Warehouse, Building2, Clock, RefreshCw } from 'lucide-react';
 import type { HistoryItem } from './types';
 import { ACTION_CONFIG } from './types';
-import type { Boutique } from '../../data/useMockStore';
+
 
 interface HistoriqueTimelineProps {
   groupesParDate: Record<string, HistoryItem[]>;
@@ -26,7 +26,7 @@ export const HistoriqueTimeline: React.FC<HistoriqueTimelineProps> = ({
   const getBoutiqueInfo = (boutiqueId: string) => {
     if (boutiqueId === 'entrepot')
       return { nom: 'Entrepôt Central', lieu: 'Dakar', type: 'entrepot' };
-    const b = boutiques.find((x) => x.id === boutiqueId);
+    const b = boutiques.find((x: any) => x.id === boutiqueId);
     return b
       ? { nom: b.nom, lieu: b.lieu, type: 'boutique' }
       : { nom: 'Boutique', lieu: '', type: 'boutique' };
@@ -80,7 +80,7 @@ export const HistoriqueTimeline: React.FC<HistoriqueTimelineProps> = ({
             {/* Ligne verticale timeline */}
             <div className="absolute left-6 top-3 bottom-3 w-0.5 bg-gradient-to-b from-blue-200 via-gray-200 to-transparent -z-0" />
 
-            {items.map((item) => {
+            {items.map((item: any) => {
               const cat = getActionCategory(item);
               const cfg = ACTION_CONFIG[cat] || ACTION_CONFIG.vente;
               const Icon = cfg.icon;
@@ -148,7 +148,7 @@ export const HistoriqueTimeline: React.FC<HistoriqueTimelineProps> = ({
                       <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-slate-600 to-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
                         {item.utilisateur
                           .split(' ')
-                          .map((n) => n[0])
+                          .map((n: any) => n[0])
                           .join('')
                           .slice(0, 2)}
                       </div>

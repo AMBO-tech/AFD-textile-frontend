@@ -1,14 +1,15 @@
-import React from 'react';
-import { formatMontant } from '../../data/mock';
-import SalesHeader from '../../features/ventes/components/SalesHeader';
-import { useSalesPOS } from '../../features/ventes/hooks/useSalesPOS';
+import { formatMontant } from '@/utils/format';
+import { useAuthStore } from '../../stores/useAuthStore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ShoppingCart, RotateCcw } from 'lucide-react';
 import SalesCatalog from './SalesCatalog';
 import SalesProductConfig from './SalesProductConfig';
 import SalesCartDrawer from './SalesCartDrawer';
 import SalesSuccessModal from './SalesSuccessModal';
 import SalesCancelModal from './SalesCancelModal';
-import SalesPaymentModal from './SalesPaymentModal';
 import SalesHistoryTable from './SalesHistoryTable';
+import type { LigneVente, SalesTab } from './types';
+
 
 interface SalesProps {
   role?: 'gerant' | 'boutiquier';
@@ -21,84 +22,196 @@ export const Sales: React.FC<SalesProps> = ({
   produitDirectId,
   onReset,
 }) => {
-  const {
-    categories,
-    boutiques,
-    tab,
-    categorieChoisie,
-    setCategorieChoisie,
-    searchProd,
-    setSearchProd,
-    produitSelectionne,
-    setProduitSelectionne,
-    setSelectedBoutiqueId,
-    boutiqueActive,
-    handleTabChange,
-    panier,
-    setPanier,
-    vuePanier,
-    setVuePanier,
-    pendingPayment,
-    setPendingPayment,
-    successData,
-    setSuccessData,
-    venteToCancel,
-    setVenteToCancel,
-    stocksBoutique,
-    ventesFiltrees,
-    totalPanier,
-    handleAddToCart,
-    handleDirectSale,
-    handleCheckoutPanier,
-    handleConfirmPayment,
-    handleCancelSale,
-  } = useSalesPOS({ role, produitDirectId, onReset });
+  const produits: any = [];
+const categories: any = [];
+const ventes: any = [];
+const addVente: any = [];
+const cancelVente: any = [];
+const user = useAuthStore((s: any) => s.user); const session = user;
+
+  const [tab, setTab] = useState<SalesTab>('vente');
+  const [categorieChoisie, setCategorieChoisie] = useState<string | null>(null);
+  const [searchProd, setSearchProd] = useState('');
+  const [produitSelectionne, setProduitSelectionne] = useState<Produit | null>(null);
+
+  // Panier
+  const [panier, setPanier] = useState<LigneVente[]>([]);
+  const [vuePanier, setVuePanier] = useState(false);
+  const [modePaiement, setModePaiement] = useState('Espèces');
+  const [nomClient, setNomClient] = useState('');
+
+  // Modals confirmation / annulation
+  const [successData, setSuccessData] = useState<{ montant: number; paiement: string; client: string } | null>(null);
+  const [venteToCancel, setVenteToCancel] = useState<Vente | null>(null);
+
+  // Gestion navigation directe depuis accueil
+  useEffect(() => {
+    if (produitDirectId) {
+      const p = produits.find((pr: any) => pr.id === produitDirectId);
+      if (p) {
+        setProduitSelectionne(p);
+      }
+    }
+  }, [produitDirectId, produits]);
+
+  // Ventes filtrées selon le rôle
+  const boutiqueId = session?.boutiqueId || 'b1';
+  const ventesFiltrees = useMemo(() => {
+    return role === 'gerant' ? ventes : ventes.filter((v: any) => v.boutique === boutiqueId);
+  }, [ventes, role, boutiqueId]);
+
+  const totalPanier = panier.reduce(
+    (s: any, l: any) => s + l.produit.prix * l.qte - Math.min(l.remise, l.produit.prix * l.qte),
+    0
+  );
+
+  const handleAddToCart = (ligne: LigneVente) => {
+    setPanier((prev: any) => [...prev, ligne]);
+    onReset?.();
+  };
+
+  const handleDirectSale = (ligne: LigneVente) => {
+    const montantLigne = ligne.produit.prix * ligne.qte - Math.min(ligne.remise, ligne.produit.prix * ligne.qte);
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 5);
+
+    addVente({
+      client: nomClient.trim() || 'Passage',
+      produit: ligne.produit.nom,
+      produitId: ligne.produit.id,
+      quantite: ligne.qte,
+      unite: ligne.unite,
+      montant: montantLigne,
+      remise: ligne.remise,
+      paiement: modePaiement,
+      date: dateStr,
+      heure: heureStr,
+      statut: 'validée',
+      boutique: boutiqueId,
+      vendeur: session?.nom || 'Vendeur',
+      typeVente: 'comptant',
+    });
+
+    setSuccessData({
+      montant: montantLigne,
+      paiement: modePaiement,
+      client: nomClient.trim() || 'Passage',
+    });
+
+    onReset?.();
+  };
+
+  const handleCheckoutPanier = () => {
+    if (panier.length === 0) return;
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const heureStr = now.toTimeString().slice(0, 5);
+    const clientActuel = nomClient.trim() || 'Passage';
+
+    for (const ligne of panier) {
+      const ligneNet = ligne.produit.prix * ligne.qte - Math.min(ligne.remise, ligne.produit.prix * ligne.qte);
+      addVente({
+        client: clientActuel,
+        produit: ligne.produit.nom,
+        produitId: ligne.produit.id,
+        quantite: ligne.qte,
+        unite: ligne.unite,
+        montant: ligneNet,
+        remise: ligne.remise,
+        paiement: modePaiement,
+        date: dateStr,
+        heure: heureStr,
+        statut: 'validée',
+        boutique: boutiqueId,
+        vendeur: session?.nom || 'Vendeur',
+        typeVente: 'comptant',
+      });
+    }
+
+    setSuccessData({
+      montant: totalPanier,
+      paiement: modePaiement,
+      client: clientActuel,
+    });
+
+    setPanier([]);
+    setVuePanier(false);
+  };
 
   return (
     <div className="space-y-4">
-      {/* En-tête Caisse & Contrôles */}
-      <SalesHeader
-        role={role}
-        boutiques={boutiques}
-        boutiqueActive={boutiqueActive}
-        onSelectBoutique={(id) => {
-          setSelectedBoutiqueId(id);
-          setCategorieChoisie(null);
-          setSearchProd('');
-        }}
-        panierLength={panier.length}
-        totalPanier={totalPanier}
-        formatMontant={formatMontant}
-        onOpenPanier={() => setVuePanier(true)}
-        tab={tab}
-        onTabChange={handleTabChange}
-        ventesCount={ventesFiltrees.length}
-      />
+      {/* En-tête Caisse & Onglets */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+        <div>
+          <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">
+            Point de Vente (Caisse)
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500">
+            Enregistrement des ventes comptant et à crédit
+          </p>
+        </div>
+
+        {/* Bouton Panier flottant */}
+        <button
+          type="button"
+          onClick={() => setVuePanier(true)}
+          className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs text-white shadow-sm hover:opacity-95 self-start sm:self-auto transition-all"
+          style={{ background: '#0F3D5E' }}
+        >
+          <ShoppingCart size={16} />
+          <span>Panier ({panier.length})</span>
+          {totalPanier > 0 && (
+            <span className="ml-1 pl-2 border-l border-white/20 font-bold">
+              {formatMontant(totalPanier)}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Onglets Vente / Historique */}
+      <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl max-w-xs">
+        <button
+          type="button"
+          onClick={() => setTab('vente')}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+            tab === 'vente' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          Nouvelle vente
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('historique')}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+            tab === 'historique' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+          }`}
+        >
+          Historique ({ventesFiltrees.length})
+        </button>
+      </div>
 
       {/* Contenu selon onglet */}
       {tab === 'vente' ? (
         <SalesCatalog
           categories={categories}
-          produits={stocksBoutique}
+          produits={produits}
           categorieChoisie={categorieChoisie}
           onSelectCategorie={setCategorieChoisie}
           searchProd={searchProd}
           onSearchChange={setSearchProd}
-          onSelectProduit={setProduitSelectionne}
-          role={role}
+          onSelectProduit={(prod: any) => setProduitSelectionne(prod)}
         />
       ) : (
-        /* Historique des ventes de la boutique active */
         <SalesHistoryTable
           ventes={ventesFiltrees}
-          onCancelClick={(v) => setVenteToCancel(v)}
+          onCancelClick={(v: any) => setVenteToCancel(v)}
           role={role}
-          boutiques={boutiques}
-          boutiqueActive={boutiqueActive}
         />
       )}
 
-      {/* Modal Configuration Produit */}
+      {/* Modals modulaires */}
       <SalesProductConfig
         produit={produitSelectionne}
         onClose={() => {
@@ -109,47 +222,40 @@ export const Sales: React.FC<SalesProps> = ({
         onDirectSale={handleDirectSale}
       />
 
-      {/* Tiroir Panier */}
       <SalesCartDrawer
         isOpen={vuePanier}
         onClose={() => setVuePanier(false)}
         panier={panier}
-        onUpdateQte={(idx, newQte) =>
-          setPanier((prev) =>
-            prev.map((item, i) => (i === idx ? { ...item, qte: newQte } : item))
-          )
-        }
-        onRemoveItem={(idx) => setPanier((prev) => prev.filter((_, i) => i !== idx))}
+        onUpdateQte={(idx: any, qte: any) => {
+          setPanier((prev: any) =>
+            prev.map((item: any, i: any) => (i === idx ? { ...item, qte } : item))
+          );
+        }}
+        onRemoveItem={(idx: any) => {
+          setPanier((prev: any) => prev.filter((_: any, i: any) => i !== idx));
+        }}
+        modePaiement={modePaiement}
+        onModePaiementChange={setModePaiement}
+        nomClient={nomClient}
+        onNomClientChange={setNomClient}
         onCheckout={handleCheckoutPanier}
       />
 
-      {/* Modale dédiée d'encaissement et choix paiement */}
-      <SalesPaymentModal
-        isOpen={!!pendingPayment}
-        onClose={() => setPendingPayment(null)}
-        target={pendingPayment}
-        onConfirmPayment={handleConfirmPayment}
+      <SalesSuccessModal
+        isOpen={Boolean(successData)}
+        onClose={() => setSuccessData(null)}
+        montant={successData?.montant || 0}
+        paiement={successData?.paiement || 'Espèces'}
+        client={successData?.client || 'Passage'}
       />
 
-      {/* Modal Succès Encaissement */}
-      {successData && (
-        <SalesSuccessModal
-          isOpen={!!successData}
-          onClose={() => setSuccessData(null)}
-          montant={successData.montant}
-          paiement={successData.paiement}
-          client={successData.client}
-        />
-      )}
-
-      {/* Modal Annulation de Vente */}
-      {venteToCancel && (
-        <SalesCancelModal
-          vente={venteToCancel}
-          onClose={() => setVenteToCancel(null)}
-          onConfirmCancel={(id, motif) => handleCancelSale(id, motif)}
-        />
-      )}
+      <SalesCancelModal
+        vente={venteToCancel}
+        onClose={() => setVenteToCancel(null)}
+        onConfirmCancel={(id: any, motif: any) => {
+          cancelVente(id, motif, session?.nom);
+        }}
+      />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, CheckCircle, XCircle, ArrowLeftRight, Building2 } from 'lucide-react';
-import type { Demande, Boutique } from '../../data/useMockStore';
+
 
 interface DemandesListProps {
   demandes: Demande[];

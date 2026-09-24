@@ -1,3 +1,4 @@
+﻿
 import { create } from 'zustand';
 import type { User, UserRole } from '@/types/auth';
 import { tokenStore } from '@/lib/tokenStore';
@@ -6,7 +7,7 @@ const USER_STORAGE_KEY = '__rsk_user__';
 
 function getStoredUser(): User | null {
   try {
-    const raw = sessionStorage.getItem(USER_STORAGE_KEY) || localStorage.getItem(USER_STORAGE_KEY);
+    const raw = sessionStorage.getItem(USER_STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -17,10 +18,8 @@ function setStoredUser(user: User | null): void {
   try {
     if (user) {
       sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
     } else {
       sessionStorage.removeItem(USER_STORAGE_KEY);
-      localStorage.removeItem(USER_STORAGE_KEY);
     }
   } catch {
     // Ignore storage errors
@@ -29,7 +28,6 @@ function setStoredUser(user: User | null): void {
 
 interface AuthState {
   token: string | null;
-  refreshToken: string | null;
   user: User | null;
   isInitialized: boolean;
   isAuthenticated: boolean;
@@ -37,7 +35,7 @@ interface AuthState {
   // Actions
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
-  setAuth: (token: string, user?: User | null, refreshToken?: string | null) => void;
+  setAuth: (token: string, user?: User | null) => void;
   clearAuth: () => void;
   setInitialized: (initialized: boolean) => void;
 
@@ -50,12 +48,10 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => {
   const initialToken = tokenStore.get();
-  const initialRefreshToken = tokenStore.getRefreshToken();
   const initialUser = getStoredUser();
 
   return {
     token: initialToken,
-    refreshToken: initialRefreshToken,
     user: initialUser,
     isInitialized: Boolean(initialToken),
     isAuthenticated: Boolean(initialToken),
@@ -74,13 +70,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ user });
     },
 
-    setAuth: (token, user = null, refreshToken = null) => {
+    setAuth: (token, user = null) => {
       tokenStore.set(token);
-      if (refreshToken) tokenStore.setRefreshToken(refreshToken);
       setStoredUser(user);
       set({
         token,
-        refreshToken,
         user,
         isAuthenticated: true,
         isInitialized: true,
@@ -92,7 +86,6 @@ export const useAuthStore = create<AuthState>((set, get) => {
       setStoredUser(null);
       set({
         token: null,
-        refreshToken: null,
         user: null,
         isAuthenticated: false,
         isInitialized: true,

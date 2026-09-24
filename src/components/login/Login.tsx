@@ -5,80 +5,31 @@ import LoginFormView from './LoginFormView';
 import LoginPhoneResetView from './LoginPhoneResetView';
 import LoginOtpView from './LoginOtpView';
 import LoginNewPasswordView from './LoginNewPasswordView';
-import { BOUTIQUE_IDS } from '../../data/mock';
 
-/**
- * @constant COMPTES
- * Comptes de démonstration / mock pour les tests hors-ligne et la prévisualisation.
- * 
- * @backend_migration_guide
- * Lors du branchement sur le backend réel (API NestJS / Express / PostgreSQL) :
- * 1. Déprécier et supprimer cette constante COMPTES.
- * 2. Remplacer `handleLoginSubmit` par :
- *    ```ts
- *    const { data } = await authApi.post('/api/v1/auth/login', { identifiant, motdepasse });
- *    // data retourne: { accessToken, user: { id, nom, role, boutiqueId } }
- *    setSession({ role: data.user.role, nom: data.user.nom, boutiqueId: data.user.boutiqueId });
- *    ```
- * 3. Le mot de passe sera vérifié via argon2/bcrypt côté serveur.
- * 4. Les collaborateurs invités sur /activer-compte auront leur hash en base et pourront se connecter directement.
- */
 const COMPTES = [
   {
     id: 'amadou.diallo@afd-textile.sn',
     pwd: 'afd2026',
     role: 'gerant' as const,
     nom: 'Amadou Diallo',
-    boutiqueId: undefined,
-  },
-  {
-    id: 'abdallahdiouf.dev@gmail.com',
-    pwd: 'Passer@123',
-    role: 'gerant' as const,
-    nom: 'Abdallah Diouf',
-    boutiqueId: undefined,
-  },
-  {
-    id: '+221770000001',
-    pwd: 'Passer@123',
-    role: 'gerant' as const,
-    nom: 'Abdallah Diouf',
-    boutiqueId: undefined,
-  },
-  {
-    id: '+221771110001',
-    pwd: 'Passer@123',
-    role: 'boutiquier' as const,
-    nom: 'Modou Fall',
-    boutiqueId: '00000000-0000-0000-0000-000000000002',
   },
   {
     id: '+221 77 010 20 30',
     pwd: 'afd2026',
     role: 'gerant' as const,
     nom: 'Amadou Diallo',
-    boutiqueId: undefined,
   },
   {
     id: 'fatou.sow@afd-textile.sn',
     pwd: 'afd2026',
     role: 'gerant' as const,
     nom: 'Fatou Sow',
-    boutiqueId: undefined,
   },
   {
     id: 'ibrahima.sarr@afd-textile.sn',
     pwd: 'afd2026',
     role: 'boutiquier' as const,
     nom: 'Ibrahima Sarr',
-    boutiqueId: BOUTIQUE_IDS.PLATEAU, // Dakar Plateau
-  },
-  {
-    id: 'moussa.fall@afd-textile.sn',
-    pwd: 'afd2026',
-    role: 'boutiquier' as const,
-    nom: 'Moussa Fall',
-    boutiqueId: BOUTIQUE_IDS.PIKINE, // Pikine Marché Zinc
   },
 ];
 
@@ -96,39 +47,30 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setDejaConnecte(localStorage.getItem('afd_deja_connecte') === '1');
   }, []);
 
-  const handleLoginSubmit = async (identifiant: string, motdepasse: string) => {
-    if (!identifiant.trim() || !motdepasse.trim()) {
-      setErreur('Veuillez remplir tous les champs.');
-      return;
-    }
+  const handleLoginSubmit = (identifiant: string, motdepasse: string) => {
     setLoading(true);
     setErreur('');
-
-    try {
-      // 1. Tenter l'authentification API NestJS réelle
-      await onLogin('gerant', '', undefined, {
-        identifier: identifiant.trim(),
-        motDePasse: motdepasse.trim(),
-      });
-      localStorage.setItem('afd_deja_connecte', '1');
+    
+    if (!identifiant.trim() || !motdepasse.trim()) {
+      setErreur('Veuillez remplir tous les champs.');
       setLoading(false);
-    } catch (apiErr: unknown) {
-      // 2. Fallback mode démo si serveur inaccessible ou compte mock
-      const id = identifiant.trim().toLowerCase();
-      const compte = COMPTES.find(
-        (c) => c.id.toLowerCase() === id && c.pwd === motdepasse.trim()
-      );
-      if (compte) {
-        localStorage.setItem('afd_deja_connecte', '1');
-        onLogin(compte.role, compte.nom, compte.boutiqueId);
-        setLoading(false);
-        return;
-      }
-
-      const msg = apiErr instanceof Error ? apiErr.message : 'Identifiant ou mot de passe incorrect.';
-      setErreur(msg);
-      setLoading(false);
+      return;
     }
+    
+    // On dǸlgue la requǦte d'authentification vers la couche supǸrieure (LoginPage)
+    // qui grera l'appel rǸel API NestJS.
+    Promise.resolve(
+      onLogin(
+        'gerant', // RǦle temporaire, ǸcrasǸ par l'API rǸelle
+        '', // Nom temporaire, ǸcrasǸ par l'API rǸelle
+        undefined,
+        { identifier: identifiant.trim(), motDePasse: motdepasse.trim() }
+      )
+    ).catch((err: any) => {
+      setErreur(err.message || 'Identifiant ou mot de passe incorrect.');
+    }).finally(() => {
+      setLoading(false);
+    });
   };
 
   const handleSavePassword = (newPwd: string, confirmPwd: string) => {
@@ -137,13 +79,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setErreurMdp('Minimum 6 caractères.');
       return;
     }
-
     if (newPwd !== confirmPwd) {
       setErreurMdp('Les mots de passe ne correspondent pas.');
       return;
     }
-
-    setOtp(['', '', '', '', '', '']);
+    setOtp(['', '', '', '']);
     setTelephone('');
     setSuccessMsg('Mot de passe réinitialisé avec succès.');
     setVue('login');

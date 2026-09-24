@@ -17,14 +17,12 @@ interface BoutiqueCardProps {
   boutique: BoutiqueWithStaff;
   onEdit: (b: BoutiqueWithStaff) => void;
   onToggleStatus: (id: string) => void;
-  onViewStaff?: (b: BoutiqueWithStaff) => void;
 }
 
 export const BoutiqueCard: React.FC<BoutiqueCardProps> = ({
   boutique,
   onEdit,
   onToggleStatus,
-  onViewStaff,
 }) => {
   const isEntrepot = boutique.type === 'ENTREPOT';
   const Icon = isEntrepot ? Warehouse : Store;
@@ -93,23 +91,16 @@ export const BoutiqueCard: React.FC<BoutiqueCardProps> = ({
 
         {/* Section Droite : Métriques discrètes & Actions */}
         <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50 flex-shrink-0">
-          <div className="flex items-center gap-2 text-right">
-            <button
-              type="button"
-              onClick={() => onViewStaff?.(boutique)}
-              className="flex items-center gap-1.5 text-xs text-gray-700 hover:text-blue-600 hover:bg-blue-50 px-2.5 py-1 rounded-xl transition-colors cursor-pointer group border border-transparent hover:border-blue-100"
-              title="Cliquer pour afficher la modale des vendeurs"
-            >
-              <Users size={13} className="text-gray-400 group-hover:text-blue-600" />
+          <div className="flex items-center gap-3 text-right">
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              <Users size={13} className="text-gray-400" />
               <span>
-                <strong className="text-gray-900 group-hover:text-blue-600">{boutique.personnel.length}</strong>{' '}
-                <span className="text-gray-500 group-hover:text-blue-600 underline underline-offset-2">
-                  vendeur{boutique.personnel.length > 1 ? 's' : ''}
-                </span>
+                <strong className="text-gray-900">{boutique.personnel.length}</strong>{' '}
+                <span className="text-gray-500">vendeur{boutique.personnel.length > 1 ? 's' : ''}</span>
               </span>
-            </button>
+            </div>
             <span className="text-gray-200">·</span>
-            <div className="flex items-center gap-1.5 text-xs text-gray-700 px-2 py-1">
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
               <Package size={13} className="text-gray-400" />
               <span>
                 <strong className="text-gray-900">{boutique.nbArticlesStock}</strong>{' '}

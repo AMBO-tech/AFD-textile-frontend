@@ -3,7 +3,7 @@ import {
   Sparkles, ShoppingCart, PackagePlus, ArrowLeftRight, CreditCard,
   Tag, AlertCircle, LogIn
 } from 'lucide-react';
-import type { HistoriqueItem } from '../../data/useMockStore';
+
 
 export type HistoryItem = HistoriqueItem;
 
