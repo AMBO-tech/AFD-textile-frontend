@@ -5,6 +5,7 @@ import ParametresProfileHeader from './ParametresProfileHeader';
 import ParametresPersonalInfo from './ParametresPersonalInfo';
 import ParametresSecurityForm from './ParametresSecurityForm';
 import ParametresNotificationPrefs from './ParametresNotificationPrefs';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
 
 export const Parametres: React.FC<ParametresProps> = ({
   nom = 'Amadou Diallo',
@@ -12,8 +13,9 @@ export const Parametres: React.FC<ParametresProps> = ({
   boutiqueId = 'b1',
   onLogout,
 }) => {
-  const boutiques: any = [];
-  const maBoutique = boutiques.find((b: any) => b.id === boutiqueId) || boutiques[0];
+  const { data: locRes } = useLocationsListQuery();
+  const boutiques = locRes?.data || [];
+  const maBoutique = boutiques.find((b: any) => b.id === boutiqueId) || boutiques[0] || { nom: 'Boutique par défaut' };
 
   const [userNom, setUserNom] = useState(nom);
   const [telephone, setTelephone] = useState(

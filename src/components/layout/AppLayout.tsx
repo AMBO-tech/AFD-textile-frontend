@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Navigation } from '../navigation';
 import type { Screen } from '../navigation/types';
@@ -8,9 +8,8 @@ import { useNotificationsQuery } from '../../hooks/queries/useNotificationsQuery
 import { Toaster } from '../ui/sonner';
 
 export const AppLayout: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const session = user as any;
-  const setSession: any = () => {};
   const demandes: any[] = [];
   const boutiques: any[] = [];
   const location = useLocation();
@@ -64,7 +63,7 @@ export const AppLayout: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setSession(null);
+    clearAuth();
     navigate('/login');
   };
 
