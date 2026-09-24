@@ -1,17 +1,11 @@
+import type { Client } from '@/types/clients';
+import type { MoyenPaiement } from '@/types/enums';
+import { MODES_PAIEMENT as MODES_CAISSE } from '../../features/pos/types';
 
+/** Modes d'encaissement d'un règlement ou d'un acompte : les mêmes qu'en caisse. */
+export const MODES_PAIEMENT: readonly { label: string; api: MoyenPaiement }[] = MODES_CAISSE;
 
-;
-
-export const MODES_PAIEMENT = ['Espèces', 'Wave', 'Orange Money', 'Free Money', 'Carte bancaire'] as const;
-export const UNITES = ['mètre', 'yard', 'kilo', 'tonne', 'pièce'] as const;
-
-export function soldeClient(c: ClientDetailed): number {
-  return c.creances.reduce((s: any, cr: any) => {
-    const paye = cr.paiements.reduce((sp: any, p: any) => sp + p.montant, 0);
-    return s + Math.max(0, cr.montantTotal - paye);
-  }, 0);
-}
-
-export function totalLignes(ls: LigneProduitCreance[]): number {
-  return ls.reduce((s: any, l: any) => s + l.quantite * l.prixUnitaire, 0);
+/** Solde restant dû, calculé par l'API sur les factures impayées du client. */
+export function soldeClient(c: Pick<Client, 'soldeDu' | 'totalDu'>): number {
+  return c.soldeDu ?? c.totalDu ?? 0;
 }

@@ -5,11 +5,12 @@ import { Search } from 'lucide-react';
 interface ClientFiltersProps {
   search: string;
   onSearchChange: (v: string) => void;
-  filtreBoutique: string;
-  onBoutiqueChange: (v: string) => void;
+  /** Filtre boutique facultatif (les fiches clients sont communes au réseau). */
+  filtreBoutique?: string;
+  onBoutiqueChange?: (v: string) => void;
   filtreSolde: 'tous' | 'creance' | 'a_jour';
   onSoldeChange: (v: 'tous' | 'creance' | 'a_jour') => void;
-  boutiques: Boutique[];
+  boutiques?: Boutique[];
   role: 'gerant' | 'boutiquier';
 }
 
@@ -20,7 +21,7 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
   onBoutiqueChange,
   filtreSolde,
   onSoldeChange,
-  boutiques,
+  boutiques = [],
   role,
 }) => {
   return (
@@ -69,7 +70,7 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
         </div>
 
         {/* Filtre boutique si gérant */}
-        {role === 'gerant' && (
+        {role === 'gerant' && boutiques.length > 0 && onBoutiqueChange && (
           <div className="flex-1">
             <select
               value={filtreBoutique}

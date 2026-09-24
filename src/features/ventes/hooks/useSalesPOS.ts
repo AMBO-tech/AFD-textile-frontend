@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import type { SalesTab } from '../types';
-import { MODES_PAIEMENT, MODE_CREDIT } from '../../pos/types';
+import { MODES_PAIEMENT } from '../../pos/types';
 import type { LigneVente, PaymentChoice, PosProduit } from '../../pos/types';
 import { montantsLigne, toPosProduit, totalPanier as calculerTotalPanier } from '../../pos/pricing';
 import type { PaymentTarget } from '../../../components/sales/SalesPaymentModal';
@@ -126,11 +126,10 @@ export const useSalesPOS = ({ produitDirectId, onReset }: UseSalesPOSProps) => {
     }
 
     const lignes = pendingPayment.type === 'direct' ? [pendingPayment.ligne] : pendingPayment.panier;
-    const moyen = MODES_PAIEMENT.find((m) => m.label === mode)?.api ?? null;
-    const isCredit = mode === MODE_CREDIT;
-
-    if (isCredit && !clientId) {
-      throw new Error('Une vente à crédit doit être rattachée à un client enregistré.');
+    // Caisse = vente comptant : le total est encaissé immédiatement.
+    const moyen = MODES_PAIEMENT.find((m) => m.label === mode)?.api;
+    if (!moyen) {
+      throw new Error('Mode de paiement inconnu.');
     }
 
     let vente: Vente;
@@ -139,9 +138,7 @@ export const useSalesPOS = ({ produitDirectId, onReset }: UseSalesPOSProps) => {
         boutiqueId: boutiqueActive,
         ...(clientId ? { clientId } : {}),
         lignes: lignesPourApi(lignes),
-        ...(moyen
-          ? { paiementInitial: { montant: calculerTotalPanier(lignes), modePaiement: moyen } }
-          : {}),
+        paiementInitial: { montant: calculerTotalPanier(lignes), modePaiement: moyen },
         idempotencyKey: crypto.randomUUID(),
       });
     } catch (error) {
@@ -157,11 +154,7 @@ export const useSalesPOS = ({ produitDirectId, onReset }: UseSalesPOSProps) => {
       client,
       reference: vente.referenceFacture,
     });
-    toast.success(
-      isCredit
-        ? `Vente à crédit ${vente.referenceFacture} enregistrée pour ${client} (${formatMontant(vente.montantTotal)})`
-        : `Vente ${vente.referenceFacture} encaissée : ${formatMontant(vente.montantTotal)} (${mode})`,
-    );
+    toast.success(`Vente ${vente.referenceFacture} encaissée : ${formatMontant(vente.montantTotal)} (${mode})`);
 
     setPendingPayment(null);
     setProduitSelectionne(null);

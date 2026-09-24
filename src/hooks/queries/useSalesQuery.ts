@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ventesService } from '../../services/ventes.service';
 import type { CreateSaleDto } from '../../types/sales';
 import { STOCK_KEYS } from './useStocksQuery';
+import { ANALYTICS_KEYS } from './useAnalyticsQuery';
+import { CLIENT_KEYS } from './useClientsQuery';
 
 export const SALES_KEYS = {
   all: ['sales'] as const,
@@ -44,6 +46,9 @@ export const useCreateSaleMutation = () => {
       // Invalider les ventes et les stocks en temps réel
       queryClient.invalidateQueries({ queryKey: SALES_KEYS.all });
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      // KPIs du tableau de bord et créances clients dépendent des ventes
+      queryClient.invalidateQueries({ queryKey: ANALYTICS_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.all });
     },
   });
 };
@@ -58,6 +63,9 @@ export const useCancelSaleMutation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SALES_KEYS.all });
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      // KPIs du tableau de bord et créances clients dépendent des ventes
+      queryClient.invalidateQueries({ queryKey: ANALYTICS_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.all });
     },
   });
 };

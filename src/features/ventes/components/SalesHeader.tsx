@@ -46,7 +46,7 @@ export const SalesHeader: React.FC<SalesHeaderProps> = ({
             </span>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Enregistrement des ventes comptant et commandes à crédit
+            Encaissement des ventes comptant (le crédit se gère dans Clients)
           </p>
         </div>
 

@@ -1,46 +1,50 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Phone, MapPin } from 'lucide-react';
+import { X, UserPlus, Phone, MapPin, AlertCircle } from 'lucide-react';
+import type { CreateClientDto } from '@/types/clients';
 
+const PREFIXE_TEL = '+221 ';
 
 interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  boutiques: Boutique[];
-  defaultBoutiqueId: string;
-  role: 'gerant' | 'boutiquier';
-  onSubmit: (client: { nom: string; telephone: string; adresse: string; boutiqueId: string }) => void;
+  /** Rejette avec un message lisible si l'API refuse : la fenêtre reste ouverte. */
+  onSubmit: (client: CreateClientDto) => Promise<void>;
 }
 
 export const NewClientModal: React.FC<NewClientModalProps> = ({
   isOpen,
   onClose,
-  boutiques,
-  defaultBoutiqueId,
-  role,
   onSubmit,
 }) => {
   const [nom, setNom] = useState('');
-  const [telephone, setTelephone] = useState('+221 ');
+  const [telephone, setTelephone] = useState(PREFIXE_TEL);
   const [adresse, setAdresse] = useState('');
-  const [boutiqueId, setBoutiqueId] = useState(defaultBoutiqueId);
+  const [erreur, setErreur] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom.trim()) return;
-
-    onSubmit({
-      nom: nom.trim(),
-      telephone: telephone.trim(),
-      adresse: adresse.trim() || 'Dakar',
-      boutiqueId,
-    });
-
-    setNom('');
-    setTelephone('+221 ');
-    setAdresse('');
-    onClose();
+    if (!nom.trim() || isSubmitting) return;
+    const tel = telephone.trim();
+    setErreur('');
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        nom: nom.trim(),
+        ...(tel && tel !== PREFIXE_TEL.trim() ? { telephone: tel } : {}),
+        ...(adresse.trim() ? { adresse: adresse.trim() } : {}),
+      });
+      setNom('');
+      setTelephone(PREFIXE_TEL);
+      setAdresse('');
+      onClose();
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : "Le client n'a pas pu être créé.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -108,22 +112,9 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
             </div>
           </div>
 
-          {role === 'gerant' && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Boutique d'enregistrement
-              </label>
-              <select
-                value={boutiqueId}
-                onChange={(e) => setBoutiqueId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500"
-              >
-                {boutiques.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.nom} ({b.lieu})
-                  </option>
-                ))}
-              </select>
+          {erreur && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" /> <span>{erreur}</span>
             </div>
           )}
 
@@ -137,10 +128,11 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95 disabled:opacity-60"
               style={{ background: '#0F3D5E' }}
             >
-              Créer le compte client
+              {isSubmitting ? 'Création…' : 'Créer le compte client'}
             </button>
           </div>
         </form>

@@ -9,6 +9,8 @@ export interface Client {
   adresse?: string | null
   notes?: string | null
   statut: ProductStatus
+  /** Solde restant dû sur les factures impayées (calculé par l'API). */
+  soldeDu?: number
   totalDu?: number
   nombreFacturesImpayees?: number
   createdAt: string
@@ -34,7 +36,8 @@ export interface UpdateClientDto {
 
 export interface ClientQueryParams extends PaginationParams {
   statut?: ProductStatus
-  avecDetteSeulement?: boolean
+  /** Uniquement les clients ayant un solde dû (nom du paramètre API). */
+  hasDebt?: boolean
 }
 
 export interface ClientInvoiceDebtDto {

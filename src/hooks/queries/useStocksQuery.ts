@@ -6,7 +6,9 @@ export const STOCK_KEYS = {
   levels: (params?: { locationId?: string; categorieId?: string; enAlerte?: boolean; page?: number; limit?: number }) =>
     [...STOCK_KEYS.all, 'levels', params] as const,
   movements: (params?: Record<string, unknown>) => [...STOCK_KEYS.all, 'movements', params] as const,
-  transfers: (params?: Record<string, unknown>) => [...STOCK_KEYS.all, 'transfers', params] as const,
+  /** Préfixe de toutes les listes de transferts (à utiliser pour invalider, quels que soient les filtres). */
+  transfersAll: () => [...STOCK_KEYS.all, 'transfers'] as const,
+  transfers: (params?: Record<string, unknown>) => [...STOCK_KEYS.transfersAll(), params] as const,
 };
 
 /**
@@ -40,16 +42,11 @@ export const useStockMovementsQuery = (params?: Record<string, unknown>) => {
 export const useExecuteMovementMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
-      produitId: string;
-      locationId: string;
-      quantite: number;
-      unite: string;
-      sens: 'ENTREE' | 'SORTIE';
-      justification?: string;
-    }) => stocksService.executeMovement(data as any),
+    mutationFn: (data: Parameters<typeof stocksService.executeMovement>[0]) =>
+      stocksService.executeMovement(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };
@@ -60,14 +57,10 @@ export const useExecuteMovementMutation = () => {
 export const useAdjustStockMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
-      produitId: string;
-      locationId: string;
-      quantiteReelle: number;
-      justification: string;
-    }) => stocksService.adjust(data),
+    mutationFn: (data: Parameters<typeof stocksService.adjust>[0]) => stocksService.adjust(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
     },
   });
 };
@@ -84,7 +77,45 @@ export const useRequestTransferMutation = () => {
       lignes: { produitId: string; quantite: number; unite: string }[];
     }) => stocksService.requestTransfer(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfers() });
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfersAll() });
+    },
+  });
+};
+
+/**
+ * Liste des transferts (le serveur limite un boutiquier à ceux de sa boutique)
+ */
+export const useTransfersQuery = (params?: Record<string, unknown>) => {
+  return useQuery({
+    queryKey: STOCK_KEYS.transfers(params),
+    queryFn: () => stocksService.getTransfers(params),
+    staleTime: 1000 * 30,
+  });
+};
+
+/**
+ * Validation d'une demande de transfert par le gérant (mouvement de stock source -> destination)
+ */
+export const useValidateTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, locationSourceId }: { id: string; locationSourceId?: string }) =>
+      stocksService.validateTransfer(id, locationSourceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+    },
+  });
+};
+
+/**
+ * Refus / annulation d'une demande de transfert
+ */
+export const useCancelTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motif }: { id: string; motif: string }) => stocksService.cancelTransfer(id, motif),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfersAll() });
     },
   });
 };

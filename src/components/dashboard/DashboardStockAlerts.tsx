@@ -1,9 +1,10 @@
 import React from 'react';
 import { AlertTriangle, ChevronRight, ShoppingCart } from 'lucide-react';
-
+import type { StockLevel } from '../../types/stocks';
+import { LIBELLES_UNITE } from '../../features/pos/pricing';
 
 interface DashboardStockAlertsProps {
-  alerts: Produit[];
+  alerts: StockLevel[];
   onNavigate?: (s: string) => void;
   onVenteDirecte?: (produitId: string) => void;
 }
@@ -44,22 +45,23 @@ export const DashboardStockAlerts: React.FC<DashboardStockAlertsProps> = ({
           <div key={prod.id} className="py-2.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                <img src={prod.photo} alt={prod.nom} className="w-full h-full object-cover" />
+                <img src={prod.produitPhotoUrl} alt={prod.produitNom} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-medium text-gray-800 truncate">{prod.nom}</div>
-                <div className="text-xs text-gray-400">
-                  {prod.categorie} • {prod.couleur}
+                <div className="text-sm font-medium text-gray-800 truncate">{prod.produitNom}</div>
+                <div className="text-xs text-gray-400 truncate">
+                  {prod.locationNom} • {prod.produitReference}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                {prod.quantite} {prod.unite} restant{prod.quantite > 1 ? 's' : ''}
+                {prod.quantite} {LIBELLES_UNITE[prod.uniteStockage]}
+                {prod.quantite > 1 ? 's' : ''} restant{prod.quantite > 1 ? 's' : ''}
               </span>
               {onVenteDirecte && (
                 <button
-                  onClick={() => onVenteDirecte(prod.id)}
+                  onClick={() => onVenteDirecte(prod.produitId)}
                   className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                   title="Vendre directement"
                 >

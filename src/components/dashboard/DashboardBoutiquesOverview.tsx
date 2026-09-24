@@ -36,8 +36,8 @@ export const DashboardBoutiquesOverview: React.FC<DashboardBoutiquesOverviewProp
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {boutiques.map((b) => {
           const ventesBoutique = ventes
-            .filter((v) => v.locationId === b.id && (v.statut === 'VALIDE' || v.statut === 'validée'))
-            .reduce((s, v) => s + (v.montant || v.montantTotal || 0), 0);
+            .filter((v) => v.boutiqueId === b.id && v.statut === 'CONFIRMEE')
+            .reduce((s, v) => s + v.montantTotal, 0);
 
           const stockBoutique = produits
             .filter((p) => p.locationId === b.id)

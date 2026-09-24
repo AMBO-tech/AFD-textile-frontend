@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { clientsService } from '../../services/clients.service';
+import { ANALYTICS_KEYS } from './useAnalyticsQuery';
 import type { CreateClientDto, UpdateClientDto, ClientQueryParams } from '../../types/clients';
 
 export const CLIENT_KEYS = {
@@ -77,17 +78,27 @@ export const useUpdateClientMutation = () => {
 export const useRecordPaymentMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      clientId,
-      data,
-    }: {
-      clientId: string;
-      data: { montant: number; modePaiement: string; referenceExterne?: string };
-    }) => clientsService.recordPayment(clientId, data),
+    mutationFn: (data: Parameters<typeof clientsService.recordPayment>[0]) =>
+      clientsService.recordPayment(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.detail(variables.clientId) });
       queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.debts(variables.clientId) });
+      queryClient.invalidateQueries({ queryKey: ANALYTICS_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+    },
+  });
+};
+
+/**
+ * Mutation pour archiver un client (suppression logique : l'historique reste consultable)
+ */
+export const useArchiveClientMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => clientsService.archive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLIENT_KEYS.all });
     },
   });
 };

@@ -24,14 +24,14 @@ const BOTTOM_TABS_MOBILE: readonly NavTabItem[] = [
   { id: 'parametres', label: 'Paramètres', icon: User },
 ];
 
+// Gérant : l'écran des demandes s'appelle « Transferts » (il les valide, il ne les émet pas).
 const TABS_SIDEBAR_EXTRA: readonly NavTabItem[] = [
-  { id: 'demandes', label: 'Demandes', icon: MessageSquare },
+  { id: 'demandes', label: 'Transferts', icon: ArrowLeftRight },
   { id: 'produits', label: 'Produits', icon: Package },
 ];
 
 const TABS_GERANT: readonly NavTabItem[] = [
   { id: 'utilisateurs', label: 'Utilisateurs', icon: Users },
-  { id: 'entrepot', label: 'Transferts', icon: ArrowLeftRight },
   { id: 'historique', label: 'Historique', icon: History },
   { id: 'parametres', label: 'Paramètres', icon: Settings },
 ];
