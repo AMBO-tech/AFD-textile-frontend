@@ -36,7 +36,7 @@ export const Clients: React.FC<ClientsProps> = ({
   
   const session = useAuthStore((s: any) => s.user);
 
-  const { data: clientsRes } = useClientsListQuery({ boutiqueId: role === 'boutiquier' ? boutiqueId : undefined } as any);
+  const { data: clientsRes } = useClientsListQuery();
   const clients = (clientsRes?.data || []).map((c: any) => ({ ...c, creances: c.creances || [] }));
   
   const { data: locRes } = useLocationsListQuery();

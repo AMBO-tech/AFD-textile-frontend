@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   MessageSquare, CheckCircle, Search, Plus, Boxes
 } from 'lucide-react';
@@ -7,6 +7,7 @@ import DemandesStockList from './DemandesStockList';
 import DemandesTrackingList from './DemandesTrackingList';
 import NewDemandeModal from './NewDemandeModal';
 import DemandeValidationModal from './DemandeValidationModal';
+import { useCategoriesQuery } from '../../hooks/queries/useProductsQuery';
 
 type Statut = Demande['statut'];
 
@@ -25,6 +26,12 @@ interface DemandesProps {
 }
 
 export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId = 'b1' }) => {
+  const { data: categories = [] } = useCategoriesQuery();
+  const CATEGORIES_DATA = categories.map((c: any) => ({
+    nom: c.nom,
+    couleur: c.couleur || '#1E88E5' // Fallback color if missing
+  }));
+
   const demandes: any = [];
 const produits: any = [];
 const boutiques: any = [];
