@@ -5,6 +5,8 @@ import type { Transfert } from '@/types/stocks';
 import type { Boutique } from '@/types/locations';
 import { useStockLevelsQuery, useValidateTransferMutation, useCancelTransferMutation } from '../../hooks/queries/useStocksQuery';
 import { getErrorMessage } from '../../services/api';
+import SelectField from '../ui/SelectField';
+import { optionsEmplacements } from '../ui/locationOptions';
 
 /** Plafond imposé par l'API sur les listes paginées. */
 const API_PAGE_MAX = 100;
@@ -75,20 +77,12 @@ export const ValidateTransferModal: React.FC<ValidateTransferModalProps> = ({ tr
         </div>
 
         <div className="p-5 overflow-y-auto space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Prélever depuis</label>
-            <select
-              value={sourceId}
-              onChange={(e) => setSourceId(e.target.value)}
-              className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs"
-            >
-              {sources.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.nom} {l.type === 'ENTREPOT' ? '(entrepôt)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectField
+            label="Prélever depuis"
+            value={sourceId}
+            onChange={setSourceId}
+            options={optionsEmplacements(sources.filter((l) => l.actif))}
+          />
 
           <div className="divide-y divide-gray-50 border border-gray-100 rounded-xl">
             {transfert.lignes.map((l) => {
