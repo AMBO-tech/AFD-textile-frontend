@@ -46,7 +46,16 @@ function processQueue(error: unknown, token: string | null = null): void {
   failedQueue = [];
 }
 
-async function attemptRefresh(): Promise<string> {
+/** Verrou partagé entre onglets : un seul rafraîchissement à la fois pour tout le navigateur. */
+const VERROU_RAFRAICHISSEMENT = 'afd-auth-refresh';
+
+async function rafraichir(jetonExpire: string | null): Promise<string> {
+  // Un autre onglet a peut-être déjà renouvelé la session pendant l'attente du verrou :
+  // on reprend alors son jeton au lieu de réutiliser un jeton de rafraîchissement consommé
+  // (le serveur révoquerait toutes les sessions de l'utilisateur).
+  const actuel = tokenStore.get();
+  if (actuel && actuel !== jetonExpire) return actuel;
+
   const refreshToken = tokenStore.getRefreshToken();
   if (!refreshToken) throw new Error('No refresh token available');
 
@@ -56,10 +65,19 @@ async function attemptRefresh(): Promise<string> {
   );
 
   const { accessToken, refreshToken: newRefreshToken } = response.data;
-  tokenStore.set(accessToken);
-  if (newRefreshToken) tokenStore.setRefreshToken(newRefreshToken);
-  useAuthStore.getState().setAuth(accessToken, useAuthStore.getState().user as any);
+  useAuthStore.getState().setAuth(accessToken, useAuthStore.getState().user, newRefreshToken);
   return accessToken;
+}
+
+/**
+ * Renouvelle le jeton d'accès (15 min) avec le jeton de rafraîchissement (7 jours, renouvelé
+ * à chaque fois). `jetonExpire` est le jeton refusé par le serveur.
+ */
+async function attemptRefresh(jetonExpire: string | null): Promise<string> {
+  if (typeof navigator !== 'undefined' && navigator.locks?.request) {
+    return navigator.locks.request(VERROU_RAFRAICHISSEMENT, () => rafraichir(jetonExpire));
+  }
+  return rafraichir(jetonExpire);
 }
 
 // ─── Response Interceptor (Handle 401 with Queue-based Silent Refresh) ────────
@@ -106,7 +124,8 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const newToken = await attemptRefresh();
+        const jetonRefuse = String(originalRequest.headers?.Authorization ?? '').replace(/^Bearer /, '') || null;
+        const newToken = await attemptRefresh(jetonRefuse);
         processQueue(null, newToken);
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
