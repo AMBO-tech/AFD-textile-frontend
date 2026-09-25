@@ -11,6 +11,8 @@ import { productsService } from '../../services/products.service';
 import { getErrorMessage } from '../../services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { PRODUCT_KEYS } from '../../hooks/queries/useProductsQuery';
+import SelectField from '../ui/SelectField';
+import { optionsEmplacements } from '../ui/locationOptions';
 
 /** Plafond imposé par l'API sur les listes paginées. */
 const API_PAGE_MAX = 100;
@@ -218,17 +220,7 @@ export const StockEntryModal: React.FC<StockEntryModalProps> = ({ isOpen, onClos
             <form onSubmit={valider} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Emplacement</label>
-                <select
-                  value={emplacementId}
-                  onChange={(e) => setEmplacementId(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs"
-                >
-                  {emplacements.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.nom} {l.type === 'ENTREPOT' ? '(entrepôt)' : ''}
-                    </option>
-                  ))}
-                </select>
+                <SelectField value={emplacementId} onChange={setEmplacementId} options={optionsEmplacements(emplacements)} aria-label="Emplacement" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>

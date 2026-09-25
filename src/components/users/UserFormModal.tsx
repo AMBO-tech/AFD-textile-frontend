@@ -6,6 +6,8 @@ import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
 import { useInviteUserMutation, useUpdateUserMutation } from '../../hooks/queries/useUsersQuery';
 import { getErrorMessage } from '../../services/api';
 import { LIBELLE_ROLE, type RoleUtilisateur } from './types';
+import SelectField from '../ui/SelectField';
+import { optionsEmplacements } from '../ui/locationOptions';
 
 /** Plafond imposé par l'API sur les listes paginées. */
 const API_PAGE_MAX = 100;
@@ -121,14 +123,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ utilisateur, locat
         {role === 'BOUTIQUIER' && (
           <div>
             <label className={etiquette}>Boutique d’affectation</label>
-            <select value={locationId} onChange={(e) => setLocationId(e.target.value)} className={champ}>
-              <option value="">— Choisir —</option>
-              {emplacements.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.nom} {l.type === 'ENTREPOT' ? '(entrepôt)' : ''}
-                </option>
-              ))}
-            </select>
+            <SelectField
+              value={locationId}
+              onChange={setLocationId}
+              placeholder="Choisir la boutique"
+              aria-label="Boutique d’affectation"
+              options={optionsEmplacements(emplacements)}
+            />
             {emplacements.length === 0 && (
               <p className="text-[11px] text-amber-700 mt-1">Aucune boutique active : créez-en une dans « Boutiques ».</p>
             )}

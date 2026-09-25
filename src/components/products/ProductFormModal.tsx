@@ -13,6 +13,7 @@ import { mediaService } from '../../services/media.service';
 import { getErrorMessage } from '../../services/api';
 import NewCategoryModal from './NewCategoryModal';
 import { UNITES_STOCKAGE } from './types';
+import SelectField from '../ui/SelectField';
 
 const PHOTO_MAX_OCTETS = 5 * 1024 * 1024;
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -187,16 +188,13 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
                 <Plus size={12} /> Nouvelle catégorie
               </button>
             </div>
-            <select value={categorieId} onChange={(e) => setCategorieId(e.target.value)} className={champ}>
-              <option value="">— Choisir —</option>
-              {categories
-                .filter((c) => c.actif !== false)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nom}
-                  </option>
-                ))}
-            </select>
+            <SelectField
+              value={categorieId}
+              onChange={setCategorieId}
+              placeholder="Choisir une catégorie"
+              aria-label="Catégorie"
+              options={categories.filter((c) => c.actif !== false).map((c) => ({ value: c.id, label: c.nom, description: c.description ?? undefined }))}
+            />
           </div>
 
           <div>

@@ -8,6 +8,8 @@ import { LIBELLES_UNITE } from '../../features/pos/pricing';
 import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
 import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
 import { useCategoriesQuery } from '../../hooks/queries/useProductsQuery';
+import SelectField from '../ui/SelectField';
+import { optionsEmplacements } from '../ui/locationOptions';
 
 /** Plafond imposé par l'API sur les listes paginées. */
 const API_PAGE_MAX = 100;
@@ -121,33 +123,23 @@ export const Stock: React.FC<StockProps> = ({ role: rawRole = 'gerant', boutique
           />
         </div>
         {isGerant && (
-          <select
+          <SelectField
+            size="sm"
+            className="flex-1"
             value={emplacement}
-            onChange={(e) => setEmplacement(e.target.value)}
-            className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs bg-white"
+            onChange={setEmplacement}
             aria-label="Emplacement"
-          >
-            <option value={TOUS}>Tous les emplacements</option>
-            {emplacements.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.nom}
-              </option>
-            ))}
-          </select>
+            options={[{ value: TOUS, label: 'Tous les emplacements' }, ...optionsEmplacements(emplacements)]}
+          />
         )}
-        <select
+        <SelectField
+          size="sm"
+          className="flex-1"
           value={categorie}
-          onChange={(e) => setCategorie(e.target.value)}
-          className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs bg-white"
+          onChange={setCategorie}
           aria-label="Catégorie"
-        >
-          <option value={TOUS}>Toutes les catégories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nom}
-            </option>
-          ))}
-        </select>
+          options={[{ value: TOUS, label: 'Toutes les catégories' }, ...categories.map((c) => ({ value: c.id, label: c.nom }))]}
+        />
       </div>
 
       {isLoading ? (

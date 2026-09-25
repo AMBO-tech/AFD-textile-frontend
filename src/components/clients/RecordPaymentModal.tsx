@@ -8,6 +8,8 @@ import type { MoyenPaiement } from '@/types/enums';
 import { MODES_PAIEMENT, soldeClient } from './types';
 import { useRecordPaymentMutation } from '../../hooks/queries/useClientsQuery';
 import { getErrorMessage } from '../../services/api';
+import SelectField from '../ui/SelectField';
+import { optionsEmplacements } from '../ui/locationOptions';
 
 interface RecordPaymentModalProps {
   isOpen: boolean;
@@ -84,15 +86,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
           {!boutiqueImposee && (
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Boutique qui encaisse</label>
-              <select
-                value={boutiqueId}
-                onChange={(e) => setBoutiqueId(e.target.value)}
-                className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs"
-              >
-                {boutiques.map((b) => (
-                  <option key={b.id} value={b.id}>{b.nom}</option>
-                ))}
-              </select>
+              <SelectField value={boutiqueId} onChange={setBoutiqueId} options={optionsEmplacements(boutiques)} aria-label="Boutique qui encaisse" />
             </div>
           )}
 
@@ -114,15 +108,12 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Mode de paiement</label>
-            <select
+            <SelectField
               value={mode}
-              onChange={(e) => setMode(e.target.value as MoyenPaiement)}
-              className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs"
-            >
-              {MODES_PAIEMENT.map((m) => (
-                <option key={m.api} value={m.api}>{m.label}</option>
-              ))}
-            </select>
+              onChange={(v) => setMode(v as MoyenPaiement)}
+              options={MODES_PAIEMENT.map((m) => ({ value: m.api, label: m.label }))}
+              aria-label="Mode de paiement"
+            />
           </div>
 
           {erreur && (

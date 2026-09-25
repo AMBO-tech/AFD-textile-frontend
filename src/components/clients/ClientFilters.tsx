@@ -1,5 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
+import SelectField from '../ui/SelectField';
+import { optionsEmplacements } from '../ui/locationOptions';
 
 
 interface ClientFiltersProps {
@@ -72,18 +74,13 @@ export const ClientFilters: React.FC<ClientFiltersProps> = ({
         {/* Filtre boutique si gérant */}
         {role === 'gerant' && boutiques.length > 0 && onBoutiqueChange && (
           <div className="flex-1">
-            <select
-              value={filtreBoutique}
-              onChange={(e) => onBoutiqueChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-700 bg-gray-50/50 focus:outline-none focus:border-blue-500"
-            >
-              <option value="toutes">Toutes les boutiques</option>
-              {boutiques.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.nom}
-                </option>
-              ))}
-            </select>
+            <SelectField
+              size="sm"
+              value={filtreBoutique ?? 'toutes'}
+              onChange={onBoutiqueChange}
+              aria-label="Boutique"
+              options={[{ value: 'toutes', label: 'Toutes les boutiques' }, ...optionsEmplacements(boutiques)]}
+            />
           </div>
         )}
       </div>

@@ -9,6 +9,7 @@ import {
   quantiteEnStock,
   unitesDisponibles,
 } from '../../features/pos/pricing';
+import SelectField from '../ui/SelectField';
 
 interface SalesProductConfigProps {
   produit: PosProduit | null;
@@ -101,17 +102,13 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Unité</label>
-              <select
+              <SelectField
+                size="sm"
                 value={unite}
-                onChange={(e) => setUnite(e.target.value as UniteVente)}
-                className="w-full h-9 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-blue-500"
-              >
-                {unitesDisponibles(produit).map((u) => (
-                  <option key={u} value={u}>
-                    {LIBELLES_UNITE[u]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setUnite(v as UniteVente)}
+                options={unitesDisponibles(produit).map((u) => ({ value: u, label: LIBELLES_UNITE[u] }))}
+                aria-label="Unité"
+              />
             </div>
           </div>
 

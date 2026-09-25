@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import type { Vente } from '../../types/sales';
 import { MOTIFS_ANNULATION } from './types';
+import SelectField from '../ui/SelectField';
 
 interface SalesCancelModalProps {
   vente: Vente | null;
@@ -69,17 +70,7 @@ export const SalesCancelModal: React.FC<SalesCancelModalProps> = ({
             <label className="block text-xs font-semibold text-gray-700 mb-1">
               Motif de l'annulation *
             </label>
-            <select
-              value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-red-500"
-            >
-              {MOTIFS_ANNULATION.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <SelectField value={motif} onChange={setMotif} options={MOTIFS_ANNULATION.map((m) => ({ value: m, label: m }))} aria-label="Motif" />
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
