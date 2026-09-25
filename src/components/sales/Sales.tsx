@@ -87,7 +87,6 @@ export const Sales: React.FC<SalesProps> = ({ produitDirectId, onReset }) => {
         onClose={() => pos.setSuccessData(null)}
         montant={pos.successData?.montant ?? 0}
         paiement={pos.successData?.paiement ?? ''}
-        client={pos.successData?.client ?? ''}
         reference={pos.successData?.reference}
       />
 

@@ -1,10 +1,9 @@
 import { formatMontant } from '@/utils/format';
-import React, { useState, useEffect, useDeferredValue } from 'react';
-import { X, CreditCard, Banknote, CheckCircle2, ShoppingBag, ShoppingCart, User, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, CreditCard, Banknote, CheckCircle2, ShoppingBag, ShoppingCart, AlertCircle } from 'lucide-react';
 import type { LigneVente, ModePaiementPos, PaymentChoice } from './types';
 import { MODES_PAIEMENT } from './types';
 import { LIBELLES_UNITE, montantsLigne, prixParUnite, totalPanier } from '../../features/pos/pricing';
-import { useClientsListQuery } from '../../hooks/queries/useClientsQuery';
 
 export type PaymentTarget =
   | { type: 'direct'; ligne: LigneVente }
@@ -17,10 +16,6 @@ interface SalesPaymentModalProps {
   /** Rejette avec un message lisible si la vente est refusée : la fenêtre reste alors ouverte. */
   onConfirmPayment: (choice: PaymentChoice) => Promise<void>;
 }
-
-const NB_CLIENTS_SUGGERES = 6;
-/** Fiche technique créée par l'API pour les encaissements sans client : jamais proposée au vendeur. */
-const CLIENT_SYSTEME = 'Client Comptoir Anonyme';
 
 const getModeIcon = (mode: ModePaiementPos) => {
   switch (mode) {
@@ -44,25 +39,14 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
   onConfirmPayment,
 }) => {
   const [modePaiement, setModePaiement] = useState<ModePaiementPos>('Espèces');
-  const [client, setClient] = useState<{ id: string; nom: string } | null>(null);
-  const [rechercheClient, setRechercheClient] = useState('');
   const [montantRecu, setMontantRecu] = useState('');
   const [erreur, setErreur] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const recherche = useDeferredValue(rechercheClient.trim());
-  const { data: clientsData } = useClientsListQuery({
-    ...(recherche ? { search: recherche } : {}),
-    limit: NB_CLIENTS_SUGGERES,
-  });
-  const suggestions = (clientsData?.data ?? []).filter((c) => c.nom !== CLIENT_SYSTEME);
 
   // Réinitialiser les champs à l'ouverture
   useEffect(() => {
     if (isOpen) {
       setModePaiement('Espèces');
-      setClient(null);
-      setRechercheClient('');
       setMontantRecu('');
       setErreur('');
       setIsSubmitting(false);
@@ -84,7 +68,8 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
     setErreur('');
     setIsSubmitting(true);
     try {
-      await onConfirmPayment({ mode: modePaiement, clientId: client?.id ?? null, clientNom: client?.nom ?? '' });
+      // Vente directe : jamais de client (le serveur rattache l'encaissement au client comptoir technique).
+      await onConfirmPayment({ mode: modePaiement, clientId: null, clientNom: '' });
     } catch (error) {
       setErreur(error instanceof Error ? error.message : "La vente n'a pas pu être enregistrée.");
     } finally {
@@ -137,51 +122,9 @@ export const SalesPaymentModal: React.FC<SalesPaymentModalProps> = ({
             </div>
           </div>
 
-          {/* Client */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
-              <User size={13} className="text-gray-400" />
-              Client (facultatif)
-            </label>
-            {client ? (
-              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-blue-200 bg-blue-50/60 text-xs font-semibold text-blue-900">
-                <span className="truncate">{client.nom}</span>
-                <button
-                  type="button"
-                  onClick={() => setClient(null)}
-                  className="text-[10px] text-blue-600 hover:underline font-normal cursor-pointer"
-                >
-                  Changer
-                </button>
-              </div>
-            ) : (
-              <>
-                <input
-                  type="text"
-                  value={rechercheClient}
-                  onChange={(e) => setRechercheClient(e.target.value)}
-                  placeholder="Rechercher un client (nom ou téléphone)…"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:border-blue-500 bg-white"
-                />
-                <div className="mt-1.5 max-h-32 overflow-y-auto space-y-1">
-                  {suggestions.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setClient({ id: c.id, nom: c.nom })}
-                      className="w-full flex justify-between px-3 py-1.5 rounded-lg text-left text-[11px] hover:bg-gray-50 cursor-pointer"
-                    >
-                      <span className="font-semibold text-gray-800 truncate">{c.nom}</span>
-                      <span className="text-gray-400 shrink-0 pl-2">{c.telephone}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1">
-                  Sans sélection : client de passage. Les ventes à crédit se font depuis la fiche client.
-                </p>
-              </>
-            )}
-          </div>
+          <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
+            <ShoppingBag size={13} className="shrink-0" /> Vente directe au comptant, sans client. Une vente à crédit se fait depuis la fiche du client.
+          </p>
 
           {/* Sélection du mode de paiement */}
           <div>
