@@ -9,7 +9,7 @@ interface MobileHeaderProps {
 export const MobileHeader: React.FC<MobileHeaderProps> = ({ boutique, onOpenSidebar }) => {
   return (
     <header
-      className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-30"
+      className="lg:hidden print:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-30"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex items-center px-4 h-14">

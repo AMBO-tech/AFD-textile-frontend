@@ -28,7 +28,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   demandes,
 }) => {
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-100 h-screen fixed left-0 top-0 z-30">
+    <aside className="hidden lg:flex print:!hidden flex-col w-64 bg-white border-r border-gray-100 h-screen fixed left-0 top-0 z-30">
       {/* Logo */}
       <div className="p-5 border-b border-gray-100">
         <div className="flex items-center gap-3">

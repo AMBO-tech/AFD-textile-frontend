@@ -56,7 +56,7 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#F5F7FA' }}>
+    <div className="min-h-screen print:!bg-white" style={{ background: '#F5F7FA' }}>
       <Navigation
         role={session.role}
         current={currentScreen as any}
@@ -70,13 +70,13 @@ export const AppLayout: React.FC = () => {
         boutique={{ ...boutiqueCourante, lieu: boutiqueCourante.lieu || '' }}
       />
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 print:!pl-0">
         <main
           style={{
             paddingTop: 'calc(3.5rem + env(safe-area-inset-top))',
             paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))',
           }}
-          className="lg:[padding-top:0] lg:[padding-bottom:0]"
+          className="lg:[padding-top:0] lg:[padding-bottom:0] print:![padding-top:0] print:![padding-bottom:0]"
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
             <Outlet />
