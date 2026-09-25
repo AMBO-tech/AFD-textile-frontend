@@ -1,75 +1,59 @@
-import React from 'react';
-import { Package, Edit2, Trash2 } from 'lucide-react';
-
+import React, { useState } from 'react';
+import { Package, Pencil, Archive } from 'lucide-react';
+import type { Produit } from '@/types/products';
+import { formatMontant } from '@/utils/format';
+import { LIBELLE_UNITE_STOCKAGE } from './types';
 
 interface ProductCardProps {
-  product: Produit;
-  role?: 'gerant' | 'boutiquier';
-  onClick: () => void;
+  produit: Produit;
+  gerant: boolean;
   onEdit: () => void;
-  onDelete: () => void;
+  onArchive: () => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
-  product,
-  role = 'gerant',
-  onClick,
-  onEdit,
-  onDelete,
-}) => {
-  const isCritique = product.quantite <= product.seuil;
+export const ProductCard: React.FC<ProductCardProps> = ({ produit, gerant, onEdit, onArchive }) => {
+  const [photoCassee, setPhotoCassee] = useState(false);
+  const archive = produit.statut === 'INACTIF';
+  const unite = LIBELLE_UNITE_STOCKAGE[produit.uniteStockage];
 
   return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-blue-200 transition-all active:scale-95"
-    >
-      {/* Zone image */}
-      <div className="relative w-full" style={{ aspectRatio: '4/3', background: '#F8F8F6' }}>
-        {product.photo ? (
-          <img src={product.photo} alt={product.nom} className="w-full h-full object-cover" />
+    <div className={`bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden flex flex-col ${archive ? 'opacity-60' : ''}`}>
+      <div className="aspect-[4/3] bg-gray-50 flex items-center justify-center">
+        {produit.photoUrl && !photoCassee ? (
+          <img src={produit.photoUrl} alt={produit.nom} onError={() => setPhotoCassee(true)} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Package size={36} color={isCritique ? '#EF4444' : '#1E88E5'} />
-          </div>
-        )}
-        {isCritique && (
-          <span className="absolute top-2 left-2 text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
-            Critique
-          </span>
-        )}
-        {role === 'gerant' && (
-          <div
-            className="absolute top-2 right-2 flex gap-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={onEdit}
-              className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-blue-500 shadow-sm hover:bg-white"
-            >
-              <Edit2 size={12} />
-            </button>
-            <button
-              onClick={onDelete}
-              className="w-7 h-7 rounded-lg bg-white/90 flex items-center justify-center text-red-400 shadow-sm hover:bg-white"
-            >
-              <Trash2 size={12} />
-            </button>
-          </div>
+          <Package size={28} className="text-gray-300" />
         )}
       </div>
-      {/* Zone texte sous l'image */}
-      <div className="px-3 py-2.5 border-t border-gray-50 text-center">
-        <div className="font-display font-bold text-gray-800 text-base leading-tight truncate">
-          {product.nom}
+      <div className="p-3 flex-1 flex flex-col gap-1">
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{produit.reference}</div>
+        <div className="font-semibold text-gray-900 text-sm leading-tight">{produit.nom}</div>
+        <div className="text-[11px] text-gray-500">
+          {produit.categorie?.nom}
+          {produit.couleur ? ` • ${produit.couleur}` : ''}
         </div>
-        <div className="text-sm font-bold mt-0.5" style={{ color: '#0F3D5E' }}>
-          {product.prix.toLocaleString()} FCFA
+        <div className="mt-auto pt-1 text-xs">
+          <span className="font-bold text-gray-900">{formatMontant(produit.prixIndicatif)}</span>
+          <span className="text-gray-400"> / {unite}</span>
+          {produit.prixMinimum != null && (
+            <div className="text-[10px] text-gray-400">min. {formatMontant(produit.prixMinimum)}</div>
+          )}
+          {produit.uniteStockage === 'ROULEAU' && produit.longueurRouleauMetres != null && (
+            <div className="text-[10px] text-gray-400">{produit.longueurRouleauMetres} m par rouleau</div>
+          )}
         </div>
-        <div className="text-xs text-gray-400 mt-0.5">
-          {product.quantite} {product.unite}
-        </div>
+        {archive && <span className="self-start text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Archivé</span>}
       </div>
+      {gerant && !archive && (
+        <div className="grid grid-cols-2 border-t border-gray-100 text-[11px] font-semibold">
+          <button onClick={onEdit} className="flex items-center justify-center gap-1 py-2 text-blue-700 hover:bg-blue-50">
+            <Pencil size={12} /> Modifier
+          </button>
+          <button onClick={onArchive} className="flex items-center justify-center gap-1 py-2 text-rose-600 hover:bg-rose-50 border-l border-gray-100">
+            <Archive size={12} /> Archiver
+          </button>
+        </div>
+      )}
     </div>
   );
 };
