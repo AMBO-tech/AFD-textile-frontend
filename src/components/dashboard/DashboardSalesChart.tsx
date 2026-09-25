@@ -24,12 +24,15 @@ export const DashboardSalesChart: React.FC<DashboardSalesChartProps> = ({ data }
           <div className="font-display font-bold text-gray-900 text-base">
             Évolution des ventes
           </div>
-          <div className="text-xs text-gray-400">7 derniers jours (FCFA)</div>
+          <div className="text-xs text-gray-400">Chiffre d’affaires par jour (FCFA)</div>
         </div>
         <div className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
           Cette semaine
         </div>
       </div>
+      {data.every((d) => d.montant === 0) ? (
+        <div className="h-48 sm:h-56 flex items-center justify-center text-sm text-gray-400">Aucune vente cette semaine.</div>
+      ) : (
       <div className="h-48 sm:h-56">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -70,6 +73,7 @@ export const DashboardSalesChart: React.FC<DashboardSalesChartProps> = ({ data }
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 };

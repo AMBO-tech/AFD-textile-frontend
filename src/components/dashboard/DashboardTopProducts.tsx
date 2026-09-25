@@ -19,10 +19,13 @@ export const DashboardTopProducts: React.FC<DashboardTopProductsProps> = ({ data
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="font-display font-bold text-gray-900 text-base">Top Produits</div>
-          <div className="text-xs text-gray-400">Ventes en mètres / pièces ce mois</div>
+          <div className="text-xs text-gray-400">Quantités vendues ce mois (unité du tissu)</div>
         </div>
         <span className="text-xs text-gray-500 font-medium">Ce mois</span>
       </div>
+      {data.length === 0 ? (
+        <div className="h-44 sm:h-52 flex items-center justify-center text-sm text-gray-400">Aucune vente ce mois.</div>
+      ) : (
       <div className="h-44 sm:h-52">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
@@ -37,7 +40,7 @@ export const DashboardTopProducts: React.FC<DashboardTopProductsProps> = ({ data
               width={85}
             />
             <Tooltip
-              formatter={(v: any) => [`${v} unités vendues`, 'Volume']}
+              formatter={(v: any) => [`${v} vendus`, 'Quantité']}
               contentStyle={{
                 borderRadius: '12px',
                 border: 'none',
@@ -49,6 +52,7 @@ export const DashboardTopProducts: React.FC<DashboardTopProductsProps> = ({ data
           </BarChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 };
