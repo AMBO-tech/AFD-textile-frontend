@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { urlPhoto } from '@/lib/photoUrl';
 
 const TEINTES = ['#0F3D5E', '#1E88E5', '#7C3AED', '#DB2777', '#EA580C', '#059669', '#0891B2', '#CA8A04'];
 
@@ -14,8 +15,9 @@ interface FabricImageProps {
 /** Photo d'un tissu ; sans photo (ou lien cassé), une vignette colorée avec les initiales. */
 export const FabricImage: React.FC<FabricImageProps> = ({ src, nom, className }) => {
   const [cassee, setCassee] = useState(false);
-  if (src && !cassee) {
-    return <img src={src} alt={nom} loading="lazy" onError={() => setCassee(true)} className={cn('w-full h-full object-cover', className)} />;
+  const adresse = urlPhoto(src);
+  if (adresse && !cassee) {
+    return <img src={adresse} alt={nom} loading="lazy" onError={() => setCassee(true)} className={cn('w-full h-full object-cover', className)} />;
   }
   const couleur = teinte(nom);
   const initiales = nom
