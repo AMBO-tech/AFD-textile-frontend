@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, ChevronRight, ShoppingCart } from 'lucide-react';
 import type { StockLevel } from '../../types/stocks';
 import { LIBELLES_UNITE } from '../../features/pos/pricing';
+import { urlPhoto } from '@/lib/photoUrl';
 
 interface DashboardStockAlertsProps {
   alerts: StockLevel[];
@@ -45,7 +46,7 @@ export const DashboardStockAlerts: React.FC<DashboardStockAlertsProps> = ({
           <div key={prod.id} className="py-2.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                <img src={prod.produitPhotoUrl} alt={prod.produitNom} className="w-full h-full object-cover" />
+                <img src={urlPhoto(prod.produitPhotoUrl)} alt={prod.produitNom} className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0">
                 <div className="text-sm font-medium text-gray-800 truncate">{prod.produitNom}</div>

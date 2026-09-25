@@ -14,6 +14,7 @@ import { getErrorMessage } from '../../services/api';
 import NewCategoryModal from './NewCategoryModal';
 import { UNITES_STOCKAGE } from './types';
 import SelectField from '../ui/SelectField';
+import { urlPhoto } from '@/lib/photoUrl';
 
 const PHOTO_MAX_OCTETS = 5 * 1024 * 1024;
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -156,7 +157,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
               className="w-24 h-24 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-300 flex items-center justify-center overflow-hidden bg-gray-50 relative"
             >
               {photoApercu ? (
-                <img src={photoApercu} alt="" className="w-full h-full object-cover" />
+                <img src={urlPhoto(photoApercu)} alt="" className="w-full h-full object-cover" />
               ) : (
                 <span className="flex flex-col items-center gap-1 text-[10px] text-gray-400">
                   <ImagePlus size={20} /> Photo
