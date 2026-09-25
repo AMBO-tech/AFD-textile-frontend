@@ -39,5 +39,5 @@ export interface UpdateUserRequest {
   telephone?: string;
   email?: string;
   role?: 'OWNER' | 'BOUTIQUIER';
-  locationId?: string;
+  locationId?: string | null;
 }

@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersService } from '../../services/users.service';
 import type { InviteUserRequest, UpdateUserRequest } from '@/types/users';
 
+/** Les emplacements affichent leur nombre de comptes rattachés. */
+const LOCATIONS_PREFIX = ['locations'] as const;
+
 export const USER_KEYS = {
   all: ['users'] as const,
   lists: () => [...USER_KEYS.all, 'list'] as const,
@@ -30,6 +33,7 @@ export const useInviteUserMutation = () => {
     mutationFn: (data: InviteUserRequest) => usersService.invite(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: USER_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: LOCATIONS_PREFIX });
     },
   });
 };
@@ -43,6 +47,7 @@ export const useResendInviteMutation = () => {
     mutationFn: (id: string) => usersService.resendInvite(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: USER_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: LOCATIONS_PREFIX });
     },
   });
 };
@@ -57,6 +62,7 @@ export const useUpdateUserMutation = () => {
       usersService.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: USER_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: LOCATIONS_PREFIX });
       queryClient.invalidateQueries({ queryKey: USER_KEYS.detail(variables.id) });
     },
   });
@@ -71,6 +77,7 @@ export const useToggleUserStatusMutation = () => {
     mutationFn: (id: string) => usersService.toggleStatus(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: USER_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: LOCATIONS_PREFIX });
     },
   });
 };

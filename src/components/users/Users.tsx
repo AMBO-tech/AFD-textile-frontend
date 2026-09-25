@@ -1,193 +1,161 @@
-import React, { useState } from 'react';
-import { UserPlus, CheckCircle, Search, Shield, User } from 'lucide-react';
-import type { Utilisateur, UserFormData, UserRoleFilter } from './types';
+import React, { useEffect, useState } from 'react';
+import { UserPlus, Search, Users as UsersIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import type { InvitationResponse, UserItem } from '@/types/users';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useUsersListQuery, useToggleUserStatusMutation, useResendInviteMutation } from '../../hooks/queries/useUsersQuery';
+import { getErrorMessage } from '../../services/api';
 import UserCard from './UserCard';
-import UserModal from './UserModal';
+import UserFormModal from './UserFormModal';
+import InvitationLinkModal from './InvitationLinkModal';
+import { LIBELLE_ROLE, type RoleUtilisateur } from './types';
+
+/** Plafond imposé par l'API sur les listes paginées. */
+const API_PAGE_MAX = 100;
+const DELAI_RECHERCHE_MS = 300;
 
 interface UsersProps {
-  boutiqueId?: string;
+  /** Restreint la liste aux membres d'un emplacement (fiche boutique). */
+  locationId?: string;
+  /** Masque l'en-tête de page (affichage dans une fenêtre). */
+  integre?: boolean;
 }
 
-export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
-  const utilisateurs: any = [];
-const boutiques: any = [];
-const addUtilisateur: any = [];
-const updateUtilisateur: any = [];
-const toggleUtilisateurActif: any = [];
+/** Membres de l'équipe : invitation, modification, désactivation (réservé au gérant). */
+export const Users: React.FC<UsersProps> = ({ locationId, integre = false }) => {
+  const moi = useAuthStore((s) => s.user);
+  const [saisie, setSaisie] = useState('');
+  const [recherche, setRecherche] = useState('');
+  const [role, setRole] = useState<RoleUtilisateur | ''>('');
+  const [formulaire, setFormulaire] = useState<{ utilisateur: UserItem | null } | null>(null);
+  const [invitation, setInvitation] = useState<InvitationResponse | null>(null);
 
-  const [search, setSearch] = useState('');
-  const [filtreRole, setFiltreRole] = useState<UserRoleFilter>('tous');
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<Utilisateur | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => setRecherche(saisie.trim()), DELAI_RECHERCHE_MS);
+    return () => clearTimeout(t);
+  }, [saisie]);
 
-  // Filtrage des utilisateurs
-  const usersFiltres = utilisateurs.filter((u: any) => {
-    const matchRole = filtreRole === 'tous' || u.role === filtreRole;
-    const q = search.trim().toLowerCase();
-    const matchSearch =
-      !q ||
-      u.nom.toLowerCase().includes(q) ||
-      u.telephone.includes(q) ||
-      (u.email && u.email.toLowerCase().includes(q));
-    return matchRole && matchSearch;
+  const { data: res, isLoading, isError, error } = useUsersListQuery({
+    search: recherche || undefined,
+    role: role || undefined,
+    locationId,
+    limit: API_PAGE_MAX,
   });
+  const utilisateurs = res?.data ?? [];
+  const { mutateAsync: basculer } = useToggleUserStatusMutation();
+  const { mutateAsync: renvoyer } = useResendInviteMutation();
 
-  const handleSave = (form: UserFormData) => {
-    const boutiqueAssociee = form.role === 'boutiquier' ? form.boutique : '';
-    const boutiqueNom = boutiques.find((b: any) => b.id === form.boutique)?.nom;
-
-    if (editing) {
-      updateUtilisateur(editing.id, {
-        nom: form.nom.trim(),
-        telephone: form.telephone.trim(),
-        email: form.email.trim(),
-        role: form.role,
-        boutique: boutiqueAssociee,
-      });
-      setShowForm(false);
-      setEditing(null);
-      setSuccessMsg(`Utilisateur ${form.nom.trim()} modifié avec succès.`);
-      setTimeout(() => setSuccessMsg(null), 3500);
-    } else {
-      addUtilisateur({
-        nom: form.nom.trim(),
-        telephone: form.telephone.trim(),
-        email: form.email.trim() || `${form.nom.toLowerCase().replace(/\s+/g, '.')}@afd-textile.sn`,
-        role: form.role,
-        boutique: boutiqueAssociee,
-        actif: true,
-      });
-      setShowForm(false);
-      setSuccessMsg(
-        `Compte créé avec succès pour ${form.nom.trim()} (${
-          form.role === 'gerant' ? 'Gérant' : `Boutiquier · ${boutiqueNom}`
-        }).`
-      );
-      setTimeout(() => setSuccessMsg(null), 4000);
+  const basculerStatut = async (u: UserItem) => {
+    if (u.actif && !window.confirm(`Désactiver ${u.nom} ? Il ne pourra plus se connecter.`)) return;
+    try {
+      await basculer(u.id);
+      toast.success(u.actif ? `${u.nom} désactivé.` : `${u.nom} réactivé.`);
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Le changement de statut a échoué.'));
     }
   };
 
-  const openEdit = (u: Utilisateur) => {
-    setEditing(u);
-    setShowForm(true);
-  };
-
-  const ouvrirNouveauForm = () => {
-    setEditing(null);
-    setShowForm(true);
+  const renvoyerInvitation = async (u: UserItem) => {
+    try {
+      setInvitation(await renvoyer(u.id));
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'L’invitation n’a pas pu être renvoyée.'));
+    }
   };
 
   return (
     <div className="space-y-4">
-      {/* En-tête */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-xl font-bold text-gray-900">Utilisateurs & Équipe</h1>
-          <p className="text-sm text-gray-500">
-            {utilisateurs.length} compte{utilisateurs.length !== 1 ? 's' : ''} configuré{utilisateurs.length !== 1 ? 's' : ''} · {utilisateurs.filter((u: any) => u.actif).length} actif{utilisateurs.filter((u: any) => u.actif).length !== 1 ? 's' : ''}
-          </p>
+      {integre ? (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setFormulaire({ utilisateur: null })}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-xs text-white"
+            style={{ background: '#0F3D5E' }}
+          >
+            <UserPlus size={15} /> Ajouter un membre
+          </button>
         </div>
-        <button
-          onClick={ouvrirNouveauForm}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md active:scale-95 transition-all"
-          style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
-        >
-          <UserPlus size={15} /> Ajouter un utilisateur
-        </button>
-      </div>
-
-      {/* Message de succès */}
-      {successMsg && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3 text-green-800 text-sm animate-fade-in shadow-sm">
-          <CheckCircle size={18} className="text-green-600 flex-shrink-0" />
-          <span className="font-medium">{successMsg}</span>
+      ) : (
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+              <UsersIcon size={20} />
+            </div>
+            <div>
+              <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">Utilisateurs</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Invitez les gérants et les boutiquiers, gérez leurs accès</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setFormulaire({ utilisateur: null })}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-white shadow-sm self-start sm:self-auto"
+            style={{ background: '#0F3D5E' }}
+          >
+            <UserPlus size={16} /> Inviter un membre
+          </button>
         </div>
       )}
 
-      {/* Barre de recherche et Filtres par rôle */}
-      <div className="space-y-2.5">
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={search}
-            onChange={(e: any) => setSearch(e.target.value)}
-            placeholder="Rechercher par nom, téléphone, email…"
-            className="w-full pl-8 pr-4 py-2.5 bg-white rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 shadow-sm"
-          />
-        </div>
-
-        {/* Badges de filtrage par Rôle */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
-          <button
-            onClick={() => setFiltreRole('tous')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-              filtreRole === 'tous'
-                ? 'bg-gray-900 text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-            }`}
-          >
-            Tous les rôles ({utilisateurs.length})
-          </button>
-          <button
-            onClick={() => setFiltreRole('gerant')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-              filtreRole === 'gerant'
-                ? 'text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-            }`}
-            style={filtreRole === 'gerant' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
-          >
-            <Shield size={12} className={filtreRole === 'gerant' ? 'text-blue-200' : 'text-blue-600'} />
-            Gérants ({utilisateurs.filter((u: any) => u.role === 'gerant').length})
-          </button>
-          <button
-            onClick={() => setFiltreRole('boutiquier')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-              filtreRole === 'boutiquier'
-                ? 'text-white shadow-sm'
-                : 'bg-white text-gray-600 border border-gray-100 hover:bg-gray-50'
-            }`}
-            style={filtreRole === 'boutiquier' ? { background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' } : {}}
-          >
-            <User size={12} className={filtreRole === 'boutiquier' ? 'text-blue-200' : 'text-blue-600'} />
-            Boutiquiers ({utilisateurs.filter((u: any) => u.role === 'boutiquier').length})
-          </button>
-        </div>
-      </div>
-
-      {/* Liste des utilisateurs */}
-      <div className="space-y-2">
-        {usersFiltres.map((u: any) => (
-          <UserCard
-            key={u.id}
-            user={u}
-            boutiques={boutiques}
-            onEdit={openEdit}
-            onToggleActif={toggleUtilisateurActif}
-          />
-        ))}
-
-        {usersFiltres.length === 0 && (
-          <div className="bg-white rounded-2xl p-10 text-center text-gray-400 border border-gray-100">
-            <User size={32} className="mx-auto mb-2 text-gray-300" />
-            <p className="text-sm font-medium">Aucun utilisateur ne correspond aux critères</p>
+      {!integre && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={saisie}
+              onChange={(e) => setSaisie(e.target.value)}
+              placeholder="Rechercher un nom, un téléphone, un e-mail…"
+              className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-200 bg-white text-sm"
+            />
           </div>
-        )}
-      </div>
+          <div className="flex gap-1 p-1 bg-gray-100/90 rounded-xl">
+            {([['', 'Tous'], ['OWNER', LIBELLE_ROLE.OWNER + 's'], ['BOUTIQUIER', LIBELLE_ROLE.BOUTIQUIER + 's']] as const).map(([id, label]) => (
+              <button
+                key={id || 'tous'}
+                onClick={() => setRole(id)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${role === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Modal Utilisateur */}
-      <UserModal
-        isOpen={showForm}
-        onClose={() => {
-          setShowForm(false);
-          setEditing(null);
-        }}
-        editingUser={editing}
-        boutiques={boutiques}
-        defaultBoutiqueId={boutiqueId}
-        onSave={handleSave}
-      />
+      {isError ? (
+        <div className="bg-white rounded-2xl p-10 text-center border border-red-100 text-sm text-red-600">
+          {getErrorMessage(error, 'La liste des membres n’a pas pu être chargée.')}
+        </div>
+      ) : isLoading ? (
+        <div className="bg-white rounded-2xl p-10 text-center border border-gray-100 text-sm text-gray-400">Chargement…</div>
+      ) : utilisateurs.length === 0 ? (
+        <div className="bg-white rounded-2xl p-10 text-center border border-gray-100 text-sm text-gray-400">
+          {locationId ? 'Aucun membre rattaché à cet emplacement.' : 'Aucun membre ne correspond.'}
+        </div>
+      ) : (
+        <div className={`grid gap-3 ${integre ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+          {utilisateurs.map((u) => (
+            <UserCard
+              key={u.id}
+              utilisateur={u}
+              estMoi={u.id === moi?.id}
+              onEdit={() => setFormulaire({ utilisateur: u })}
+              onToggle={() => basculerStatut(u)}
+              onResend={() => renvoyerInvitation(u)}
+            />
+          ))}
+        </div>
+      )}
+
+      {formulaire && (
+        <UserFormModal
+          key={formulaire.utilisateur?.id ?? 'nouveau'}
+          utilisateur={formulaire.utilisateur}
+          locationIdParDefaut={locationId}
+          onClose={() => setFormulaire(null)}
+          onInvited={setInvitation}
+        />
+      )}
+      {invitation && <InvitationLinkModal invitation={invitation} onClose={() => setInvitation(null)} />}
     </div>
   );
 };

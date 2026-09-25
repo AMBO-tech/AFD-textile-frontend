@@ -1,5 +1,5 @@
 import { API } from './api';
-import type { Produit, CreateProduitDto, UpdateProduitDto, ProductQueryParams } from '@/types/products';
+import type { Produit, Categorie, Unite, CreateProduitDto, UpdateProduitDto, ProductQueryParams } from '@/types/products';
 import type { PaginatedResponse } from '@/types/api';
 
 export const productsService = {
@@ -23,20 +23,21 @@ export const productsService = {
     const res = await API.patch<Produit>(`/produits/${id}`, data);
     return res.data;
   },
+  /** Archivage (statut INACTIF) : l'API l'expose en DELETE. */
   archive: async (id: string) => {
-    const res = await API.patch<Produit>(`/produits/${id}/archiver`);
+    const res = await API.delete<Produit>(`/produits/${id}`);
     return res.data;
   },
-  createCategory: async (data: { code: string; nom: string }) => {
-    const res = await API.post<{ id: string; code: string; nom: string }>('/produits/categories', data);
+  createCategory: async (data: { code: string; nom: string; description?: string }) => {
+    const res = await API.post<Categorie>('/produits/categories', data);
     return res.data;
   },
   getCategories: async () => {
-    const res = await API.get<any[]>('/produits/categories');
+    const res = await API.get<Categorie[]>('/produits/categories');
     return res.data;
   },
   getUnites: async () => {
-    const res = await API.get<any[]>('/produits/unites');
+    const res = await API.get<Unite[]>('/produits/unites');
     return res.data;
   },
 };

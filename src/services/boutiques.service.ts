@@ -1,9 +1,10 @@
 import { API } from './api';
 import type { Location, CreateLocationDto, UpdateLocationDto } from '@/types/locations';
+import type { PaginatedResponse } from '@/types/api';
 
 export const boutiquesService = {
   getAll: async (params?: Record<string, unknown>) => {
-    const res = await API.get<{ data: Location[] }>('/locations', { params });
+    const res = await API.get<PaginatedResponse<Location>>('/locations', { params });
     return res.data;
   },
   getById: async (id: string) => {
@@ -19,7 +20,7 @@ export const boutiquesService = {
     return res.data;
   },
   toggleStatus: async (id: string) => {
-    const res = await API.patch<Location>(`/locations/${id}/statut`);
+    const res = await API.patch<Location>(`/locations/${id}/toggle-status`);
     return res.data;
   },
 };

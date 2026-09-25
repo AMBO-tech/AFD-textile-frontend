@@ -1,13 +1,11 @@
+import type { UserItem } from '@/types/users';
 
+export type RoleUtilisateur = UserItem['role'];
 
-export type Utilisateur = UtilisateurItem;
+export const LIBELLE_ROLE: Record<RoleUtilisateur, string> = {
+  OWNER: 'Gérant',
+  BOUTIQUIER: 'Boutiquier',
+};
 
-export interface UserFormData {
-  nom: string;
-  telephone: string;
-  email: string;
-  role: 'gerant' | 'boutiquier';
-  boutique: string;
-}
-
-export type UserRoleFilter = 'tous' | 'gerant' | 'boutiquier';
+/** Un compte invité n'a pas encore choisi son mot de passe. */
+export const enAttenteActivation = (u: UserItem) => u.premiereConnexion;

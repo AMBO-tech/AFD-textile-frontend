@@ -1,78 +1,83 @@
 import React, { useState } from 'react';
-import { X, ImagePlus } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Categorie } from '@/types/products';
+import { useCreateCategoryMutation } from '../../hooks/queries/useProductsQuery';
+import { getErrorMessage } from '../../services/api';
+import { codeCategorie } from './types';
 
 interface NewCategoryModalProps {
-  isOpen: boolean;
   onClose: () => void;
-  onSave: (cat: { nom: string; photo: string }) => void;
+  onCreated?: (categorie: Categorie) => void;
 }
 
-export const NewCategoryModal: React.FC<NewCategoryModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-}) => {
-  const [formCat, setFormCat] = useState({ nom: '', photo: '' });
+export const NewCategoryModal: React.FC<NewCategoryModalProps> = ({ onClose, onCreated }) => {
+  const [nom, setNom] = useState('');
+  const [description, setDescription] = useState('');
+  const [erreur, setErreur] = useState('');
+  const { mutateAsync: create, isPending } = useCreateCategoryMutation();
 
-  if (!isOpen) return null;
+  const nomValide = nom.trim().length >= 2 && codeCategorie(nom).length >= 2;
 
-  const handleSubmit = () => {
-    if (!formCat.nom.trim()) return;
-    onSave({ nom: formCat.nom.trim(), photo: formCat.photo });
-    setFormCat({ nom: '', photo: '' });
+  const enregistrer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nomValide) return;
+    setErreur('');
+    try {
+      const categorie = await create({
+        code: codeCategorie(nom),
+        nom: nom.trim(),
+        description: description.trim() || undefined,
+      });
+      toast.success(`Catégorie « ${categorie.nom} » créée.`);
+      onCreated?.(categorie);
+      onClose();
+    } catch (error) {
+      setErreur(getErrorMessage(error, 'La catégorie n’a pas pu être créée.'));
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-bold text-gray-900">Nouvelle catégorie</h2>
-          <button onClick={onClose} className="text-gray-400">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <form onSubmit={enregistrer} className="bg-white rounded-3xl w-full max-w-sm shadow-2xl border border-gray-100 p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display font-bold text-gray-900 text-base">Nouvelle catégorie</h3>
+          <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Fermer">
             <X size={18} />
           </button>
         </div>
-        <div className="space-y-3">
-          <label className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-300 transition-colors">
-            {formCat.photo ? (
-              <img src={formCat.photo} alt="" className="w-full h-24 object-cover rounded-xl" />
-            ) : (
-              <>
-                <ImagePlus size={18} className="text-gray-400" />
-                <span className="text-sm text-gray-400">Ajouter une photo</span>
-              </>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) setFormCat((fc) => ({ ...fc, photo: URL.createObjectURL(f) }));
-              }}
-            />
-          </label>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Nom de la catégorie *
-            </label>
-            <input
-              value={formCat.nom}
-              onChange={(e) => setFormCat((fc) => ({ ...fc, nom: e.target.value }))}
-              placeholder="Ex: Wax"
-              className="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30"
-            />
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={!formCat.nom.trim()}
-            className="w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
-          >
-            Créer la catégorie
-          </button>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Nom</label>
+          <input
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+            autoFocus
+            placeholder="ex. Bazin riche"
+            className="w-full h-9 px-3 rounded-xl border border-gray-200 text-sm"
+          />
         </div>
-      </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Description (facultatif)</label>
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full h-9 px-3 rounded-xl border border-gray-200 text-sm"
+          />
+        </div>
+        {erreur && (
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+            <AlertCircle size={15} className="shrink-0 mt-0.5" /> <span>{erreur}</span>
+          </div>
+        )}
+        <button
+          type="submit"
+          disabled={!nomValide || isPending}
+          className="w-full py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+          style={{ background: '#0F3D5E' }}
+        >
+          {isPending ? 'Création…' : 'Créer la catégorie'}
+        </button>
+      </form>
     </div>
   );
 };
