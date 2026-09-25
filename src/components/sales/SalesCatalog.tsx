@@ -3,6 +3,10 @@ import React from 'react';
 import { Search, ChevronLeft } from 'lucide-react';
 import type { PosProduit } from './types';
 import { LIBELLES_UNITE } from '../../features/pos/pricing';
+import FabricImage from '../ui/FabricImage';
+import SquareCard, { Pastille } from '../ui/SquareCard';
+import CategoryTile from '../ui/CategoryTile';
+import { GRILLE_TUILES } from '../ui/fabricOption';
 
 interface SalesCatalogProps {
   categories: { id: string; nom: string }[];
@@ -15,6 +19,12 @@ interface SalesCatalogProps {
   onSelectProduit: (prod: PosProduit) => void;
 }
 
+const couleurStock = (q: number) => (q < 10 ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white');
+
+/**
+ * Catalogue de la caisse en tuiles carrées (photo sur 88 %) : d'abord les catégories qui ont du
+ * stock, puis leurs tissus, les plus disponibles d'abord, avec prix et stock en pastilles.
+ */
 export const SalesCatalog: React.FC<SalesCatalogProps> = ({
   categories,
   produits,
@@ -27,63 +37,46 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
 }) => {
   const enStock = produits.filter((p) => p.quantite > 0);
   const categorieActive = categories.find((c) => c.id === categorieChoisie);
-
-  // Catégories qui possèdent au moins un produit disponible
   const categoriesDisponibles = categories.filter((c) => enStock.some((p) => p.categorieId === c.id));
 
   const recherche = searchProd.trim().toLowerCase();
-  const produitsFiltres = enStock.filter(
-    (p) =>
-      p.categorieId === categorieChoisie &&
-      (p.nom.toLowerCase().includes(recherche) || p.reference.toLowerCase().includes(recherche)),
-  );
+  const produitsFiltres = enStock
+    .filter(
+      (p) =>
+        p.categorieId === categorieChoisie &&
+        (p.nom.toLowerCase().includes(recherche) || p.reference.toLowerCase().includes(recherche)),
+    )
+    .sort((a, b) => b.quantite - a.quantite || a.nom.localeCompare(b.nom));
 
   if (isLoading) {
     return <div className="text-center py-10 text-xs text-gray-400">Chargement du stock…</div>;
   }
 
   return (
-    <div className="space-y-3">
-      {/* Si aucune catégorie choisie, afficher la grille des catégories */}
+    <div className="@container space-y-3">
       {!categorieChoisie ? (
         <div>
-          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-            1. Choisissez un type de tissu
-          </div>
-          {categoriesDisponibles.length === 0 && (
-            <div className="text-center py-8 text-xs text-gray-400">
-              Aucun tissu en stock dans cette boutique.
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">1. Choisissez un type de tissu</div>
+          {categoriesDisponibles.length === 0 ? (
+            <div className="text-center py-8 text-xs text-gray-400">Aucun tissu en stock dans cette boutique.</div>
+          ) : (
+            <div className={GRILLE_TUILES}>
+              {categoriesDisponibles.map((cat) => {
+                const tissus = enStock.filter((p) => p.categorieId === cat.id);
+                return (
+                  <CategoryTile
+                    key={cat.id}
+                    nom={cat.nom}
+                    couvertures={tissus.map((t) => ({ id: t.id, nom: t.nom, photoUrl: t.photo }))}
+                    detail={`${tissus.length} modèle${tissus.length > 1 ? 's' : ''} en stock`}
+                    onClick={() => onSelectCategorie(cat.id)}
+                  />
+                );
+              })}
             </div>
           )}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {categoriesDisponibles.map((cat) => {
-              const produitsCategorie = enStock.filter((p) => p.categorieId === cat.id);
-              const count = produitsCategorie.length;
-
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => onSelectCategorie(cat.id)}
-                  className="p-3 rounded-2xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm transition-all flex flex-col items-center text-center group"
-                >
-                  <div className="w-16 h-16 rounded-xl overflow-hidden mb-2 bg-gray-100 border border-gray-100">
-                    <img
-                      src={produitsCategorie[0]?.photo}
-                      alt={cat.nom}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                  <span className="font-semibold text-gray-900 text-sm">{cat.nom}</span>
-                  <span className="text-[11px] text-gray-400 mt-0.5">
-                    {count} modèle{count > 1 ? 's' : ''} en stock
-                  </span>
-                </button>
-              );
-            })}
-          </div>
         </div>
       ) : (
-        /* Modèles dans la catégorie sélectionnée */
         <div>
           <div className="flex items-center justify-between gap-2 mb-3">
             <button
@@ -93,9 +86,7 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
               <ChevronLeft size={16} />
               Toutes les catégories
             </button>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800">
-              {categorieActive?.nom}
-            </span>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800">{categorieActive?.nom}</span>
           </div>
 
           <div className="relative mb-3">
@@ -109,46 +100,32 @@ export const SalesCatalog: React.FC<SalesCatalogProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {produitsFiltres.length === 0 ? (
-              <div className="col-span-2 text-center py-8 text-xs text-gray-400">
-                Aucun modèle disponible dans cette sélection.
-              </div>
-            ) : (
-              produitsFiltres.map((prod) => (
-                <button
+          {produitsFiltres.length === 0 ? (
+            <div className="text-center py-8 text-xs text-gray-400">Aucun modèle disponible dans cette sélection.</div>
+          ) : (
+            <div className={GRILLE_TUILES}>
+              {produitsFiltres.map((prod) => (
+                <SquareCard
                   key={prod.id}
                   onClick={() => onSelectProduit(prod)}
-                  className="p-3 rounded-xl border border-gray-100 bg-white hover:border-blue-200 hover:shadow-xs flex items-center justify-between text-left transition-all group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                      <img src={prod.photo} alt={prod.nom} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-gray-900 text-xs truncate group-hover:text-blue-600">
-                        {prod.nom}
-                      </div>
-                      <div className="text-[11px] text-gray-500 truncate">{prod.reference}</div>
-                      <div className="text-[10px] text-gray-400">
-                        Stock :{' '}
-                        <span className="font-medium text-gray-700">
-                          {prod.quantite} {LIBELLES_UNITE[prod.unite]}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right flex-shrink-0 pl-2">
-                    <div className="font-bold text-gray-900 text-xs">
-                      {formatMontant(prod.prix)}
-                    </div>
-                    <div className="text-[10px] text-gray-400">par {LIBELLES_UNITE[prod.unite]}</div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
+                  titre={prod.nom}
+                  infobulle={`${prod.nom} — ${prod.reference} • ${formatMontant(prod.prix)} par ${LIBELLES_UNITE[prod.unite]}`}
+                  visuel={<FabricImage src={prod.photo} nom={prod.nom} />}
+                  hautDroite={
+                    <Pastille className="bg-white/90 text-gray-900">
+                      {formatMontant(prod.prix)} / {LIBELLES_UNITE[prod.unite]}
+                    </Pastille>
+                  }
+                  basGauche={<Pastille>{prod.reference}</Pastille>}
+                  basDroite={
+                    <Pastille className={couleurStock(prod.quantite)}>
+                      {prod.quantite} {LIBELLES_UNITE[prod.unite]}
+                    </Pastille>
+                  }
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
