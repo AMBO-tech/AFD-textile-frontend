@@ -19,7 +19,7 @@ export const useAuthUser = () => {
     async (credentials: LoginRequest) => {
       const response = await LOGIN(credentials);
       if (response.accessToken && response.user) {
-        setAuth(response.accessToken, response.user);
+        setAuth(response.accessToken, response.user, response.refreshToken);
         queryClient.invalidateQueries();
       }
       return response;
