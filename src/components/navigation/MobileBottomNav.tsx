@@ -10,7 +10,7 @@ interface MobileBottomNavProps {
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ current, onNavigate, items }) => {
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40"
+      className="lg:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-5 h-16">
