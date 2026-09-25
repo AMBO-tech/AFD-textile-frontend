@@ -3,6 +3,7 @@ import React from 'react';
 import { X, Trash2, ShoppingCart } from 'lucide-react';
 import type { LigneVente } from './types';
 import { LIBELLES_UNITE, montantsLigne, prixParUnite, totalPanier } from '../../features/pos/pricing';
+import { urlPhoto } from '@/lib/photoUrl';
 
 interface SalesCartDrawerProps {
   isOpen: boolean;
@@ -61,7 +62,7 @@ export const SalesCartDrawer: React.FC<SalesCartDrawerProps> = ({
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
-                      <img src={l.produit.photo} alt={l.produit.nom} className="w-full h-full object-cover" />
+                      <img src={urlPhoto(l.produit.photo)} alt={l.produit.nom} className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0">
                       <div className="font-semibold text-gray-900 text-xs truncate">

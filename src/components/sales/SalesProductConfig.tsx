@@ -10,6 +10,7 @@ import {
   unitesDisponibles,
 } from '../../features/pos/pricing';
 import SelectField from '../ui/SelectField';
+import { urlPhoto } from '@/lib/photoUrl';
 
 interface SalesProductConfigProps {
   produit: PosProduit | null;
@@ -57,7 +58,7 @@ export const SalesProductConfig: React.FC<SalesProductConfigProps> = ({
         {/* Aperçu */}
         <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 mb-4">
           <div className="w-12 h-12 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
-            <img src={produit.photo} alt={produit.nom} className="w-full h-full object-cover" />
+            <img src={urlPhoto(produit.photo)} alt={produit.nom} className="w-full h-full object-cover" />
           </div>
           <div className="min-w-0">
             <div className="font-bold text-gray-900 text-sm truncate">{produit.nom}</div>

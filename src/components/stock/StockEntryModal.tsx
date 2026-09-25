@@ -13,6 +13,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { PRODUCT_KEYS } from '../../hooks/queries/useProductsQuery';
 import SelectField from '../ui/SelectField';
 import { optionsEmplacements } from '../ui/locationOptions';
+import { urlPhoto } from '@/lib/photoUrl';
 
 /** Plafond imposé par l'API sur les listes paginées. */
 const API_PAGE_MAX = 100;
@@ -194,7 +195,7 @@ export const StockEntryModal: React.FC<StockEntryModalProps> = ({ isOpen, onClos
                       className="w-full p-2.5 rounded-xl border border-gray-100 hover:border-blue-200 flex items-center justify-between gap-3 text-left"
                     >
                       <span className="flex items-center gap-2.5 min-w-0">
-                        <img src={p.photoUrl} alt={p.nom} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" />
+                        <img src={urlPhoto(p.photoUrl)} alt={p.nom} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" />
                         <span className="min-w-0">
                           <span className="block font-semibold text-gray-900 text-xs truncate">{p.nom}</span>
                           <span className="block text-[11px] text-gray-400">{p.reference}</span>
