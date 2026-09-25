@@ -8,7 +8,6 @@ interface SalesSuccessModalProps {
   onClose: () => void;
   montant: number;
   paiement: string;
-  client: string;
   reference?: string;
 }
 
@@ -17,7 +16,6 @@ export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
   onClose,
   montant,
   paiement,
-  client,
   reference,
 }) => {
   if (!isOpen) return null;
@@ -44,8 +42,8 @@ export const SalesSuccessModal: React.FC<SalesSuccessModalProps> = ({
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-400">Client :</span>
-            <span className="font-semibold text-gray-800">{client || 'Passage'}</span>
+            <span className="text-gray-400">Type :</span>
+            <span className="font-semibold text-gray-800">Vente directe</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Règlement :</span>
