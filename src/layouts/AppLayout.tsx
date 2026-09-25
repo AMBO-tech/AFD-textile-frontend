@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navigation } from '../components/navigation';
 import { useLocationsListQuery } from '../hooks/queries/useLocationsQuery';
+import { deconnecter } from '../services/api';
 import { useTransfersQuery } from '../hooks/queries/useStocksQuery';
 
 export const AppLayout: React.FC = () => {
-  const { user, clearAuth } = useAuthStore();
+  const { user } = useAuthStore();
   const session = user as any;
   const notifications: any = [];
 
@@ -44,8 +45,8 @@ export const AppLayout: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    clearAuth();
+  const handleLogout = async () => {
+    await deconnecter();
     navigate('/login');
   };
 

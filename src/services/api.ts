@@ -149,6 +149,24 @@ API.interceptors.response.use(
   }
 );
 
+// ─── Déconnexion ──────────────────────────────────────────────────────────────
+
+/**
+ * Révoque le jeton de rafraîchissement côté serveur puis vide la session locale.
+ * La session durant 7 jours sur l'appareil, la révocation compte (ordinateur partagé) ;
+ * un échec réseau n'empêche jamais la déconnexion locale.
+ */
+export async function deconnecter(): Promise<void> {
+  const refreshToken = tokenStore.getRefreshToken();
+  try {
+    if (tokenStore.get()) await API.post('/auth/logout', refreshToken ? { refreshToken } : {});
+  } catch {
+    // Jeton déjà expiré ou serveur injoignable : la session locale est effacée quand même.
+  } finally {
+    useAuthStore.getState().clearAuth();
+  }
+}
+
 // ─── Helper: Normalisation des erreurs API ────────────────────────────────────
 
 export function getErrorMessage(error: unknown, defaultMessage = 'Une erreur inattendue est survenue.'): string {
