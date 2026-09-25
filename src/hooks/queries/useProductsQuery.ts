@@ -9,6 +9,28 @@ export const PRODUCT_KEYS = {
   details: () => [...PRODUCT_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...PRODUCT_KEYS.details(), id] as const,
   categories: () => [...PRODUCT_KEYS.all, 'categories'] as const,
+  unites: () => [...PRODUCT_KEYS.all, 'unites'] as const,
+};
+
+/** Les niveaux de stock embarquent nom / photo / prix du produit : on les rafraîchit aussi. */
+const STOCKS_PREFIX = ['stocks'] as const;
+
+export const useUnitesQuery = () => {
+  return useQuery({
+    queryKey: PRODUCT_KEYS.unites(),
+    queryFn: () => productsService.getUnites(),
+    staleTime: 1000 * 60 * 60,
+  });
+};
+
+export const useCreateCategoryMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof productsService.createCategory>[0]) => productsService.createCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.categories() });
+    },
+  });
 };
 
 export const useCategoriesQuery = () => {
@@ -64,6 +86,7 @@ export const useUpdateProductMutation = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: STOCKS_PREFIX });
     },
   });
 };
@@ -77,6 +100,7 @@ export const useArchiveProductMutation = () => {
     mutationFn: (id: string) => productsService.archive(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: STOCKS_PREFIX });
     },
   });
 };
