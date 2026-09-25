@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { X, ChevronLeft, Search, Layers } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import FabricImage from './FabricImage';
+import { X, ChevronLeft, Search } from 'lucide-react';
+import CategoryTile from './CategoryTile';
 import FabricTile from './FabricTile';
 import { GRILLE_TUILES, trierParDisponibilite, type FabricOption, type TriDisponibilite } from './fabricOption';
 
@@ -115,35 +114,15 @@ export const FabricPickerModal: React.FC<FabricPickerModalProps> = ({
             ) : (
               <div className={GRILLE_TUILES}>
                 {categories.map((c) => {
-                  const total = c.tissus.reduce((s, t) => s + t.disponible, 0);
-                  const couvertures = c.tissus.slice(0, 4);
+                  const total = c.tissus.reduce((somme, t) => somme + t.disponible, 0);
                   return (
-                    <button
+                    <CategoryTile
                       key={c.id}
+                      nom={c.nom}
+                      couvertures={c.tissus.map((t) => ({ id: t.produitId, nom: t.nom, photoUrl: t.photoUrl }))}
+                      detail={`${c.tissus.length} tissu${c.tissus.length > 1 ? 's' : ''}${total > 0 ? ` • ${Math.round(total)} en stock` : ''}`}
                       onClick={() => setCategorieId(c.id)}
-                      className="group aspect-square rounded-2xl bg-white border border-gray-100 shadow-xs hover:shadow-md hover:border-blue-200 overflow-hidden flex flex-col text-left transition-all"
-                    >
-                      <div
-                        className={cn(
-                          'h-[76%] w-full grid gap-px bg-gray-100',
-                          couvertures.length > 1 ? 'grid-cols-2' : 'grid-cols-1',
-                          couvertures.length > 2 ? 'grid-rows-2' : 'grid-rows-1',
-                        )}
-                      >
-                        {couvertures.map((t, i) => (
-                          <div key={t.produitId} className={cn('h-full min-h-0 overflow-hidden', couvertures.length === 3 && i === 0 && 'row-span-2')}>
-                            <FabricImage src={t.photoUrl} nom={t.nom} className="group-hover:scale-105 transition-transform duration-300" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex-1 px-2.5 flex flex-col justify-center min-h-0 leading-tight">
-                        <span className="font-semibold text-gray-900 text-xs sm:text-sm truncate">{c.nom}</span>
-                        <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-gray-400 truncate">
-                          <Layers size={11} /> {c.tissus.length} tissu{c.tissus.length > 1 ? 's' : ''}
-                          {total > 0 ? ` • ${Math.round(total)} en stock` : ''}
-                        </span>
-                      </div>
-                    </button>
+                    />
                   );
                 })}
               </div>
