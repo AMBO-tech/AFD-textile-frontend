@@ -97,8 +97,11 @@ export const DirectTransferPanel: React.FC<DirectTransferPanelProps> = ({ emplac
     }
   };
 
+  // Le récapitulatif passe à côté des tuiles seulement si le panneau lui-même est assez large
+  // (et non l'écran : la zone de contenu est plafonnée sur les grands écrans).
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
+    <div className="@container">
+    <div className="grid grid-cols-1 @4xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
       <div className="@container space-y-3 min-w-0">
         <div className="bg-white rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-xs grid grid-cols-1 @xl:grid-cols-[1fr_auto_1fr] gap-2 @xl:gap-3 items-end">
           <SelectField label="Point de départ" value={sourceId} onChange={changerSource} options={optionsEmplacements(actifs)} placeholder="D’où part le tissu ?" />
@@ -174,7 +177,7 @@ export const DirectTransferPanel: React.FC<DirectTransferPanelProps> = ({ emplac
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-xs xl:sticky xl:top-4 flex flex-col xl:max-h-[calc(100vh-120px)]">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xs @4xl:sticky @4xl:top-4 flex flex-col @4xl:max-h-[calc(100vh-120px)]">
         <div className="p-4 border-b border-gray-100">
           <div className="font-display font-bold text-gray-900 text-sm">Récapitulatif</div>
           <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 min-w-0">
@@ -207,6 +210,7 @@ export const DirectTransferPanel: React.FC<DirectTransferPanelProps> = ({ emplac
           <p className="text-[10px] text-gray-400 text-center">Le stock est retiré au départ et ajouté à l’arrivée immédiatement.</p>
         </div>
       </div>
+    </div>
     </div>
   );
 };
