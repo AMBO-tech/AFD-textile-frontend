@@ -50,6 +50,11 @@ export const stocksService = {
     const res = await API.post<Transfert>('/stocks/transferts/demande', data);
     return res.data;
   },
+  /** Transfert immédiat par le gérant : retrait à la source et réception à destination en une transaction. */
+  directTransfer: async (data: { locationSourceId: string; locationDestinationId: string; lignes: { produitId: string; quantite: number; unite: string }[] }) => {
+    const res = await API.post<Transfert>('/stocks/transferts/direct', data);
+    return res.data;
+  },
   /** Validation par le gérant : déplace le stock depuis l'emplacement source choisi. */
   validateTransfer: async (id: string, locationSourceId?: string) => {
     const res = await API.post<Transfert>(

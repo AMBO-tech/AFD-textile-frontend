@@ -68,6 +68,18 @@ export const useAdjustStockMutation = () => {
 /**
  * Mutation pour créer une demande de réassort / transfert
  */
+/** Transfert direct du gérant : rafraîchit transferts, niveaux de stock et indicateurs. */
+export const useDirectTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof stocksService.directTransfer>[0]) => stocksService.directTransfer(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    },
+  });
+};
+
 export const useRequestTransferMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
