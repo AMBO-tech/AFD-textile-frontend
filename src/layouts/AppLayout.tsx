@@ -78,7 +78,7 @@ export const AppLayout: React.FC = () => {
           }}
           className="lg:[padding-top:0] lg:[padding-bottom:0]"
         >
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5 lg:py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 lg:py-6">
             <Outlet />
           </div>
         </main>
