@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Package, Pencil, Archive } from 'lucide-react';
+import React from 'react';
+import { Pencil, Archive } from 'lucide-react';
 import type { Produit } from '@/types/products';
 import { formatMontant } from '@/utils/format';
+import FabricImage from '../ui/FabricImage';
+import SquareCard, { Pastille } from '../ui/SquareCard';
 import { LIBELLE_UNITE_STOCKAGE } from './types';
 
 interface ProductCardProps {
@@ -11,45 +13,40 @@ interface ProductCardProps {
   onArchive: () => void;
 }
 
+/** Carte carrée d'un tissu du catalogue : photo sur 88 %, prix et catégorie en pastilles, actions dessous. */
 export const ProductCard: React.FC<ProductCardProps> = ({ produit, gerant, onEdit, onArchive }) => {
-  const [photoCassee, setPhotoCassee] = useState(false);
   const archive = produit.statut === 'INACTIF';
   const unite = LIBELLE_UNITE_STOCKAGE[produit.uniteStockage];
+  const details = [
+    produit.reference,
+    produit.categorie?.nom,
+    produit.couleur,
+    produit.prixMinimum != null ? `min. ${formatMontant(produit.prixMinimum)}` : null,
+    produit.uniteStockage === 'ROULEAU' && produit.longueurRouleauMetres != null ? `${produit.longueurRouleauMetres} m par rouleau` : null,
+  ].filter(Boolean);
 
   return (
-    <div className={`bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden flex flex-col ${archive ? 'opacity-60' : ''}`}>
-      <div className="aspect-[4/3] bg-gray-50 flex items-center justify-center">
-        {produit.photoUrl && !photoCassee ? (
-          <img src={produit.photoUrl} alt={produit.nom} onError={() => setPhotoCassee(true)} className="w-full h-full object-cover" />
-        ) : (
-          <Package size={28} className="text-gray-300" />
-        )}
-      </div>
-      <div className="p-3 flex-1 flex flex-col gap-1">
-        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{produit.reference}</div>
-        <div className="font-semibold text-gray-900 text-sm leading-tight">{produit.nom}</div>
-        <div className="text-[11px] text-gray-500">
-          {produit.categorie?.nom}
-          {produit.couleur ? ` • ${produit.couleur}` : ''}
-        </div>
-        <div className="mt-auto pt-1 text-xs">
-          <span className="font-bold text-gray-900">{formatMontant(produit.prixIndicatif)}</span>
-          <span className="text-gray-400"> / {unite}</span>
-          {produit.prixMinimum != null && (
-            <div className="text-[10px] text-gray-400">min. {formatMontant(produit.prixMinimum)}</div>
-          )}
-          {produit.uniteStockage === 'ROULEAU' && produit.longueurRouleauMetres != null && (
-            <div className="text-[10px] text-gray-400">{produit.longueurRouleauMetres} m par rouleau</div>
-          )}
-        </div>
-        {archive && <span className="self-start text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Archivé</span>}
-      </div>
+    <div className="space-y-1.5">
+      <SquareCard
+        titre={produit.nom}
+        infobulle={`${produit.nom} — ${details.join(' • ')}`}
+        estompe={archive}
+        visuel={<FabricImage src={produit.photoUrl} nom={produit.nom} />}
+        hautGauche={produit.categorie?.nom ? <Pastille>{produit.categorie.nom}</Pastille> : undefined}
+        hautDroite={
+          <Pastille className="bg-white/90 text-gray-900">
+            {formatMontant(produit.prixIndicatif)} / {unite}
+          </Pastille>
+        }
+        basGauche={<Pastille>{produit.reference}</Pastille>}
+        basDroite={archive ? <Pastille className="bg-gray-700 text-white">Archivé</Pastille> : undefined}
+      />
       {gerant && !archive && (
-        <div className="grid grid-cols-2 border-t border-gray-100 text-[11px] font-semibold">
-          <button onClick={onEdit} className="flex items-center justify-center gap-1 py-2 text-blue-700 hover:bg-blue-50">
+        <div className="grid grid-cols-2 gap-1.5 text-[11px] font-semibold">
+          <button onClick={onEdit} className="flex items-center justify-center gap-1 py-1.5 rounded-xl bg-white border border-gray-100 text-blue-700 hover:bg-blue-50">
             <Pencil size={12} /> Modifier
           </button>
-          <button onClick={onArchive} className="flex items-center justify-center gap-1 py-2 text-rose-600 hover:bg-rose-50 border-l border-gray-100">
+          <button onClick={onArchive} className="flex items-center justify-center gap-1 py-1.5 rounded-xl bg-white border border-gray-100 text-rose-600 hover:bg-rose-50">
             <Archive size={12} /> Archiver
           </button>
         </div>
