@@ -7,6 +7,8 @@ export interface Location { lieu?: string;
   adresse?: string | null
   telephone?: string | null
   actif: boolean
+  /** Nombre de comptes rattachés (liste des emplacements). */
+  nombreEmployes?: number
   createdAt: string
   updatedAt: string
 }
