@@ -51,3 +51,17 @@ body {
 .font-display {
   font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Impression des rapports : fond blanc, couleurs conservées, marges A4 raisonnables. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

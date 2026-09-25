@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Home, Package, Archive, ShoppingCart, Users, MessageSquare,
-  Bell, User, History, Settings, X, LogOut, ArrowLeftRight, Store
+  Bell, User, History, Settings, X, LogOut, ArrowLeftRight, Store, BarChart3
 } from 'lucide-react';
 import type { NavigationProps, NavTabItem } from './types';
 import DesktopSidebar from './DesktopSidebar';
@@ -33,6 +33,7 @@ const TABS_SIDEBAR_EXTRA: readonly NavTabItem[] = [
 const TABS_GERANT: readonly NavTabItem[] = [
   { id: 'boutiques', label: 'Boutiques', icon: Store },
   { id: 'utilisateurs', label: 'Utilisateurs', icon: Users },
+  { id: 'rapports', label: 'Rapports', icon: BarChart3 },
   { id: 'historique', label: 'Historique', icon: History },
   { id: 'parametres', label: 'Paramètres', icon: Settings },
 ];
