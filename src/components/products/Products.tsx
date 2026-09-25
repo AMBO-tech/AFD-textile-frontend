@@ -9,6 +9,7 @@ import ProductCard from './ProductCard';
 import ProductFormModal from './ProductFormModal';
 import NewCategoryModal from './NewCategoryModal';
 import { isGerant, type ProductsProps } from './types';
+import { GRILLE_TUILES } from '../ui/fabricOption';
 
 /** Plafond imposé par l'API sur les listes paginées. */
 const API_PAGE_MAX = 100;
@@ -64,7 +65,7 @@ export const Products: React.FC<ProductsProps> = ({ role }) => {
   const aucuneCategorie = !chargementCategories && categories.length === 0;
 
   return (
-    <div className="space-y-4">
+    <div className="@container space-y-4">
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
@@ -160,7 +161,7 @@ export const Products: React.FC<ProductsProps> = ({ role }) => {
           <p className="text-xs text-gray-400">
             {total} tissu{total > 1 ? 's' : ''}
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className={GRILLE_TUILES}>
             {produits.map((p) => (
               <ProductCard
                 key={p.id}
