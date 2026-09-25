@@ -18,7 +18,7 @@ export const useLogin = () => {
       if (response.success || ('accessToken' in response && Boolean(response.accessToken))) {
         const token = 'accessToken' in response ? (response.accessToken as string) : '';
         // Enregistrer la session dans Zustand / tokenStore
-        setAuth(token, response.user || null)
+        setAuth(token, response.user || null, 'refreshToken' in response ? response.refreshToken : undefined)
 
         // Pré-remplir le cache TanStack Query avec l'utilisateur si retourné par l'API
         if (response.user) {

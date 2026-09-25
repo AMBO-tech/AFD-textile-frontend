@@ -5,9 +5,13 @@ import { tokenStore } from '@/lib/tokenStore';
 
 const USER_STORAGE_KEY = '__rsk_user__';
 
+/** Profil de l'utilisateur connecté : localStorage, comme les jetons (session de 7 jours). */
 function getStoredUser(): User | null {
   try {
-    const raw = sessionStorage.getItem(USER_STORAGE_KEY);
+    const ancien = sessionStorage.getItem(USER_STORAGE_KEY);
+    if (ancien && !localStorage.getItem(USER_STORAGE_KEY)) localStorage.setItem(USER_STORAGE_KEY, ancien);
+    sessionStorage.removeItem(USER_STORAGE_KEY);
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -17,9 +21,9 @@ function getStoredUser(): User | null {
 function setStoredUser(user: User | null): void {
   try {
     if (user) {
-      sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
     } else {
-      sessionStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
     }
   } catch {
     // Ignore storage errors
@@ -35,7 +39,8 @@ interface AuthState {
   // Actions
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
-  setAuth: (token: string, user?: User | null) => void;
+  /** Ouvre (ou prolonge) la session ; le jeton de rafraîchissement est conservé s'il est fourni. */
+  setAuth: (token: string, user?: User | null, refreshToken?: string) => void;
   clearAuth: () => void;
   setInitialized: (initialized: boolean) => void;
 
@@ -70,8 +75,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
       set({ user });
     },
 
-    setAuth: (token, user = null) => {
+    setAuth: (token, user = null, refreshToken) => {
       tokenStore.set(token);
+      if (refreshToken) tokenStore.setRefreshToken(refreshToken);
       setStoredUser(user);
       set({
         token,

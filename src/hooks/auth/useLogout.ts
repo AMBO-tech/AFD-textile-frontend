@@ -1,17 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/stores/useAuthStore'
+import { deconnecter } from '@/services/api'
 import { toast } from 'sonner'
 import { useCallback } from 'react'
 
 export const useLogout = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const clearAuth = useAuthStore((state) => state.clearAuth)
-
-  const logout = useCallback(() => {
-    // 1. Vider le store d'authentification et le stockage de token
-    clearAuth()
+  const logout = useCallback(async () => {
+    // 1. Révoquer la session côté serveur et vider le stockage local
+    await deconnecter()
 
     // 2. Vider complètement le cache de requêtes TanStack Query
     queryClient.clear()
@@ -21,7 +19,7 @@ export const useLogout = () => {
 
     // 4. Rediriger vers la page de connexion
     navigate('/login')
-  }, [clearAuth, queryClient, navigate])
+  }, [queryClient, navigate])
 
   return { logout }
 }
