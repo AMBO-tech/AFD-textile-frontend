@@ -21,8 +21,14 @@ export const AppLayout: React.FC = () => {
 
   if (!session) return null;
 
-  const boutiqueCourante =
-    boutiques.find((b: any) => b.id === (session.boutiqueId || session.locationId)) || boutiques[0] || { id: 'temp', nom: 'Chargement...', lieu: '' };
+  // Le gérant n'est rattaché à aucun emplacement : l'en-tête affiche le réseau, pas un emplacement au hasard.
+  const estGerant = session.role === 'OWNER';
+  const boutiqueCourante = estGerant
+    ? { id: 'reseau', nom: 'AFD Textile', lieu: `${boutiques.length} emplacement${boutiques.length > 1 ? 's' : ''}` }
+    : (() => {
+        const b = boutiques.find((l) => l.id === (session.boutiqueId || session.locationId));
+        return b ? { id: b.id, nom: b.nom, lieu: b.adresse ?? (b.type === 'ENTREPOT' ? 'Entrepôt' : 'Boutique') } : { id: 'temp', nom: 'Chargement…', lieu: '' };
+      })();
 
   const unreadNotifs = notifications.filter((n: any) => !n.lu).length;
   const pendingDemandes = demandesEnAttente?.total ?? demandesEnAttente?.meta?.total ?? 0;
