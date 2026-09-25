@@ -14,6 +14,7 @@ import {
   NotificationsPage,
   ParametresPage,
   EntrepotPage,
+  BoutiquesPage,
   UsersPage,
   RapportsPage,
   HistoriquePage,
@@ -46,6 +47,7 @@ export const AppRoutes: React.FC = () => {
           {/* Espace restreint : Gérant uniquement */}
           <Route element={<RoleProtectedRoute allowedRoles={['gerant']} />}>
             <Route path="/entrepot" element={<EntrepotPage />} />
+            <Route path="/boutiques" element={<BoutiquesPage />} />
             <Route path="/utilisateurs" element={<UsersPage />} />
             <Route path="/rapports" element={<RapportsPage />} />
             <Route path="/historique" element={<HistoriquePage />} />

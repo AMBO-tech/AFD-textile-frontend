@@ -1,170 +1,144 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { Plus, Store, Warehouse, MapPin, Phone, Users as UsersIcon, Pencil, Power, X } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Location } from '@/types/locations';
+import { useLocationsListQuery, useToggleLocationStatusMutation } from '../../hooks/queries/useLocationsQuery';
+import { getErrorMessage } from '../../services/api';
+import { Users } from '../users';
+import LocationFormModal from './LocationFormModal';
 
-import type { BoutiqueFilter, BoutiqueFormData, BoutiqueWithStaff } from './types';
-import BoutiquesList from './BoutiquesList';
-import BoutiqueModal from './BoutiqueModal';
-import BoutiqueStaffModal from './BoutiqueStaffModal';
-import { CheckCircle2 } from 'lucide-react';
-import {
-  useCreateLocationMutation,
-  useUpdateLocationMutation,
-  useToggleLocationStatusMutation,
-} from '../../hooks/queries/useLocationsQuery';
+/** Plafond imposé par l'API sur les listes paginées. */
+const API_PAGE_MAX = 100;
 
+/** Boutiques et entrepôts : création, modification, activation, et membres rattachés. */
 export const Boutiques: React.FC = () => {
-  const boutiques: any[] = [];
-  const utilisateurs: any[] = [];
-  const stocks: any[] = [];
-  const addBoutique = (data: any) => {};
-  const updateBoutique = (id: any, data: any) => {};
-  const toggleBoutiqueActif = (id: any) => {};
+  const [formulaire, setFormulaire] = useState<{ emplacement: Location | null } | null>(null);
+  const [membresDe, setMembresDe] = useState<Location | null>(null);
 
-  const [search, setSearch] = useState('');
-  const [filtre, setFiltre] = useState<BoutiqueFilter>('tous');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingBoutique, setEditingBoutique] = useState<BoutiqueWithStaff | null>(null);
-  const [staffModalBoutique, setStaffModalBoutique] = useState<BoutiqueWithStaff | null>(null);
-  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const { data: res, isLoading, isError, error } = useLocationsListQuery({ limit: API_PAGE_MAX });
+  const emplacements = [...(res?.data ?? [])].sort(
+    (a, b) => Number(b.actif) - Number(a.actif) || a.type.localeCompare(b.type) || a.nom.localeCompare(b.nom),
+  );
+  const { mutateAsync: basculer } = useToggleLocationStatusMutation();
 
-  // Construction des données enrichies (personnel + stock par boutique)
-  const boutiquesWithStaff: BoutiqueWithStaff[] = useMemo(() => {
-    return boutiques.map((b: any) => {
-      const staff = utilisateurs.filter((u: any) => u.boutique === b.id);
-      const nbStock = stocks.filter(
-        (s: any) =>
-          s.boutiqueId === b.id ||
-          ((b.id === 'b-ent' || b.id === 'entrepot') &&
-            (s.boutiqueId === 'b-ent' || s.boutiqueId === 'entrepot'))
-      ).length;
-      return {
-        ...b,
-        personnel: staff,
-        nbArticlesStock: nbStock,
-      };
-    });
-  }, [boutiques, utilisateurs, stocks]);
-
-  const handleOpenCreate = () => {
-    setEditingBoutique(null);
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEdit = (b: BoutiqueWithStaff) => {
-    setEditingBoutique(b);
-    setIsModalOpen(true);
-  };
-
-  const { mutate: createLocationApi } = useCreateLocationMutation();
-  const { mutate: updateLocationApi } = useUpdateLocationMutation();
-  const { mutate: toggleLocationApi } = useToggleLocationStatusMutation();
-
-  const handleSave = (form: BoutiqueFormData) => {
-    if (editingBoutique) {
-      updateBoutique(editingBoutique.id, {
-        code: form.code,
-        nom: form.nom,
-        type: form.type,
-        lieu: form.lieu,
-        adresse: form.adresse,
-        telephone: form.telephone,
-        gerant: form.gerant,
-      });
-      // Synchronisation API réelle
-      updateLocationApi({
-        id: editingBoutique.id,
-        data: {
-          nom: form.nom,
-          type: form.type === 'ENTREPOT' ? 'ENTREPOT' : 'BOUTIQUE',
-          adresse: form.adresse,
-          telephone: form.telephone,
-        },
-      });
-      setFeedbackMsg(`L'emplacement ${form.nom} a été mis à jour avec succès.`);
-    } else {
-      addBoutique({
-        code: form.code,
-        nom: form.nom,
-        type: form.type,
-        lieu: form.lieu || 'Dakar',
-        adresse: form.adresse,
-        telephone: form.telephone,
-        gerant: form.gerant,
-      });
-      // Synchronisation API réelle
-      createLocationApi({
-        nom: form.nom,
-        type: form.type === 'ENTREPOT' ? 'ENTREPOT' : 'BOUTIQUE',
-        adresse: form.adresse || 'Dakar',
-        telephone: form.telephone || '+221',
-      });
-      setFeedbackMsg(`L'emplacement ${form.nom} (${form.type}) a été créé avec succès.`);
-    }
-
-    setIsModalOpen(false);
-    setEditingBoutique(null);
-    setTimeout(() => setFeedbackMsg(null), 4000);
-  };
-
-  const handleToggleStatus = (id: string) => {
-    toggleBoutiqueActif(id);
-    toggleLocationApi(id);
-    const target = boutiques.find((b: any) => b.id === id);
-    if (target) {
-      const statutTxt = target.actif ? 'désactivé' : 'activé';
-      setFeedbackMsg(`L'emplacement ${target.nom} a été ${statutTxt}.`);
-      setTimeout(() => setFeedbackMsg(null), 3500);
+  const basculerStatut = async (l: Location) => {
+    if (l.actif && !window.confirm(`Désactiver « ${l.nom} » ? Il ne sera plus proposé pour les ventes, le stock et les transferts.`)) return;
+    try {
+      await basculer(l.id);
+      toast.success(l.actif ? `« ${l.nom} » désactivé.` : `« ${l.nom} » réactivé.`);
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Le changement de statut a échoué.'));
     }
   };
 
   return (
-    <div className="space-y-5">
-      {/* En-tête de la page */}
-      <div>
-        <h1 className="font-display text-xl font-bold text-gray-900">
-          Gestion des Boutiques & Entrepôts
-        </h1>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Supervision des emplacements physiques, du personnel affecté et des stocks par point de vente
-        </p>
+    <div className="space-y-4">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+            <Store size={20} />
+          </div>
+          <div>
+            <h1 className="font-display font-bold text-gray-900 text-xl sm:text-2xl">Boutiques & entrepôts</h1>
+            <p className="text-xs sm:text-sm text-gray-500">Vos emplacements de vente et de stockage, et leurs équipes</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setFormulaire({ emplacement: null })}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs text-white shadow-sm self-start sm:self-auto"
+          style={{ background: '#0F3D5E' }}
+        >
+          <Plus size={16} /> Nouvel emplacement
+        </button>
       </div>
 
-      {/* Message de notification / feedback */}
-      {feedbackMsg && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 text-emerald-800 text-xs font-semibold animate-fade-in shadow-sm">
-          <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
-          <span>{feedbackMsg}</span>
+      {isError ? (
+        <div className="bg-white rounded-2xl p-10 text-center border border-red-100 text-sm text-red-600">
+          {getErrorMessage(error, 'Les emplacements n’ont pas pu être chargés.')}
+        </div>
+      ) : isLoading ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 text-sm text-gray-400">Chargement…</div>
+      ) : emplacements.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 space-y-2">
+          <Warehouse size={32} className="mx-auto text-gray-300" />
+          <p className="text-sm text-gray-500">
+            Aucun emplacement : créez votre entrepôt et vos boutiques pour pouvoir mettre du stock et inviter vos boutiquiers.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {emplacements.map((l) => {
+            const Icone = l.type === 'ENTREPOT' ? Warehouse : Store;
+            return (
+              <div key={l.id} className={`bg-white rounded-2xl p-4 border border-gray-100 shadow-xs space-y-2 ${l.actif ? '' : 'opacity-60'}`}>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                    <Icone size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-gray-900 text-sm">{l.nom}</div>
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                        {l.type === 'ENTREPOT' ? 'Entrepôt' : 'Boutique'}
+                      </span>
+                      {!l.actif && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">Désactivé</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[11px] text-gray-500 space-y-0.5">
+                  {l.adresse && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin size={11} /> {l.adresse}
+                    </div>
+                  )}
+                  {l.telephone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone size={11} /> {l.telephone}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <UsersIcon size={11} /> {l.nombreEmployes ?? 0} membre{(l.nombreEmployes ?? 0) > 1 ? 's' : ''}
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-end gap-1 pt-1 text-[11px] font-semibold">
+                  <button onClick={() => setMembresDe(l)} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-gray-700 hover:bg-gray-50">
+                    <UsersIcon size={12} /> Membres
+                  </button>
+                  <button onClick={() => setFormulaire({ emplacement: l })} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-blue-700 hover:bg-blue-50">
+                    <Pencil size={12} /> Modifier
+                  </button>
+                  <button
+                    onClick={() => basculerStatut(l)}
+                    className={`flex items-center gap-1 px-2 py-1.5 rounded-lg ${l.actif ? 'text-rose-600 hover:bg-rose-50' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                  >
+                    <Power size={12} /> {l.actif ? 'Désactiver' : 'Réactiver'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Liste principale */}
-      <BoutiquesList
-        boutiques={boutiquesWithStaff}
-        search={search}
-        onSearchChange={setSearch}
-        filtre={filtre}
-        onFiltreChange={setFiltre}
-        onOpenCreateModal={handleOpenCreate}
-        onEditBoutique={handleOpenEdit}
-        onToggleStatus={handleToggleStatus}
-      />
+      {formulaire && (
+        <LocationFormModal key={formulaire.emplacement?.id ?? 'nouveau'} emplacement={formulaire.emplacement} onClose={() => setFormulaire(null)} />
+      )}
 
-      {/* Modal d'ajout / modification */}
-      <BoutiqueModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingBoutique(null);
-        }}
-        editingBoutique={editingBoutique}
-        onSave={handleSave}
-      />
-
-      {/* Modal d'affichage des vendeurs / personnel */}
-      <BoutiqueStaffModal
-        isOpen={Boolean(staffModalBoutique)}
-        onClose={() => setStaffModalBoutique(null)}
-        boutique={staffModalBoutique}
-      />
+      {membresDe && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-gray-50 rounded-3xl w-full max-w-2xl shadow-2xl border border-gray-100 max-h-[92vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white">
+              <h3 className="font-display font-bold text-gray-900 text-base">Membres — {membresDe.nom}</h3>
+              <button onClick={() => setMembresDe(null)} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Fermer">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              <Users locationId={membresDe.id} integre />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

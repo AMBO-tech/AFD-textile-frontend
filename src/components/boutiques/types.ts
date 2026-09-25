@@ -1,30 +1,6 @@
+import type { LocationType } from '@/types/enums';
 
-
-export interface BoutiqueItem {
-  id: string;
-  code: string;
-  nom: string;
-  type: 'BOUTIQUE' | 'ENTREPOT';
-  lieu: string;
-  adresse: string;
-  telephone: string;
-  gerant: string;
-  actif: boolean;
-}
-
-export interface BoutiqueFormData {
-  code: string;
-  nom: string;
-  type: 'BOUTIQUE' | 'ENTREPOT';
-  lieu: string;
-  adresse: string;
-  telephone: string;
-  gerant: string;
-}
-
-export type BoutiqueFilter = 'tous' | 'BOUTIQUE' | 'ENTREPOT';
-
-export interface BoutiqueWithStaff extends BoutiqueItem {
-  personnel: UtilisateurItem[];
-  nbArticlesStock: number;
-}
+export const TYPES_EMPLACEMENT: { id: LocationType; label: string; aide: string }[] = [
+  { id: 'BOUTIQUE', label: 'Boutique', aide: 'Point de vente : ses boutiquiers y vendent et demandent du stock.' },
+  { id: 'ENTREPOT', label: 'Entrepôt', aide: 'Réserve : reçoit les arrivages et approvisionne les boutiques par transfert.' },
+];

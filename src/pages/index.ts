@@ -8,6 +8,7 @@ export { ProductsPage } from './products/ProductsPage';
 export { NotificationsPage } from './notifications/NotificationsPage';
 export { ParametresPage } from './parametres/ParametresPage';
 export { EntrepotPage } from './entrepot/EntrepotPage';
+export { BoutiquesPage } from './boutiques/BoutiquesPage';
 export { UsersPage } from './users/UsersPage';
 export { RapportsPage } from './rapports/RapportsPage';
 export { HistoriquePage } from './historique/HistoriquePage';
