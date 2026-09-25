@@ -32,6 +32,8 @@ export interface InvitationResponse {
   activationUrl: string;
   expiresAt: string;
   notificationSent: boolean;
+  /** Canal utilisé : e-mail si le membre en a un, sinon SMS ; null si rien n'est parti. */
+  canal?: 'EMAIL' | 'SMS' | null;
 }
 
 export interface UpdateUserRequest {

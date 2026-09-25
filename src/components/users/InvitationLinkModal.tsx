@@ -12,7 +12,9 @@ const formatExpiration = (iso: string) => new Date(iso).toLocaleString('fr-SN', 
 /** Lien d'activation d'un compte invité : à transmettre si le SMS / l'e-mail n'est pas arrivé. */
 export const InvitationLinkModal: React.FC<InvitationLinkModalProps> = ({ invitation, onClose }) => {
   const [copie, setCopie] = useState(false);
-  const { user, activationUrl, expiresAt, notificationSent } = invitation;
+  const { user, activationUrl, expiresAt, notificationSent, canal } = invitation;
+  const destination =
+    canal === 'EMAIL' ? `par e-mail à ${user.email}` : canal === 'SMS' ? `par SMS au ${user.telephone}` : 'par SMS / e-mail';
 
   const copier = async () => {
     try {
@@ -46,8 +48,8 @@ export const InvitationLinkModal: React.FC<InvitationLinkModalProps> = ({ invita
           {notificationSent ? <CheckCircle2 size={15} className="shrink-0 mt-0.5" /> : <AlertTriangle size={15} className="shrink-0 mt-0.5" />}
           <span>
             {notificationSent
-              ? `Le lien a été envoyé par SMS${user.email ? ' / e-mail' : ''}. Vous pouvez aussi le transmettre vous-même.`
-              : 'Le SMS n’a pas pu partir : transmettez ce lien vous-même.'}
+              ? `Le lien a été envoyé ${destination}. Vous pouvez aussi le transmettre vous-même.`
+              : 'Ni l’e-mail ni le SMS n’ont pu partir : transmettez ce lien vous-même.'}
           </span>
         </div>
 

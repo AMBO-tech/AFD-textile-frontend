@@ -138,7 +138,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ utilisateur, locat
 
         {!edition && (
           <p className="text-[11px] text-gray-400">
-            Le membre reçoit un lien pour choisir son mot de passe. Vous pourrez aussi le copier ou l’envoyer par WhatsApp.
+            Le membre reçoit un lien pour choisir son mot de passe : par e-mail s’il en a un, sinon par SMS. Vous pourrez aussi le copier ou l’envoyer par WhatsApp.
           </p>
         )}
         {problemes.length > 0 && <p className="text-[11px] text-gray-400">À compléter : {problemes.join(' • ')}</p>}
