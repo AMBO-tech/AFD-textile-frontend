@@ -2,7 +2,6 @@ import { useAuthStore } from '../../stores/useAuthStore';
 import React, { useMemo } from 'react';
 import DashboardKpiCards from './DashboardKpiCards';
 import DashboardSalesChart from './DashboardSalesChart';
-import DashboardTopProducts from './DashboardTopProducts';
 import DashboardStockAlerts from './DashboardStockAlerts';
 import DashboardQuickActions from './DashboardQuickActions';
 import DashboardBoutiquesOverview from './DashboardBoutiquesOverview';
@@ -12,11 +11,8 @@ import {
   useCreancesTotalQuery,
   useDashboardKpisQuery,
   useSalesTrendQuery,
-  useTopTextilesQuery,
 } from '../../hooks/queries/useAnalyticsQuery';
 
-/** Nombre de tissus affichés dans le palmarès du mois. */
-const TOP_TISSUS = 5;
 import { useStockLevelsQuery } from '../../hooks/queries/useStocksQuery';
 
 /** Plafond imposé par l'API sur les listes paginées. */
@@ -47,14 +43,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ role: rawRole, onNavigate,
   const { data: kpisSemaine } = useDashboardKpisQuery('CETTE_SEMAINE', boutiqueId);
   const { data: creances } = useCreancesTotalQuery(boutiqueId);
   const { data: tendance } = useSalesTrendQuery('CETTE_SEMAINE', boutiqueId);
-  const { data: palmares } = useTopTextilesQuery('CE_MOIS', TOP_TISSUS, boutiqueId);
   const courbeVentes = useMemo(
     () => (tendance?.points ?? []).map((p) => ({ jour: p.label, montant: p.caFacture })),
     [tendance],
-  );
-  const topTissus = useMemo(
-    () => (palmares?.produits ?? []).map((p) => ({ nom: p.produitNom, ventes: p.quantiteVendue })),
-    [palmares],
   );
 
   // Le serveur calcule estEnAlerte avec le seuil propre à chaque stock ; les plus bas d'abord.
@@ -123,10 +114,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ role: rawRole, onNavigate,
         />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DashboardSalesChart data={courbeVentes} />
-        <DashboardTopProducts data={topTissus} />
-      </div>
+      {/* Le boutiquier ne suit que la journée : la courbe de la semaine est réservée au gérant. */}
+      {role === 'gerant' && <DashboardSalesChart data={courbeVentes} />}
     </div>
   );
 };
