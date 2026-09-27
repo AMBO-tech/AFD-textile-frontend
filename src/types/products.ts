@@ -40,7 +40,8 @@ export interface Produit { photo?: string; lieu?: string; prix?: number; unite?:
 }
 
 export interface CreateProduitDto {
-  reference: string
+  /** Facultative : générée à partir de la catégorie si absente. */
+  reference?: string
   nom: string
   categorieId: string
   unitePrincipaleId: string
