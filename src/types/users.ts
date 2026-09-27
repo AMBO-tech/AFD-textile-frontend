@@ -37,7 +37,7 @@ export interface InvitationResponse {
 export interface UpdateUserRequest {
   nom?: string;
   telephone?: string;
-  email?: string;
+  email?: string | null;
   role?: 'OWNER' | 'BOUTIQUIER';
   locationId?: string | null;
 }

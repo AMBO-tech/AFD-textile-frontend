@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { KeyRound, Lock, Eye, EyeOff } from 'lucide-react';
 
 interface ParametresSecurityFormProps {
-  onPasswordChange: (ancien: string, nouveau: string, confirm: string) => void;
+  /** Rejette en cas d'échec : les champs sont alors conservés. */
+  onPasswordChange: (ancien: string, nouveau: string) => Promise<void>;
 }
+
+/** Aligné sur la validation du serveur (ChangePasswordDto). */
+const LONGUEUR_MIN_MOT_DE_PASSE = 8;
 
 export const ParametresSecurityForm: React.FC<ParametresSecurityFormProps> = ({
   onPasswordChange,
@@ -15,12 +19,26 @@ export const ParametresSecurityForm: React.FC<ParametresSecurityFormProps> = ({
   const [showNouveau, setShowNouveau] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [enCours, setEnCours] = useState(false);
+
+  const tropCourt = nouveauPwd.length > 0 && nouveauPwd.length < LONGUEUR_MIN_MOT_DE_PASSE;
+  const differents = confirmPwd.length > 0 && confirmPwd !== nouveauPwd;
+  const bloque = !ancienPwd || !nouveauPwd || !confirmPwd || tropCourt || differents || enCours;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onPasswordChange(ancienPwd, nouveauPwd, confirmPwd);
-    setAncienPwd('');
-    setNouveauPwd('');
-    setConfirmPwd('');
+    if (bloque) return;
+    setEnCours(true);
+    try {
+      await onPasswordChange(ancienPwd, nouveauPwd);
+      setAncienPwd('');
+      setNouveauPwd('');
+      setConfirmPwd('');
+    } catch {
+      // Le message d'erreur est affiché par la page ; la saisie est conservée pour corriger.
+    } finally {
+      setEnCours(false);
+    }
   };
 
   return (
@@ -67,7 +85,7 @@ export const ParametresSecurityForm: React.FC<ParametresSecurityFormProps> = ({
                 type={showNouveau ? 'text' : 'password'}
                 value={nouveauPwd}
                 onChange={(e) => setNouveauPwd(e.target.value)}
-                placeholder="Min. 6 caractères"
+                placeholder={`Min. ${LONGUEUR_MIN_MOT_DE_PASSE} caractères`}
                 className="w-full px-3.5 py-2.5 pr-10 bg-gray-50 rounded-xl border border-gray-200 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
               />
               <button
@@ -78,6 +96,9 @@ export const ParametresSecurityForm: React.FC<ParametresSecurityFormProps> = ({
                 {showNouveau ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {tropCourt && (
+              <p className="text-[11px] text-red-600 mt-1">Au moins {LONGUEUR_MIN_MOT_DE_PASSE} caractères.</p>
+            )}
           </div>
 
           {/* Confirmation */}
@@ -101,18 +122,19 @@ export const ParametresSecurityForm: React.FC<ParametresSecurityFormProps> = ({
                 {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {differents && <p className="text-[11px] text-red-600 mt-1">Les deux saisies ne correspondent pas.</p>}
           </div>
         </div>
 
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={!ancienPwd || !nouveauPwd || !confirmPwd}
+            disabled={bloque}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-xs font-bold shadow-md active:scale-95 disabled:opacity-40 transition-all"
             style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
           >
             <Lock size={14} />
-            <span>Mettre à jour le mot de passe</span>
+            <span>{enCours ? 'Mise à jour…' : 'Mettre à jour le mot de passe'}</span>
           </button>
         </div>
       </form>

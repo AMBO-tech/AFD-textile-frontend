@@ -61,7 +61,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
   const poids = versNombre(poidsAuMetre);
 
   const problemes = [
-    reference.trim().length < 2 && 'Référence (2 caractères minimum)',
+    reference.trim().length === 1 && 'Référence : 2 caractères minimum (ou laissez vide)',
     nom.trim().length < 2 && 'Nom (2 caractères minimum)',
     !categorieId && 'Catégorie',
     !unitePrincipale && 'Unité introuvable côté serveur',
@@ -104,7 +104,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
     if (problemes.length > 0 || !unitePrincipale || prix === undefined) return;
     setErreur('');
     const donnees: CreateProduitDto = {
-      reference: reference.trim(),
+      // Vide : le serveur génère une référence à partir de la catégorie (ex. BAZIN-7K3Q).
+      reference: reference.trim() || undefined,
       nom: nom.trim(),
       categorieId,
       uniteStockage,
@@ -142,7 +143,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h3 className="font-display font-bold text-gray-900 text-base">
-            {edition ? `Modifier ${produit?.reference}` : 'Nouveau tissu'}
+            {edition ? `Modifier ${produit?.nom}` : 'Nouveau tissu'}
           </h3>
           <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600" aria-label="Fermer">
             <X size={18} />
@@ -154,7 +155,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
             <button
               type="button"
               onClick={() => fichierRef.current?.click()}
-              className="w-24 h-24 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-300 flex items-center justify-center overflow-hidden bg-gray-50 relative"
+              className="w-28 h-28 shrink-0 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-300 flex items-center justify-center overflow-hidden bg-gray-50 relative"
             >
               {photoApercu ? (
                 <img src={urlPhoto(photoApercu)} alt="" className="w-full h-full object-cover" />
@@ -170,15 +171,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
               )}
             </button>
             <input ref={fichierRef} type="file" accept={PHOTO_TYPES.join(',')} className="hidden" onChange={choisirPhoto} />
-            <div className="flex-1 space-y-3">
-              <div>
-                <label className={etiquette}>Référence</label>
-                <input value={reference} onChange={(e) => setReference(e.target.value.toUpperCase())} placeholder="ex. BAZ-GETZ-01" className={champ} />
-              </div>
-              <div>
-                <label className={etiquette}>Nom du tissu</label>
-                <input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="ex. Getzner Super Magnum" className={champ} />
-              </div>
+            <div className="flex-1 flex flex-col justify-center gap-1">
+              <label className={etiquette}>Nom du tissu</label>
+              <input value={nom} onChange={(e) => setNom(e.target.value)} autoFocus placeholder="ex. Getzner Super Magnum" className={champ} />
+              <p className="text-[11px] text-gray-400">La photo et le nom suffisent pour commencer.</p>
             </div>
           </div>
 
@@ -239,6 +235,16 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({ produit, cat
               <label className={etiquette}>Prix minimum — facultatif</label>
               <input inputMode="numeric" value={prixMinimum} onChange={(e) => setPrixMinimum(e.target.value)} className={champ} />
             </div>
+          </div>
+
+          <div>
+            <label className={etiquette}>Référence — facultatif</label>
+            <input
+              value={reference}
+              onChange={(e) => setReference(e.target.value.toUpperCase())}
+              placeholder={edition ? '' : 'Laissez vide : générée automatiquement (ex. BAZIN-7K3Q)'}
+              className={champ}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

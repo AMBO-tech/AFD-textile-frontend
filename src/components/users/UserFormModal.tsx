@@ -56,7 +56,11 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ utilisateur, locat
     };
     try {
       if (utilisateur) {
-        await modifier({ id: utilisateur.id, data: { ...donnees, locationId: role === 'BOUTIQUIER' ? locationId : null } });
+        // E-mail vidé : null pour que le compte n'ait plus d'adresse (undefined le laisserait inchangé).
+        await modifier({
+          id: utilisateur.id,
+          data: { ...donnees, email: donnees.email ?? null, locationId: role === 'BOUTIQUIER' ? locationId : null },
+        });
         toast.success(`${donnees.nom} mis à jour.`);
         onClose();
       } else {

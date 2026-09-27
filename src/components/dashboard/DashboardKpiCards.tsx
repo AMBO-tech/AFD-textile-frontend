@@ -91,9 +91,9 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
     );
   }
 
-  // Rôle Boutiquier
+  // Rôle Boutiquier : uniquement la journée (ventes du jour, stock, alertes)
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
       <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-500">Mes ventes du jour</span>
@@ -107,19 +107,6 @@ export const DashboardKpiCards: React.FC<DashboardKpiCardsProps> = ({
         <div className="text-xs text-green-600 font-medium mt-0.5">
           {nbVentes} vente{nbVentes > 1 ? 's' : ''} enregistrée{nbVentes > 1 ? 's' : ''}
         </div>
-      </div>
-
-      <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-gray-500">Semaine en cours</span>
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-            <ShoppingBag size={16} className="text-blue-600" />
-          </div>
-        </div>
-        <div className="font-display font-bold text-gray-900 text-lg sm:text-xl">
-          {formatMontant(ventesSemaine)}
-        </div>
-        <div className="text-xs text-blue-600 font-medium mt-0.5">Boutique Dakar</div>
       </div>
 
       <div
