@@ -1,6 +1,7 @@
 import { formatMontant } from '@/utils/format';
 import React, { useMemo, useState } from 'react';
-import { Search, PackagePlus, AlertTriangle, ClipboardCheck, ChevronDown, ChevronRight, Boxes } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, PackagePlus, AlertTriangle, ClipboardCheck, ChevronDown, ChevronRight, Boxes, Send } from 'lucide-react';
 import type { StockLevel } from '@/types/stocks';
 import StockEntryModal from './StockEntryModal';
 import StockAdjustModal from './StockAdjustModal';
@@ -26,6 +27,9 @@ interface StockProps {
 /** Stocks par emplacement. Gérant : tous les emplacements, mise en stock et inventaire. Boutiquier : sa boutique. */
 export const Stock: React.FC<StockProps> = ({ role: rawRole = 'gerant', boutiqueId, onNavigate }) => {
   const isGerant = rawRole === 'OWNER' || rawRole?.toLowerCase() === 'gerant';
+  const navigate = useNavigate();
+  /** Boutiquier : un tissu sous son seuil ouvre directement la demande de réassort, tissu déjà choisi. */
+  const demanderReassort = (s: StockLevel) => navigate(`/demandes?reassort=${encodeURIComponent(s.produitId)}`);
 
   const [search, setSearch] = useState('');
   const [emplacement, setEmplacement] = useState<string>(TOUS);
@@ -167,8 +171,22 @@ export const Stock: React.FC<StockProps> = ({ role: rawRole = 'gerant', boutique
                 </button>
                 {ouverte && (
                   <div className="divide-y divide-gray-50 border-t border-gray-50">
-                    {lignes.map((s) => (
-                      <div key={s.id} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                    {lignes.map((s) => {
+                      const reassort = !isGerant && s.estEnAlerte;
+                      return (
+                      <div
+                        key={s.id}
+                        {...(reassort
+                          ? {
+                              role: 'button',
+                              tabIndex: 0,
+                              onClick: () => demanderReassort(s),
+                              onKeyDown: (e: React.KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && demanderReassort(s),
+                              title: 'Demander du stock pour ce tissu',
+                            }
+                          : {})}
+                        className={`px-4 py-2.5 flex items-center justify-between gap-3 ${reassort ? 'cursor-pointer hover:bg-red-50/60' : ''}`}
+                      >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <img src={urlPhoto(s.produitPhotoUrl)} alt={s.produitNom} className="w-10 h-10 rounded-lg object-cover bg-gray-100 shrink-0" />
                           <div className="min-w-0">
@@ -188,6 +206,11 @@ export const Stock: React.FC<StockProps> = ({ role: rawRole = 'gerant', boutique
                               {formatMontant(s.prixEffectif ?? 0)}/{LIBELLES_UNITE[s.uniteStockage]}
                             </div>
                           </div>
+                          {reassort && (
+                            <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-600 text-white text-[10px] font-bold">
+                              <Send size={11} /> Demander du stock
+                            </span>
+                          )}
                           {isGerant && (
                             <button
                               onClick={() => setStockAAjuster(s)}
@@ -199,7 +222,8 @@ export const Stock: React.FC<StockProps> = ({ role: rawRole = 'gerant', boutique
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

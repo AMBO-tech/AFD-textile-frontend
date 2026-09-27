@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, Send, AlertCircle, Shirt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRequestTransferMutation } from '../../hooks/queries/useStocksQuery';
@@ -12,18 +12,29 @@ interface NewDemandeModalProps {
   onClose: () => void;
   /** Boutique du demandeur : destination de la demande. */
   boutiqueId: string;
+  /** Tissu à ajouter d'office (réassort depuis l'écran Stock). */
+  produitInitialId?: string;
 }
 
 /**
  * Demande de réassort (boutiquier). Les tissus se choisissent en tuiles (catégorie puis tissu),
  * triés du moins au plus disponible dans SA boutique : aucune saisie libre, aucune erreur de référence.
  */
-export const NewDemandeModal: React.FC<NewDemandeModalProps> = ({ isOpen, onClose, boutiqueId }) => {
+export const NewDemandeModal: React.FC<NewDemandeModalProps> = ({ isOpen, onClose, boutiqueId, produitInitialId }) => {
   const [lignes, setLignes] = useState<FabricLine[]>([]);
   const [choix, setChoix] = useState(false);
   const [erreur, setErreur] = useState('');
   const { options, isLoading } = useFabricOptions(boutiqueId, isOpen);
   const { mutateAsync: requestTransfer, isPending } = useRequestTransferMutation();
+
+  // Une seule fois, dès que le catalogue est chargé : le tissu venu de l'écran Stock est déjà dans la demande.
+  const initialAjoute = useRef(false);
+  useEffect(() => {
+    if (initialAjoute.current || !produitInitialId || options.length === 0) return;
+    const option = options.find((o) => o.produitId === produitInitialId);
+    if (option) setLignes((ls) => (ls.some((l) => l.option.produitId === option.produitId) ? ls : [...ls, { option, quantite: '' }]));
+    initialAjoute.current = true;
+  }, [options, produitInitialId]);
 
   if (!isOpen) return null;
 

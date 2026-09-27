@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, ArrowLeftRight, MessageSquare, XCircle, Inbox, Send, Boxes, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Transfert } from '@/types/stocks';
@@ -49,6 +50,16 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId }) => {
   const [sourceInitiale, setSourceInitiale] = useState<string | undefined>();
   const [statut, setStatut] = useState<TransfertStatus>('DEMANDE');
   const [showNew, setShowNew] = useState(false);
+  // Arrivée depuis un tissu sous son seuil (écran Stock) : la demande s'ouvre avec ce tissu.
+  const [params, setParams] = useSearchParams();
+  const [tissuReassort, setTissuReassort] = useState<string | undefined>();
+  useEffect(() => {
+    const produitId = params.get('reassort');
+    if (!produitId || isGerant) return;
+    setTissuReassort(produitId);
+    setShowNew(true);
+    setParams({}, { replace: true });
+  }, [params, setParams, isGerant]);
   const [aTraiter, setATraiter] = useState<Transfert | null>(null);
 
   const { data: transfersRes, isLoading } = useTransfersQuery({ statut, limit: API_PAGE_MAX });
@@ -218,7 +229,15 @@ export const Demandes: React.FC<DemandesProps> = ({ role, boutiqueId }) => {
         </>
       )}
 
-      {!isGerant && boutiqueId && showNew && <NewDemandeModal isOpen onClose={() => setShowNew(false)} boutiqueId={boutiqueId} />}
+      {!isGerant && boutiqueId && showNew && <NewDemandeModal
+          isOpen
+          onClose={() => {
+            setShowNew(false);
+            setTissuReassort(undefined);
+          }}
+          boutiqueId={boutiqueId}
+          produitInitialId={tissuReassort}
+        />}
       {isGerant && aTraiter && (
         <ValidateTransferModal key={aTraiter.id} transfert={aTraiter} emplacements={emplacements} onClose={() => setATraiter(null)} />
       )}
