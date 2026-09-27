@@ -1,12 +1,16 @@
 export interface ParametresProps {
-  nom?: string;
-  role?: 'gerant' | 'boutiquier';
-  boutiqueId?: string;
+  nom: string;
+  telephone: string;
+  /** null : aucune adresse enregistrée, le champ reste vide. */
+  email: string | null;
+  role: 'gerant' | 'boutiquier';
+  boutiqueId?: string | null;
+  onSaveProfil: (info: UserPersonalInfo) => Promise<void>;
+  onPasswordChange: (ancien: string, nouveau: string) => Promise<void>;
   onLogout?: () => void;
 }
 
 export interface UserPersonalInfo {
   nom: string;
-  telephone: string;
   email: string;
 }

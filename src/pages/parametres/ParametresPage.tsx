@@ -1,29 +1,67 @@
-import { useAuthStore } from '../../stores/useAuthStore';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Parametres } from '../../components/parametres';
+import { toast } from 'sonner';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { Parametres, type UserPersonalInfo } from '../../components/parametres';
+import { getCurrentUser } from '../../services/auth/currentUser';
+import { changePassword, updateProfile } from '../../services/auth/profile';
+import { deconnecter } from '../../services/api';
 
 export const ParametresPage: React.FC = () => {
-  const { user, clearAuth } = useAuthStore();
-  const session = user as any;
-  const boutiques: any = [];
+  const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
 
-  if (!session) return null;
+  // Le profil mémorisé à la connexion peut dater : on relit l'e-mail réel du compte.
+  useEffect(() => {
+    getCurrentUser()
+      .then((frais) => {
+        const actuel = useAuthStore.getState().user;
+        if (actuel) setUser({ ...actuel, ...frais });
+      })
+      .catch(() => {
+        // Hors ligne : le profil mémorisé reste affiché.
+      });
+  }, [setUser]);
 
-  const boutiqueId = session.boutiqueId || boutiques[0]?.id || 'b1';
+  if (!user) return null;
 
-  const handleLogout = () => {
-    clearAuth();
+  const role = user.role === 'OWNER' || user.role === 'gerant' ? 'gerant' : 'boutiquier';
+
+  const enregistrerProfil = async (info: UserPersonalInfo) => {
+    try {
+      const maj = await updateProfile({ nom: info.nom, email: info.email || null });
+      setUser({ ...user, nom: maj.nom, name: maj.nom, email: maj.email ?? null });
+      toast.success('Informations enregistrées.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Impossible d'enregistrer vos informations.");
+    }
+  };
+
+  const changerMotDePasse = async (ancien: string, nouveau: string) => {
+    try {
+      await changePassword(ancien, nouveau);
+      toast.success('Mot de passe mis à jour.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Impossible de changer le mot de passe.');
+      throw error;
+    }
+  };
+
+  const seDeconnecter = async () => {
+    await deconnecter();
     navigate('/login');
   };
 
   return (
     <Parametres
-      nom={session.nom}
-      role={session.role}
-      boutiqueId={boutiqueId}
-      onLogout={handleLogout}
+      nom={user.nom}
+      telephone={user.telephone}
+      email={user.email ?? null}
+      role={role}
+      boutiqueId={user.locationId ?? user.boutiqueId}
+      onSaveProfil={enregistrerProfil}
+      onPasswordChange={changerMotDePasse}
+      onLogout={seDeconnecter}
     />
   );
 };

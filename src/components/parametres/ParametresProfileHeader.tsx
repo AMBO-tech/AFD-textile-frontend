@@ -6,7 +6,8 @@ interface ParametresProfileHeaderProps {
   nom: string;
   role: 'gerant' | 'boutiquier';
   telephone: string;
-  boutique: Boutique;
+  /** Libellé déjà formaté (nom de la boutique ou « Toutes les boutiques »). */
+  boutique: string;
 }
 
 export const ParametresProfileHeader: React.FC<ParametresProfileHeaderProps> = ({
@@ -17,7 +18,8 @@ export const ParametresProfileHeader: React.FC<ParametresProfileHeaderProps> = (
 }) => {
   const initials = nom
     .split(' ')
-    .map((n) => n[0])
+    .filter(Boolean)
+    .map((n) => n[0].toUpperCase())
     .join('')
     .slice(0, 2);
 
@@ -42,7 +44,7 @@ export const ParametresProfileHeader: React.FC<ParametresProfileHeaderProps> = (
         <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-gray-500 mt-1 flex-wrap">
           <span className="inline-flex items-center gap-1">
             <Building2 size={12} className="text-blue-600" />
-            {role === 'gerant' ? 'Superviseur Réseau' : boutique.nom}
+            {role === 'gerant' ? 'Superviseur Réseau' : boutique}
           </span>
           <span>·</span>
           <span>{telephone}</span>

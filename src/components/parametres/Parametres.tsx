@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import React from 'react';
+import { LogOut } from 'lucide-react';
 import type { ParametresProps } from './types';
 import ParametresProfileHeader from './ParametresProfileHeader';
 import ParametresPersonalInfo from './ParametresPersonalInfo';
@@ -8,114 +8,40 @@ import ParametresNotificationPrefs from './ParametresNotificationPrefs';
 import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
 
 export const Parametres: React.FC<ParametresProps> = ({
-  nom = 'Amadou Diallo',
-  role = 'gerant',
-  boutiqueId = 'b1',
+  nom,
+  telephone,
+  email,
+  role,
+  boutiqueId,
+  onSaveProfil,
+  onPasswordChange,
   onLogout,
 }) => {
   const { data: locRes } = useLocationsListQuery();
-  const boutiques = locRes?.data || [];
-  const maBoutique = boutiques.find((b: any) => b.id === boutiqueId) || boutiques[0] || { nom: 'Boutique par défaut' };
-
-  const [userNom, setUserNom] = useState(nom);
-  const [telephone, setTelephone] = useState(
-    role === 'gerant' ? '+221 77 010 20 30' : '+221 77 314 25 36'
-  );
-  const [email, setEmail] = useState(
-    role === 'gerant' ? 'amadou.diallo@afd-textile.sn' : 'ibrahima.sarr@afd-textile.sn'
-  );
-
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSaveProfil = (info: { nom: string; telephone: string; email: string }) => {
-    if (!info.telephone.trim()) {
-      setErrorMsg('Le numéro de téléphone est obligatoire.');
-      setTimeout(() => setErrorMsg(null), 3500);
-      return;
-    }
-    setUserNom(info.nom);
-    setTelephone(info.telephone);
-    setEmail(info.email);
-
-    setSuccessMsg('Informations personnelles enregistrées avec succès.');
-    setTimeout(() => setSuccessMsg(null), 3500);
-  };
-
-  const handleChangePassword = (ancien: string, nouveau: string, confirm: string) => {
-    setErrorMsg(null);
-    if (!ancien) {
-      setErrorMsg('Veuillez renseigner votre mot de passe actuel.');
-      setTimeout(() => setErrorMsg(null), 3500);
-      return;
-    }
-    if (nouveau.length < 6) {
-      setErrorMsg('Le nouveau mot de passe doit contenir au moins 6 caractères.');
-      setTimeout(() => setErrorMsg(null), 3500);
-      return;
-    }
-    if (nouveau !== confirm) {
-      setErrorMsg('La confirmation ne correspond pas au nouveau mot de passe.');
-      setTimeout(() => setErrorMsg(null), 3500);
-      return;
-    }
-
-    setSuccessMsg('Votre mot de passe a été mis à jour avec succès.');
-    setTimeout(() => setSuccessMsg(null), 4000);
-  };
+  const boutique = (locRes?.data ?? []).find((b) => b.id === boutiqueId);
+  const libelleBoutique = role === 'gerant' ? 'Toutes les boutiques (Gérant)' : (boutique?.nom ?? 'Boutique non renseignée');
 
   return (
     <div className="space-y-4">
-      {/* ── En-tête ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-xl font-bold text-gray-900">Paramètres & Profil</h1>
-          <p className="text-sm text-gray-500">
-            Gérez votre compte, vos coordonnées et votre mot de passe
-          </p>
-        </div>
+      <div>
+        <h1 className="font-display text-xl font-bold text-gray-900">Paramètres & Profil</h1>
+        <p className="text-sm text-gray-500">Gérez votre compte, vos coordonnées et votre mot de passe</p>
       </div>
 
-      {/* ── Toasts de succès et d'erreur ── */}
-      {successMsg && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-3.5 flex items-center gap-2.5 text-green-800 text-sm animate-fade-in shadow-sm">
-          <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
-          <span className="font-medium">{successMsg}</span>
-        </div>
-      )}
+      <ParametresProfileHeader nom={nom} role={role} telephone={telephone} boutique={libelleBoutique} />
 
-      {errorMsg && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 flex items-center gap-2.5 text-red-800 text-sm animate-fade-in shadow-sm">
-          <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
-          <span className="font-medium">{errorMsg}</span>
-        </div>
-      )}
-
-      {/* ── Carte Profil En-tête ── */}
-      <ParametresProfileHeader
-        nom={userNom}
-        role={role}
-        telephone={telephone}
-        boutique={maBoutique}
-      />
-
-      {/* ── Section 1 : Informations Personnelles ── */}
       <ParametresPersonalInfo
-        nom={userNom}
+        nom={nom}
         telephone={telephone}
-        email={email}
-        role={role}
-        boutique={maBoutique}
-        onSave={handleSaveProfil}
+        email={email ?? ''}
+        boutique={libelleBoutique}
+        onSave={onSaveProfil}
       />
 
-      {/* ── Section 2 : Modification du Mot de Passe ── */}
-      <ParametresSecurityForm onPasswordChange={handleChangePassword} />
+      <ParametresSecurityForm onPasswordChange={onPasswordChange} />
 
-      {/* ── Section 3 : Préférences de Notifications ── */}
       <ParametresNotificationPrefs />
 
-      {/* ── Section 4 : Déconnexion ── */}
       {onLogout && (
         <button
           onClick={onLogout}
@@ -126,9 +52,7 @@ export const Parametres: React.FC<ParametresProps> = ({
         </button>
       )}
 
-      <p className="text-center text-xs text-gray-400 pt-1 pb-2">
-        AFD Textile v1.0.0 · © 2026 Système de gestion textile
-      </p>
+      <p className="text-center text-xs text-gray-400 pt-1 pb-2">AFD Textile v1.0.0 · © 2026 Système de gestion textile</p>
     </div>
   );
 };
