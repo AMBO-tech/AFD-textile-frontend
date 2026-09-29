@@ -1,5 +1,8 @@
 ﻿import React, { useState, useMemo } from 'react';
-import { toast } from 'sonner';
+import { toast } from "sonner";
+import { useAdjustStockMutation, useExecuteMovementMutation, useStockLevelsQuery } from "../../hooks/queries/useStocksQuery";
+import { useProductsQuery, useCategoriesQuery, useCreateProductMutation } from "../../hooks/queries/useProductsQuery";
+import { useLocationsListQuery } from "../../hooks/queries/useLocationsQuery";
 import type { StockEnriched } from '@/types/stocks'; import type { Produit } from '@/types/products';
 import StockHeader from './StockHeader';
 import StockFilters from './StockFilters';
@@ -8,10 +11,7 @@ import QuickCategoryModal from './QuickCategoryModal';
 import QuickProductModal from './QuickProductModal';
 import QuickStockAdjustmentModal from './QuickStockAdjustmentModal';
 import StockInWizardModal from './StockInWizardModal';
-import {
-  useAdjustStockMutation,
-  useExecuteMovementMutation,
-} from '../../hooks/queries/useStocksQuery';
+
 
 interface StockProps {
   role?: 'gerant' | 'boutiquier';
@@ -24,15 +24,20 @@ export const Stock: React.FC<StockProps> = ({
   boutiqueId = 'b1',
   onNavigate,
 }) => {
-  const produits: any[] = [];
-  const stocks: any[] = [];
-  const categories: any[] = [];
-  const boutiques: any[] = [];
-  const adjustStock = (...args: any[]) => {};
-  const upsertStockItem = (p: any) => {};
-  const addProduit = (p: any) => {};
-  const addCategorie = (c: any) => {};
-  const getStocksEnriched = (loc?: any) => [] as any[];
+  const { data: prods } = useProductsQuery();
+  const { data: cats } = useCategoriesQuery();
+  const { data: locs } = useLocationsListQuery();
+  const { data: stks } = useStockLevelsQuery();
+  const createProductMutation = useCreateProductMutation();
+  const produits = prods?.data || [];
+  const categories = cats?.data || [];
+  const boutiques = locs?.data || [];
+  const stocks = stks?.data || [];
+  const addProduit = (p) => createProductMutation.mutateAsync(p);
+  const addCategorie = (c) => {};
+  const upsertStockItem = (p) => {};
+  const adjustStock = () => {};
+  const getStocksEnriched = (loc) => stocks.filter((s) => loc === "tous" ? true : s.locationId === loc).map((s) => ({ ...s, nom: s.produitNom, reference: s.produitReference, categorie: s.categorieNom || "N/A", boutiqueId: s.locationId, unite: s.uniteStockage }));
 
   const [search, setSearch] = useState('');
   const [filtreEmplacement, setFiltreEmplacement] = useState<string>(
@@ -95,17 +100,25 @@ export const Stock: React.FC<StockProps> = ({
 
   // CatÃ©gories visibles avec leurs produits associÃ©s
   const categoriesAffichees = useMemo(() => {
-    return categories
-      .filter((cat: any) => (filtreCat === 'toutes' ? true : cat.nom === filtreCat))
-      .map((cat: any) => ({
+    const catMap = new Map();
+    categories.forEach((c) => catMap.set(c.nom, c));
+    produitsFiltres.forEach((p) => {
+      if (!catMap.has(p.categorie)) {
+        catMap.set(p.categorie, { nom: p.categorie, couleur: "#64748b" });
+      }
+    });
+    
+    return Array.from(catMap.values())
+      .filter((cat) => (filtreCat === "toutes" ? true : cat.nom === filtreCat))
+      .map((cat) => ({
         categorie: cat,
-        produits: produitsFiltres.filter((p: any) => p.categorie === cat.nom),
+        produits: produitsFiltres.filter((p) => p.categorie === cat.nom),
       }))
-      .filter((group: any) => group.produits.length > 0 || search === '');
+      .filter((group) => group.produits.length > 0 || search === "");
   }, [categories, produitsFiltres, filtreCat, search]);
 
-  const { mutate: executeMovementApi } = useExecuteMovementMutation();
-  const { mutate: adjustStockApi } = useAdjustStockMutation();
+  const { mutateAsync: executeMovementApi } = useExecuteMovementMutation();
+  const { mutateAsync: adjustStockApi } = useAdjustStockMutation();
 
   return (
     <div className="space-y-4">
@@ -170,84 +183,66 @@ export const Stock: React.FC<StockProps> = ({
             
             onOpenNewCat={() => setShowQuickCatModal(true)}
             onOpenNewProd={() => setShowQuickProdModal(true)}
-            onSubmit={({ produitId, quantite, prix,  unite, pieces, seuil, emplacement }) => {
-              upsertStockItem({
-                produitId,
-                boutiqueId: emplacement,
-                quantite,
-                prixVente: prix,
-                
-                unite,
-                pieces,
-                seuil,
-              });
-
-              // Synchronisation API rÃ©elle
-              executeMovementApi({
-                produitId,
-                locationId: emplacement,
-                quantite,
-                
-                
-                unite, sens: 'ENTREE',
-                justification: `Arrivage / RÃ©assort (+${quantite} ${unite})`,
-              });
-              const prodNom = produits.find((p: any) => p.id === produitId)?.nom || 'Produit';
-              const nomCible = emplacement === 'entrepot'
-                ? 'EntrepÃ´t Central'
-                : (boutiques.find((b: any) => b.id === emplacement)?.nom || emplacement);
-              toast.success(`Mise en stock rÃ©ussie Ã  ${nomCible} : +${quantite} ${unite} de ${prodNom}`);
-            }}
+            onSubmit={async ({ produitId, quantite, prix,  unite, pieces, seuil, emplacement }) => {
+                await executeMovementApi({
+                  produitId,
+                  locationId: emplacement,
+                  quantite,
+                  uniteUtilisee: unite,
+                  type: 'ENTREE_STOCK',
+                  sens: 'ENTREE',
+                  justification: `Arrivage / Réassort (+${quantite} ${unite})`,
+                });
+                const prodNom = produits.find((p: any) => p.id === produitId)?.nom || 'Produit';
+                toast.success(`Mise en stock réussie : +${quantite} ${unite} de ${prodNom}`);
+              }}
           />
 
           <QuickCategoryModal
             isOpen={showQuickCatModal}
             onClose={() => setShowQuickCatModal(false)}
-            onSubmit={(cat: any) => {
-              addCategorie(cat);
-              toast.success(`CatÃ©gorie "${cat.nom}" crÃ©Ã©e avec succÃ¨s`);
-            }}
+            onSubmit={async (cat: any) => {
+                // Not fully implemented on backend, but mocked here
+                toast.success(`Catégorie "${cat.nom}" créée avec succès`);
+              }}
           />
 
           <QuickProductModal
             isOpen={showQuickProdModal}
             onClose={() => setShowQuickProdModal(false)}
             categories={categories}
-            onSubmit={(prod) => {
-              addProduit({
-                nom: prod.nom,
-                categorie: prod.categorie,
-                couleur: prod.couleur,
-                photo: prod.photo,
-              });
-              toast.success(`Tissu "${prod.nom}" ajoutÃ© au catalogue`);
-            }}
+            onSubmit={async (prod) => {
+                await addProduit({
+                  nom: prod.nom,
+                  categorie: prod.categorie,
+                  couleur: prod.couleur,
+                  photo: prod.photo,
+                  reference: prod.nom.substring(0, 3).toUpperCase(),
+                  uniteMesure: 'Metre',
+                  prixUnitaire: 0
+                });
+                toast.success(`Tissu "${prod.nom}" ajouté au catalogue`);
+              }}
           />
 
           <QuickStockAdjustmentModal
             produit={modalEntreeRapide}
             
             onClose={() => setModalEntreeRapide(null)}
-            onSubmit={(prodId, qte, motif) => {
-              adjustStock(prodId, qte, motif, undefined, modalEntreeRapide?.boutiqueId);
-
-              // Synchronisation API rÃ©elle
-              const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique || 'b1';
-              adjustStockApi({
-                produitId: prodId,
-                locationId: bId,
-                quantiteReelle: qte,
-                justification: motif,
-              });
-              const nomCible = bId === 'entrepot' || bId === 'b-ent'
-                ? 'EntrepÃ´t Central'
-                : (boutiques.find((b: any) => b.id === bId)?.nom || 'la boutique');
-              if (qte > 0) {
-                toast.success(`EntrÃ©e de stock validÃ©e Ã  ${nomCible} : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
-              } else {
-                toast.warning(`Sortie / perte enregistrÃ©e Ã  ${nomCible} : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
-              }
-            }}
+            onSubmit={async (prodId, qte, motif) => {
+                const bId = modalEntreeRapide?.boutiqueId || modalEntreeRapide?.boutique || 'b1';
+                await adjustStockApi({
+                  produitId: prodId,
+                  locationId: bId,
+                  quantiteReelle: qte,
+                  justification: motif,
+                });
+                if (qte > 0) {
+                  toast.success(`Entrée de stock validée : +${qte} ${modalEntreeRapide?.unite} (${motif})`);
+                } else {
+                  toast.warning(`Sortie / perte enregistrée : ${qte} ${modalEntreeRapide?.unite} (${motif})`);
+                }
+              }}
           />
         </>
       )}

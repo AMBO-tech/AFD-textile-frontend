@@ -67,10 +67,10 @@ export const Clients: React.FC<ClientsProps> = ({
   const [selectedCreanceForPayment, setSelectedCreanceForPayment] = useState<Creance | null>(null);
   const [receiptData, setReceiptData] = useState<PaymentReceiptData | null>(null);
 
-  const { mutate: createClientApi } = useCreateClientMutation();
-  const { mutate: updateClientApi } = useUpdateClientMutation();
+  const { mutateAsync: createClientApi } = useCreateClientMutation();
+  const { mutateAsync: updateClientApi } = useUpdateClientMutation();
   // const { mutate: deleteClient } = useArchiveClientMutation();
-  const { mutate: recordPaymentApi } = useRecordPaymentMutation();
+  const { mutateAsync: recordPaymentApi } = useRecordPaymentMutation();
 
   // Synchronisation du client sÃ©lectionnÃ© aprÃ¨s mutation
   const activeClient = useMemo(() => {
@@ -167,18 +167,14 @@ export const Clients: React.FC<ClientsProps> = ({
         boutiques={boutiques}
         defaultBoutiqueId={role === 'boutiquier' ? boutiqueId : 'b1'}
         role={role}
-        onSubmit={(nouveau) => {
-          const c = addClient(nouveau);
-
-          // Synchronisation API rÃ©elle
-          createClientApi({
+        onSubmit={async (nouveau) => {
+          await createClientApi({
             nom: nouveau.nom,
             telephone: nouveau.telephone,
             adresse: nouveau.adresse,
+            locationId: nouveau.boutiqueId
           });
-
-          toast.success(`Client "${c.nom}" enregistrÃ© avec succÃ¨s`);
-          setSelectedClient(c);
+          toast.success(`Client "${nouveau.nom}" enregistré avec succès`);
         }}
       />
 

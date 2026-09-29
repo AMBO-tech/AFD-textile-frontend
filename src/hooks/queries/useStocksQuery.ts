@@ -84,3 +84,31 @@ export const useRequestTransferMutation = () => {
     },
   });
 };
+
+export const useTransfersQuery = (params?: Record<string, unknown>) => {
+  return useQuery({
+    queryKey: STOCK_KEYS.transfers(params),
+    queryFn: () => stocksService.getTransfers(params),
+  });
+};
+
+export const useValidateTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => stocksService.validateTransfer(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfers() });
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.levels() });
+    },
+  });
+};
+
+export const useCancelTransferMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { id: string; motif: string }) => stocksService.cancelTransfer(data.id, data.motif),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STOCK_KEYS.transfers() });
+    },
+  });
+};

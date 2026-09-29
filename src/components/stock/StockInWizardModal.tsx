@@ -72,21 +72,25 @@ export const StockInWizardModal: React.FC<StockInWizardModalProps> = ({
     setEtape('config');
   };
 
-  const handleSubmitConfig = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmitConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!produitChoisi) return;
-
-    onSubmit({
-      produitId: produitChoisi.id,
-      quantite: parseFloat(form.quantite) || 0,
-      prix: parseFloat(form.prix) || produitChoisi.prix,
-      unite: form.unite,
-      pieces: parseInt(form.pieces, 10) || 0,
-      seuil: parseInt(form.seuil, 10) || 10,
-      emplacement: form.emplacement,
-    });
-
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        produitId: produitChoisi.id,
+        quantite: parseFloat(form.quantite) || 0,
+        prix: parseFloat(form.prix) || produitChoisi.prix,
+        unite: form.unite,
+        pieces: parseInt(form.pieces, 10) || 0,
+        seuil: parseInt(form.seuil, 10) || 10,
+        emplacement: form.emplacement,
+      });
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetAndClose = () => {

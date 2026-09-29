@@ -4,16 +4,23 @@ import type { Utilisateur, UserFormData, UserRoleFilter } from './types';
 import UserCard from './UserCard';
 import UserModal from './UserModal';
 
+import { useUsersListQuery, useInviteUserMutation, useUpdateUserMutation, useToggleUserStatusMutation } from '../../hooks/queries/useUsersQuery';
+import { useLocationsListQuery } from '../../hooks/queries/useLocationsQuery';
+
 interface UsersProps {
   boutiqueId?: string;
 }
 
 export const Users: React.FC<UsersProps> = ({ boutiqueId = 'b1' }) => {
-  const utilisateurs: any = [];
-const boutiques: any = [];
-const addUtilisateur: any = [];
-const updateUtilisateur: any = [];
-const toggleUtilisateurActif: any = [];
+  const { data: usersResponse, isLoading } = useUsersListQuery();
+  const utilisateurs = usersResponse?.data || [];
+
+  const { data: locationsResponse } = useLocationsListQuery();
+  const boutiques = locationsResponse?.data || [];
+
+  const inviteUserMutation = useInviteUserMutation();
+  const updateUserMutation = useUpdateUserMutation();
+  const toggleStatusMutation = useToggleUserStatusMutation();
 
   const [search, setSearch] = useState('');
   const [filtreRole, setFiltreRole] = useState<UserRoleFilter>('tous');
@@ -33,40 +40,24 @@ const toggleUtilisateurActif: any = [];
     return matchRole && matchSearch;
   });
 
-  const handleSave = (form: UserFormData) => {
-    const boutiqueAssociee = form.role === 'boutiquier' ? form.boutique : '';
-    const boutiqueNom = boutiques.find((b: any) => b.id === form.boutique)?.nom;
-
+  const handleSave = async (form: UserFormData) => {
+  const boutiqueAssociee = form.role === 'boutiquier' ? form.boutique : undefined;
+  const backendRole = form.role === 'gerant' ? 'OWNER' : 'BOUTIQUIER';
+  try {
     if (editing) {
-      updateUtilisateur(editing.id, {
-        nom: form.nom.trim(),
-        telephone: form.telephone.trim(),
-        email: form.email.trim(),
-        role: form.role,
-        boutique: boutiqueAssociee,
-      });
+      await updateUserMutation.mutateAsync({ id: editing.id, data: { nom: form.nom.trim(), telephone: form.telephone.trim(), email: form.email.trim(), role: backendRole as any, locationId: boutiqueAssociee } });
       setShowForm(false);
       setEditing(null);
-      setSuccessMsg(`Utilisateur ${form.nom.trim()} modifié avec succès.`);
+      setSuccessMsg('Utilisateur modifié avec succès.');
       setTimeout(() => setSuccessMsg(null), 3500);
     } else {
-      addUtilisateur({
-        nom: form.nom.trim(),
-        telephone: form.telephone.trim(),
-        email: form.email.trim() || `${form.nom.toLowerCase().replace(/\s+/g, '.')}@afd-textile.sn`,
-        role: form.role,
-        boutique: boutiqueAssociee,
-        actif: true,
-      });
+      await inviteUserMutation.mutateAsync({ nom: form.nom.trim(), telephone: form.telephone.trim(), email: form.email.trim() || `${form.nom.toLowerCase().replace(/\s+/g, '.')}@afd-textile.sn`, role: backendRole as any, locationId: boutiqueAssociee });
       setShowForm(false);
-      setSuccessMsg(
-        `Compte créé avec succès pour ${form.nom.trim()} (${
-          form.role === 'gerant' ? 'Gérant' : `Boutiquier · ${boutiqueNom}`
-        }).`
-      );
+      setSuccessMsg('Compte invité avec succès.');
       setTimeout(() => setSuccessMsg(null), 4000);
     }
-  };
+  } catch (e) { console.error(e); }
+};
 
   const openEdit = (u: Utilisateur) => {
     setEditing(u);
@@ -164,7 +155,7 @@ const toggleUtilisateurActif: any = [];
             user={u}
             boutiques={boutiques}
             onEdit={openEdit}
-            onToggleActif={toggleUtilisateurActif}
+            onToggleActif={async (id) => toggleStatusMutation.mutateAsync(id)}
           />
         ))}
 

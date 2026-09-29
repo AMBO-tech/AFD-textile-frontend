@@ -127,10 +127,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ role: rawRole, onNavigate,
         />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <DashboardSalesChart data={[]} />
-        <DashboardTopProducts data={[]} />
-      </div>
+      {role === "gerant" && (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <DashboardSalesChart data={[]} />
+    <DashboardTopProducts data={[]} />
+  </div>
+)}
     </div>
   );
 };

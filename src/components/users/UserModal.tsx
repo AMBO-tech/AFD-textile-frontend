@@ -50,11 +50,17 @@ export const UserModal: React.FC<UserModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nom.trim() || !form.telephone.trim()) return;
-    if (form.role === 'boutiquier' && !form.boutique) return;
-    onSave(form);
+    if (form.role === "boutiquier" && !form.boutique) return;
+    setIsSubmitting(true);
+    try {
+      await onSave(form);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -248,11 +254,11 @@ export const UserModal: React.FC<UserModalProps> = ({
 
           <button
             type="submit"
-            disabled={!form.nom.trim() || !form.telephone.trim()}
+            disabled={!form.nom.trim() || !form.telephone.trim() || isSubmitting}
             className="w-full py-3.5 rounded-2xl text-white font-bold text-sm shadow-md active:scale-98 transition-all disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #0F3D5E, #1E88E5)' }}
           >
-            {editingUser ? 'Enregistrer les modifications' : 'Créer le compte utilisateur'}
+            {isSubmitting ? "Chargement..." : (editingUser ? "Enregistrer les modifications" : "Créer le compte utilisateur")}
           </button>
         </form>
       </div>

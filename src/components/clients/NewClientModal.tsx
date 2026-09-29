@@ -26,21 +26,25 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nom.trim()) return;
-
-    onSubmit({
-      nom: nom.trim(),
-      telephone: telephone.trim(),
-      adresse: adresse.trim() || 'Dakar',
-      boutiqueId,
-    });
-
-    setNom('');
-    setTelephone('+221 ');
-    setAdresse('');
-    onClose();
+    if (!nom.trim() || !telephone.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        nom: nom.trim(),
+        telephone: telephone.trim(),
+        adresse: adresse.trim() || 'Dakar',
+        boutiqueId,
+      });
+      setNom('');
+      setTelephone('+221 ');
+      setAdresse('');
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -136,12 +140,13 @@ export const NewClientModal: React.FC<NewClientModalProps> = ({
               Annuler
             </button>
             <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95"
-              style={{ background: '#0F3D5E' }}
-            >
-              Créer le compte client
-            </button>
+    type="submit"
+    disabled={!nom.trim() || !telephone.trim() || isSubmitting}
+    className="px-4 py-2 text-xs font-semibold text-white rounded-xl shadow-sm hover:opacity-95 disabled:opacity-50"
+    style={{ background: '#0F3D5E' }}
+  >
+    {isSubmitting ? "Création..." : "Créer le compte client"}
+  </button>
           </div>
         </form>
       </div>
